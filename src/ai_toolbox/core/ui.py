@@ -465,6 +465,392 @@ def clear_screen():
         os.system('clear')
 
 
+# ============================================================================
+# BRANDED COMPONENTS
+# ============================================================================
+
+def print_branded_header(title: str, subtitle: str = ""):
+    """
+    Print a distinctive branded header for tools.
+
+    Uses orange branding with clean typography.
+    """
+    width = 60
+
+    # Top border with brand color
+    console.print(f"\n[orange1]{'━' * width}[/orange1]")
+
+    # Logo line
+    console.print(f"[bold orange1]  ▣ AI TOOLBOX[/bold orange1] [dim]│[/dim] [bold white]{title}[/bold white]")
+
+    # Subtitle if provided
+    if subtitle:
+        console.print(f"[dim]  {subtitle}[/dim]")
+
+    # Bottom border
+    console.print(f"[orange1]{'━' * width}[/orange1]\n")
+
+
+def print_branded_footer(message: str = ""):
+    """Print a branded footer."""
+    width = 60
+    console.print(f"\n[dim]{'─' * width}[/dim]")
+    if message:
+        console.print(f"[dim]  {message}[/dim]")
+    console.print(f"[dim orange3]  ▣ AI TOOLBOX[/dim orange3]")
+    console.print()
+
+
+# ============================================================================
+# TABLE-BASED MODEL SELECTION
+# ============================================================================
+
+def create_model_table(
+    models: list,
+    title: str = "Mallit",
+    show_index: bool = True,
+    show_size: bool = True,
+    show_quant: bool = True,
+    show_format: bool = True,
+    show_date: bool = False,
+    show_source: bool = False,
+    max_name_length: int = 40
+) -> Table:
+    """
+    Create a beautiful Rich table for displaying models.
+
+    Args:
+        models: List of ModelEntry objects
+        title: Table title
+        show_index: Show row numbers for selection
+        show_size: Show file size column
+        show_quant: Show quantization column
+        show_format: Show format column
+        show_date: Show date added column
+        show_source: Show source column
+        max_name_length: Maximum length for model names
+
+    Returns:
+        Rich Table object
+    """
+    from ..models.library import format_display_name
+
+    table = Table(
+        title=f"[bold orange1]{title}[/bold orange1]",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan",
+        border_style="orange3",
+        title_style="bold orange1",
+        padding=(0, 1),
+        expand=False,
+    )
+
+    # Add columns based on options
+    if show_index:
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+
+    table.add_column("Malli", style="white", min_width=20, max_width=max_name_length)
+
+    if show_format:
+        table.add_column("Tyyppi", style="green", width=8, justify="center")
+
+    if show_quant:
+        table.add_column("Quant", style="yellow", width=8, justify="center")
+
+    if show_size:
+        table.add_column("Koko", style="cyan", width=10, justify="right")
+
+    if show_source:
+        table.add_column("Lähde", style="dim", width=10)
+
+    if show_date:
+        table.add_column("Lisätty", style="dim", width=12)
+
+    # Add rows
+    for i, model in enumerate(models, 1):
+        # Handle string models (shouldn't happen but be defensive)
+        if isinstance(model, str):
+            row = [str(i)] if show_index else []
+            row.append(model[:max_name_length])
+            if show_format:
+                row.append("?")
+            if show_quant:
+                row.append("-")
+            if show_size:
+                row.append("-")
+            if show_source:
+                row.append("-")
+            if show_date:
+                row.append("-")
+            table.add_row(*row)
+            continue
+
+        # Format display name
+        display_name = format_display_name(model.name, max_length=max_name_length)
+
+        # Build row
+        row = []
+        if show_index:
+            row.append(str(i))
+
+        row.append(display_name)
+
+        if show_format:
+            fmt = model.format.upper() if model.format else "?"
+            row.append(fmt)
+
+        if show_quant:
+            quant = model.quantization if model.quantization else "-"
+            row.append(quant)
+
+        if show_size:
+            size_str = format_size(model.size_bytes) if model.size_bytes else "-"
+            row.append(size_str)
+
+        if show_source:
+            source = model.source[:10] if model.source else "-"
+            row.append(source)
+
+        if show_date:
+            date = model.added_date[:10] if model.added_date else "-"
+            row.append(date)
+
+        table.add_row(*row)
+
+    return table
+
+
+def select_model_from_table(
+    models: list,
+    title: str = "Valitse malli",
+    subtitle: str = "",
+    allow_cancel: bool = True,
+    show_size: bool = True,
+    show_quant: bool = True,
+    show_format: bool = True,
+) -> Optional[Any]:
+    """
+    Display models in a table and let user select by number.
+
+    Args:
+        models: List of ModelEntry objects
+        title: Selection title
+        subtitle: Optional subtitle
+        allow_cancel: Whether to allow cancellation
+        show_size: Show size column
+        show_quant: Show quantization column
+        show_format: Show format column
+
+    Returns:
+        Selected ModelEntry or None if cancelled
+    """
+    import questionary
+
+    if not models:
+        print_warning("Ei malleja saatavilla")
+        return None
+
+    # Print branded header
+    print_branded_header(title, subtitle)
+
+    # Create and display table
+    table = create_model_table(
+        models,
+        title=f"{len(models)} mallia",
+        show_index=True,
+        show_size=show_size,
+        show_quant=show_quant,
+        show_format=show_format,
+    )
+    console.print(table)
+    console.print()
+
+    # Build prompt
+    cancel_hint = " (0 = peruuta)" if allow_cancel else ""
+    prompt = f"Valitse numero [1-{len(models)}]{cancel_hint}"
+
+    while True:
+        answer = questionary.text(
+            prompt,
+            style=MENU_STYLE,
+        ).ask()
+
+        if answer is None:
+            return None
+
+        answer = answer.strip()
+
+        # Handle cancel
+        if allow_cancel and answer in ("0", "q", "Q", ""):
+            return None
+
+        # Parse selection
+        try:
+            idx = int(answer)
+            if 1 <= idx <= len(models):
+                return models[idx - 1]
+            else:
+                print_warning(f"Valitse numero väliltä 1-{len(models)}")
+        except ValueError:
+            print_warning("Anna kelvollinen numero")
+
+
+def select_multiple_models_from_table(
+    models: list,
+    title: str = "Valitse mallit",
+    subtitle: str = "",
+    min_selection: int = 1,
+    max_selection: int = None,
+    show_size: bool = True,
+    show_quant: bool = True,
+) -> Optional[List[Any]]:
+    """
+    Display models in a table and let user select multiple by numbers.
+
+    Args:
+        models: List of ModelEntry objects
+        title: Selection title
+        subtitle: Optional subtitle
+        min_selection: Minimum models to select
+        max_selection: Maximum models to select (None = unlimited)
+        show_size: Show size column
+        show_quant: Show quantization column
+
+    Returns:
+        List of selected ModelEntry objects or None if cancelled
+    """
+    import questionary
+
+    if not models:
+        print_warning("Ei malleja saatavilla")
+        return None
+
+    # Print branded header
+    print_branded_header(title, subtitle)
+
+    # Create and display table
+    table = create_model_table(
+        models,
+        title=f"{len(models)} mallia",
+        show_index=True,
+        show_size=show_size,
+        show_quant=show_quant,
+    )
+    console.print(table)
+    console.print()
+
+    # Instructions
+    max_hint = f" (max {max_selection})" if max_selection else ""
+    console.print(f"[dim]Anna numerot pilkulla erotettuna{max_hint}, esim: 1, 3, 5[/dim]")
+    console.print(f"[dim]Tyhjä tai 0 = peruuta[/dim]")
+    console.print()
+
+    while True:
+        answer = questionary.text(
+            f"Valitse [{min_selection}-{max_selection or len(models)} mallia]",
+            style=MENU_STYLE,
+        ).ask()
+
+        if answer is None or answer.strip() in ("", "0", "q"):
+            return None
+
+        # Parse comma-separated numbers
+        try:
+            indices = [int(x.strip()) for x in answer.split(",")]
+
+            # Validate indices
+            invalid = [i for i in indices if i < 1 or i > len(models)]
+            if invalid:
+                print_warning(f"Virheelliset numerot: {invalid}")
+                continue
+
+            # Check count
+            if len(indices) < min_selection:
+                print_warning(f"Valitse vähintään {min_selection} mallia")
+                continue
+
+            if max_selection and len(indices) > max_selection:
+                print_warning(f"Valitse enintään {max_selection} mallia")
+                continue
+
+            # Return selected models
+            return [models[i - 1] for i in indices]
+
+        except ValueError:
+            print_warning("Anna numerot pilkulla erotettuna")
+
+
+def display_model_details(model, show_path: bool = True):
+    """
+    Display detailed information about a model in a styled panel.
+
+    Args:
+        model: ModelEntry object
+        show_path: Whether to show full file path
+    """
+    from ..models.library import format_display_name
+
+    if isinstance(model, str):
+        console.print(Panel(
+            f"[yellow]Mallin ID:[/yellow] {model}",
+            title="[bold]Mallin tiedot[/bold]",
+            border_style="yellow"
+        ))
+        return
+
+    # Create details table
+    table = Table(
+        show_header=False,
+        box=None,
+        padding=(0, 2),
+        expand=False,
+    )
+    table.add_column("Key", style="cyan", width=15)
+    table.add_column("Value", style="white")
+
+    # Add details
+    display_name = format_display_name(model.name, max_length=50)
+    table.add_row("Nimi", f"[bold]{display_name}[/bold]")
+    table.add_row("Täysi nimi", f"[dim]{model.name}[/dim]")
+    table.add_row("Formaatti", model.format.upper() if model.format else "-")
+    table.add_row("Koko", format_size(model.size_bytes) if model.size_bytes else "-")
+
+    if model.quantization:
+        table.add_row("Kvantisointi", f"[yellow]{model.quantization}[/yellow]")
+
+    if model.source:
+        table.add_row("Lähde", model.source)
+
+    if model.source_id:
+        table.add_row("Lähde-ID", model.source_id)
+
+    if model.added_date:
+        table.add_row("Lisätty", model.added_date[:10])
+
+    if model.tags:
+        table.add_row("Tagit", ", ".join(model.tags))
+
+    if show_path:
+        table.add_row("Polku", f"[dim]{model.path}[/dim]")
+
+    # Determine border color
+    if model.format == 'gguf':
+        border = 'cyan' if model.quantization and model.quantization not in ('F16', 'F32') else 'yellow'
+    elif model.format in ('safetensors', 'pytorch'):
+        border = 'green'
+    else:
+        border = 'white'
+
+    console.print(Panel(
+        table,
+        title="[bold orange1]▣ Mallin tiedot[/bold orange1]",
+        border_style=border,
+        padding=(1, 2),
+        box=box.ROUNDED
+    ))
+
+
 # ==========================================
 # Categorized Model Display Components
 # ==========================================

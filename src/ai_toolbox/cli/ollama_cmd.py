@@ -6,66 +6,90 @@ Interactive wizard for creating and managing Ollama models.
 """
 
 import questionary
-from questionary import Style
-from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from ..core.ui import clear_screen, format_size
-
-# Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+from ..core.ui import (
+    console,
+    clear_screen,
+    format_size,
+    print_branded_header,
+    print_warning,
+    print_success,
+    print_error,
+    create_model_table,
+    select_model_from_table,
+    MENU_STYLE,
+    format_menu_item,
+)
 from ..integrations.ollama import OllamaManager, SYSTEM_PROMPTS
-from ..models.library import ModelLibrary
+from ..models.library import ModelLibrary, format_display_name
 from ..abliteration.prompts import get_random_test_prompts, get_category_list, TEST_PROMPT_CATEGORIES
-
-console = Console()
 
 
 def run_ollama_wizard():
     """Main entry point for Ollama Wizard."""
     clear_screen()
 
-    console.print(Panel.fit(
-        "[bold cyan]OLLAMA WIZARD[/bold cyan]\n"
-        "[dim]Create and manage Ollama models from your GGUF files[/dim]",
-        border_style="cyan"
-    ))
-
     manager = OllamaManager()
 
     if not manager.is_available():
-        console.print("\n[red]Ollama is not installed or not accessible.[/red]")
-        console.print("[yellow]Please install Ollama from: https://ollama.com[/yellow]")
-        input("\nPress Enter to return...")
+        print_branded_header("Ollama Manager", "Ollama ei ole asennettu")
+        print_error("Ollama ei ole asennettu tai ei ole käytettävissä.")
+        console.print("[yellow]Asenna Ollama: https://ollama.com[/yellow]")
+        input("\nPaina Enter jatkaaksesi...")
         return
 
     while True:
-        console.print()
+        print_branded_header("Ollama Manager", "Luo ja hallitse Ollama-malleja")
+
+        # Show quick status
+        models = manager.list_models()
+        console.print(f"  [dim]Ollama-malleja:[/dim] [cyan]{len(models)}[/cyan]\n")
+
         choice = questionary.select(
-            "What would you like to do?",
+            "",
             choices=[
-                questionary.Choice("Create model from GGUF", value="create"),
-                questionary.Choice("Test model (chat)", value="test"),
-                questionary.Choice("Quick abliteration test", value="abltest"),
-                questionary.Separator(),
-                questionary.Choice("List Ollama models", value="list"),
-                questionary.Choice("Show model info", value="show"),
-                questionary.Choice("Pull public model", value="pull"),
-                questionary.Choice("Delete model", value="delete"),
-                questionary.Separator(),
-                questionary.Choice("Back to main menu", value="back"),
-            ]
+                questionary.Separator("─── Luo & Testaa ───"),
+                questionary.Choice(
+                    title=format_menu_item("Create Model", "Luo Ollama-malli GGUF:sta"),
+                    value="create"
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Test Chat", "Keskustele mallin kanssa"),
+                    value="test"
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Abliteration Test", "Testaa sensuurin poisto"),
+                    value="abltest"
+                ),
+                questionary.Separator("─── Hallinta ───"),
+                questionary.Choice(
+                    title=format_menu_item("List Models", "Näytä kaikki Ollama-mallit"),
+                    value="list"
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Model Info", "Näytä mallin tiedot"),
+                    value="show"
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Pull Model", "Lataa julkinen malli"),
+                    value="pull"
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Delete Model", "Poista malli"),
+                    value="delete"
+                ),
+                questionary.Separator("─────────────────────────────"),
+                questionary.Choice(
+                    title=format_menu_item("← Back", "Palaa päävalikkoon"),
+                    value="back"
+                ),
+            ],
+            style=MENU_STYLE,
+            qmark="",
+            pointer="▸",
         ).ask()
 
         if choice == "back" or choice is None:
@@ -88,34 +112,26 @@ def run_ollama_wizard():
 
 def _create_model_wizard(manager: OllamaManager):
     """Wizard for creating a new Ollama model from GGUF."""
-    console.print("\n[bold cyan]CREATE OLLAMA MODEL[/bold cyan]\n")
-
     # Get GGUF models from library
     library = ModelLibrary(auto_scan=False)
     gguf_models = library.get_gguf_models()
 
     if not gguf_models:
-        console.print("[yellow]No GGUF models found in library.[/yellow]")
-        console.print("[dim]Use Model Download or GGUF Converter to add models first.[/dim]")
-        input("\nPress Enter to continue...")
+        print_branded_header("Create Ollama Model", "Ei GGUF-malleja")
+        print_warning("Kirjastossa ei ole GGUF-malleja.")
+        console.print("[dim]Käytä Model Download tai GGUF Converter lisätäksesi malleja.[/dim]")
+        input("\nPaina Enter jatkaaksesi...")
         return
 
-    # Step 1: Select GGUF model
-    console.print("[bold]Step 1: Select GGUF model[/bold]\n")
-
-    model_choices = [
-        questionary.Choice(
-            f"{m.name} [{m.quantization or 'unknown'}] ({format_size(m.size_bytes)})",
-            value=m
-        )
-        for m in gguf_models
-    ]
-    model_choices.append(questionary.Choice("Cancel", value=None))
-
-    selected_model = questionary.select(
-        "Select GGUF model:",
-        choices=model_choices
-    ).ask()
+    # Step 1: Select GGUF model using table
+    selected_model = select_model_from_table(
+        models=gguf_models,
+        title="Create Ollama Model",
+        subtitle="Valitse GGUF-malli Ollama-mallin pohjaksi",
+        show_format=True,
+        show_quant=True,
+        show_size=True,
+    )
 
     if selected_model is None:
         return
@@ -292,87 +308,142 @@ def _create_model_wizard(manager: OllamaManager):
 
 def _list_models(manager: OllamaManager):
     """List all Ollama models with nice formatting."""
-    console.print("\n[bold cyan]OLLAMA MODELS[/bold cyan]\n")
+    print_branded_header("Ollama Models", "Asennetut Ollama-mallit")
 
     models = manager.list_models()
 
     if not models:
-        console.print("[yellow]No Ollama models found.[/yellow]")
-        input("\nPress Enter to continue...")
+        print_warning("Ei Ollama-malleja.")
+        input("\nPaina Enter jatkaaksesi...")
         return
 
-    # Rakennetaan tyylikäs Choice-lista kuten Library-näkymässä
-    choices = []
-    for model in models:
-        # Lyhennä digest tunnistettavaksi (12 merkkiä)
-        digest_short = model.digest[:12] if model.digest else ""
+    # Create beautiful table for Ollama models
+    table = Table(
+        title=f"[bold orange1]{len(models)} Ollama-mallia[/bold orange1]",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan",
+        border_style="orange3",
+        padding=(0, 1),
+    )
 
-        # Monirivi-muotoilu:
-        # 🤖 llama2:latest
-        #    7.3 GB | 2 days ago | abc123def456
-        title = f"🤖 {model.name}\n   {model.size} | {model.modified} | {digest_short}"
-        choices.append(questionary.Choice(title=title, value=model.name))
+    table.add_column("#", style="bold yellow", width=4, justify="right")
+    table.add_column("Malli", style="white", min_width=25)
+    table.add_column("Koko", style="cyan", width=10, justify="right")
+    table.add_column("Muokattu", style="dim", width=15)
+    table.add_column("ID", style="dim", width=14)
 
-    choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title="<-  Back", value=None))
+    for i, model in enumerate(models, 1):
+        digest_short = model.digest[:12] if model.digest else "-"
+        table.add_row(
+            str(i),
+            f"🤖 {model.name}",
+            model.size,
+            model.modified,
+            digest_short
+        )
 
-    console.print(f"[dim]Yhteensä {len(models)} mallia[/dim]\n")
+    console.print(table)
+    console.print()
+    input("Paina Enter jatkaaksesi...")
 
-    # Näytä valikko - valinta ei tee mitään, vain listaus
-    questionary.select(
-        "Ollama-mallit:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">",
-    ).ask()
+
+def _select_ollama_model(manager: OllamaManager, title: str, subtitle: str = ""):
+    """
+    Display Ollama models in a table and let user select by number.
+
+    Returns:
+        Selected model name (str) or None if cancelled
+    """
+    models = manager.list_models()
+
+    if not models:
+        print_branded_header(title, "Ei malleja")
+        print_warning("Ei Ollama-malleja saatavilla.")
+        input("\nPaina Enter jatkaaksesi...")
+        return None
+
+    print_branded_header(title, subtitle)
+
+    # Create table
+    table = Table(
+        title=f"[bold orange1]{len(models)} mallia[/bold orange1]",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan",
+        border_style="orange3",
+        padding=(0, 1),
+    )
+
+    table.add_column("#", style="bold yellow", width=4, justify="right")
+    table.add_column("Malli", style="white", min_width=25)
+    table.add_column("Koko", style="cyan", width=10, justify="right")
+    table.add_column("Muokattu", style="dim", width=15)
+
+    for i, model in enumerate(models, 1):
+        table.add_row(
+            str(i),
+            f"🤖 {model.name}",
+            model.size,
+            model.modified,
+        )
+
+    console.print(table)
+    console.print()
+
+    # Get selection
+    while True:
+        answer = questionary.text(
+            f"Valitse numero [1-{len(models)}] (0 = peruuta)",
+            style=MENU_STYLE,
+        ).ask()
+
+        if answer is None or answer.strip() in ("", "0", "q"):
+            return None
+
+        try:
+            idx = int(answer.strip())
+            if 1 <= idx <= len(models):
+                return models[idx - 1].name
+            else:
+                print_warning(f"Valitse numero väliltä 1-{len(models)}")
+        except ValueError:
+            print_warning("Anna kelvollinen numero")
 
 
 def _show_model_info(manager: OllamaManager):
     """Show detailed info about a model."""
-    models = manager.list_models()
-
-    if not models:
-        console.print("\n[yellow]No Ollama models found.[/yellow]")
-        input("\nPress Enter to continue...")
-        return
-
-    # Tyylikäs valinta kuten _list_models
-    choices = []
-    for model in models:
-        digest_short = model.digest[:12] if model.digest else ""
-        title = f"🤖 {model.name}\n   {model.size} | {model.modified} | {digest_short}"
-        choices.append(questionary.Choice(title=title, value=model.name))
-
-    choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title="<-  Cancel", value=None))
-
-    selected = questionary.select(
-        "Select model to view:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">",
-    ).ask()
+    selected = _select_ollama_model(manager, "Model Info", "Näytä mallin tiedot")
 
     if selected is None:
         return
 
-    console.print(f"\n[bold cyan]MODEL INFO: {selected}[/bold cyan]\n")
+    print_branded_header(f"Model: {selected}", "Mallin tiedot")
 
     details = manager.show_model(selected)
     if details:
+        # Create details table
+        table = Table(
+            show_header=False,
+            box=None,
+            padding=(0, 2),
+        )
+        table.add_column("Key", style="cyan", width=15)
+        table.add_column("Value", style="white")
+
         for key, value in details.items():
             if key != "raw_output":
-                console.print(f"  [cyan]{key}:[/cyan] {value}")
+                table.add_row(key, str(value))
+
+        console.print(table)
 
     # Show saved Modelfile if exists
     modelfile = manager.get_modelfile(selected.split(":")[0])
     if modelfile:
-        console.print("\n[bold]Saved Modelfile:[/bold]")
+        console.print("\n[bold]Tallennettu Modelfile:[/bold]")
         console.print(Panel(modelfile, border_style="dim"))
 
-    input("\nPress Enter to continue...")
+    input("\nPaina Enter jatkaaksesi...")
 
 
 def _pull_model(manager: OllamaManager):
@@ -403,30 +474,7 @@ def _pull_model(manager: OllamaManager):
 
 def _delete_model(manager: OllamaManager):
     """Delete an Ollama model with full cleanup options."""
-    models = manager.list_models()
-
-    if not models:
-        console.print("\n[yellow]No Ollama models found.[/yellow]")
-        input("\nPress Enter to continue...")
-        return
-
-    # Tyylikäs valinta kuten _list_models
-    choices = []
-    for model in models:
-        digest_short = model.digest[:12] if model.digest else ""
-        title = f"🤖 {model.name}\n   {model.size} | {model.modified} | {digest_short}"
-        choices.append(questionary.Choice(title=title, value=model.name))
-
-    choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title="<-  Cancel", value=None))
-
-    selected = questionary.select(
-        "Select model to delete:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">",
-    ).ask()
+    selected = _select_ollama_model(manager, "Delete Model", "Valitse poistettava malli")
 
     if selected is None:
         return
@@ -515,36 +563,13 @@ def _delete_model(manager: OllamaManager):
 
 def _test_model_chat(manager: OllamaManager):
     """Interactive chat with an Ollama model."""
-    models = manager.list_models()
-
-    if not models:
-        console.print("\n[yellow]No Ollama models found.[/yellow]")
-        input("\nPress Enter to continue...")
-        return
-
-    # Tyylikäs valinta
-    choices = []
-    for model in models:
-        digest_short = model.digest[:12] if model.digest else ""
-        title = f"🤖 {model.name}\n   {model.size} | {model.modified} | {digest_short}"
-        choices.append(questionary.Choice(title=title, value=model.name))
-
-    choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title="<-  Cancel", value=None))
-
-    selected = questionary.select(
-        "Select model to test:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">",
-    ).ask()
+    selected = _select_ollama_model(manager, "Test Chat", "Valitse malli testaukseen")
 
     if selected is None:
         return
 
-    console.print(f"\n[bold cyan]CHAT WITH: {selected}[/bold cyan]")
-    console.print("[dim]Type 'quit' or 'exit' to end, 'clear' to reset[/dim]\n")
+    print_branded_header(f"Chat: {selected}", "Kirjoita 'quit' lopettaaksesi")
+    console.print("[dim]Komennot: quit/exit = lopeta, clear = tyhjennä[/dim]\n")
 
     while True:
         try:
@@ -576,36 +601,12 @@ def _test_model_chat(manager: OllamaManager):
 
 def _abliteration_test(manager: OllamaManager):
     """Quick test to verify abliteration worked."""
-    models = manager.list_models()
-
-    if not models:
-        console.print("\n[yellow]No Ollama models found.[/yellow]")
-        input("\nPress Enter to continue...")
-        return
-
-    console.print("\n[bold cyan]━━━ ABLITERATION TEST ━━━[/bold cyan]")
-    console.print("[dim]Testaa, kieltäytyykö malli vastaamasta tyypillisiin 'haitallisiin' kysymyksiin[/dim]\n")
-
     # Step 1: Model selection
-    console.print("[bold]Vaihe 1: Valitse malli[/bold]\n")
-
-    # Tyylikäs valinta
-    choices = []
-    for model in models:
-        digest_short = model.digest[:12] if model.digest else ""
-        title = f"🤖 {model.name}\n   {model.size} | {model.modified} | {digest_short}"
-        choices.append(questionary.Choice(title=title, value=model.name))
-
-    choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title="<-  Peruuta", value=None))
-
-    selected = questionary.select(
-        "Valitse testattava malli:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">",
-    ).ask()
+    selected = _select_ollama_model(
+        manager,
+        "Abliteration Test",
+        "Testaa sensuurin poistoa"
+    )
 
     if selected is None:
         return
