@@ -52,7 +52,7 @@ env/
 # --------------------------------------------
 # Models & Large Files (DO NOT COMMIT)
 # --------------------------------------------
-models/
+/models/
 *.gguf
 *.bin
 *.safetensors
