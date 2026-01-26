@@ -1,0 +1,161 @@
+# ============================================
+# AI Toolbox - .gitignore
+# ============================================
+
+# --------------------------------------------
+# Python
+# --------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --------------------------------------------
+# Virtual Environment
+# --------------------------------------------
+venv/
+ENV/
+env/
+.venv/
+
+# --------------------------------------------
+# IDE / Editor
+# --------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# --------------------------------------------
+# Models & Large Files (DO NOT COMMIT)
+# --------------------------------------------
+models/
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+
+# Huggingface cache
+.cache/
+
+# --------------------------------------------
+# Datasets (user data, not for repo)
+# --------------------------------------------
+datasets/
+*.jsonl
+*.parquet
+
+# --------------------------------------------
+# External Tools (downloaded separately)
+# --------------------------------------------
+tools/llama.cpp/
+tools/mergekit/
+
+# --------------------------------------------
+# Configuration with secrets
+# --------------------------------------------
+config/settings.json
+config/secrets.json
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --------------------------------------------
+# Logs & Temporary Files
+# --------------------------------------------
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+
+# --------------------------------------------
+# OS-specific
+# --------------------------------------------
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+
+# --------------------------------------------
+# Jupyter Notebooks (optional)
+# --------------------------------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# --------------------------------------------
+# Test & Coverage
+# --------------------------------------------
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# --------------------------------------------
+# Build artifacts
+# --------------------------------------------
+*.manifest
+*.spec
+
+# --------------------------------------------
+# Benchmarks & Results (user-specific)
+# --------------------------------------------
+benchmarks/results/
+
+# --------------------------------------------
+# MCP config (user-specific paths)
+# --------------------------------------------
+mcp-config.json
+
+# --------------------------------------------
+# AI Assistant configs (user-specific)
+# --------------------------------------------
+.claude/
+.gemini/
+.cursor/
+.copilot/
+
+# --------------------------------------------
+# Windows artifacts
+# --------------------------------------------
+nul
