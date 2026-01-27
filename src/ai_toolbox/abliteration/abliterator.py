@@ -802,7 +802,6 @@ class Abliterator:
         means: Dict[int, Any] = {}
         counts: Dict[int, int] = {}
         samples: Dict[int, List[Any]] = {} if collect_samples else None
-        samples_collected = 0
 
         total_batches = (len(prompts) + batch_size - 1) // batch_size
 
@@ -889,16 +888,17 @@ class Abliterator:
                         counts[actual_layer] = total
 
                     # Collect individual samples for linear probing if enabled
-                    if collect_samples and samples_collected < max_samples:
+                    # Track per-layer sample count for accurate collection
+                    if collect_samples:
                         if actual_layer not in samples:
                             samples[actual_layer] = []
-                        # Add individual activations (up to max_samples)
-                        for i in range(min(current.shape[0], max_samples - samples_collected)):
-                            samples[actual_layer].append(current[i].clone())
-
-                # Update samples collected count
-                if collect_samples:
-                    samples_collected += len(batch)
+                        # Only add samples if this layer hasn't reached max_samples yet
+                        layer_sample_count = len(samples[actual_layer])
+                        if layer_sample_count < max_samples:
+                            # Add individual activations (up to max_samples per layer)
+                            samples_to_add = min(current.shape[0], max_samples - layer_sample_count)
+                            for i in range(samples_to_add):
+                                samples[actual_layer].append(current[i].clone())
 
                 # Cleanup batch tensors
                 del inputs, outputs, hidden_states
@@ -935,8 +935,8 @@ class Abliterator:
                     padding=True
                 )
 
-                if device == "cuda":
-                    inputs = {k: v.cuda() for k, v in inputs.items()}
+                # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
+                inputs = {k: v.to(device) for k, v in inputs.items()}
 
                 with torch.no_grad():
                     model(**inputs)
@@ -994,20 +994,37 @@ class Abliterator:
             refusal_dir = refusal_dir / (refusal_dir.norm() + 1e-8)
 
         elif method == "pca":
-            # Use PCA to find principal component
+            # Use PCA to find the principal component of the difference
+            # This is useful when you have multiple samples and want to find
+            # the dominant direction of variation between harmful and harmless
             try:
                 from sklearn.decomposition import PCA
                 import numpy as np
 
+                # Stack harmful and harmless activations
+                # harmful_act and harmless_act are mean activations (1D vectors)
+                # For true PCA, we'd need individual samples, but we can still
+                # use PCA on the difference to get a normalized direction
                 diff = (harmful_act - harmless_act).cpu().numpy()
+
                 if diff.ndim == 1:
+                    # Single vector - reshape for PCA
                     diff = diff.reshape(1, -1)
 
-                # Just use the normalized difference for single samples
-                refusal_dir = torch.from_numpy(diff[0])
+                if diff.shape[0] >= 2:
+                    # Multiple samples - use PCA to find principal direction
+                    pca = PCA(n_components=1)
+                    pca.fit(diff)
+                    refusal_dir = torch.from_numpy(pca.components_[0].astype(np.float32))
+                else:
+                    # Single sample - just normalize the difference
+                    # (PCA needs at least 2 samples)
+                    refusal_dir = torch.from_numpy(diff[0].astype(np.float32))
+
                 refusal_dir = refusal_dir / (refusal_dir.norm() + 1e-8)
+
             except ImportError:
-                # Fallback to mean_diff
+                # Fallback to mean_diff if sklearn not available
                 refusal_dir = harmful_act - harmless_act
                 refusal_dir = refusal_dir / (refusal_dir.norm() + 1e-8)
         else:
@@ -1495,8 +1512,8 @@ class Abliterator:
                 max_length=512
             )
 
-            if device == "cuda":
-                inputs = {k: v.cuda() for k, v in inputs.items()}
+            # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = model.generate(
@@ -1882,9 +1899,11 @@ class Abliterator:
         torch = self._torch
         original_dtype = weight.dtype
 
-        # Check if GPU is available
-        use_gpu = device == "cuda" and torch.cuda.is_available()
-        compute_device = "cuda" if use_gpu else "cpu"
+        # Determine compute device - handle both string and torch.device
+        # device can be "cuda", "cpu", torch.device("cuda:0"), etc.
+        device_str = str(device) if hasattr(device, '__str__') else device
+        use_gpu = ("cuda" in device_str) and torch.cuda.is_available()
+        compute_device = device if use_gpu else "cpu"
 
         # Move to compute device and convert to float32 for numerical stability
         weight_gpu = weight.to(compute_device, dtype=torch.float32, non_blocking=True)
