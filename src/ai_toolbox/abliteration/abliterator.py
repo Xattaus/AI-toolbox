@@ -312,15 +312,15 @@ class Abliterator:
             if progress_callback:
                 progress_callback("Loading model...", 0.0)
 
-            # Determine device and dtype
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # Determine dtype
             dtype = getattr(torch, config.dtype, torch.float16)
+            use_cuda = torch.cuda.is_available()
 
             # Load model
             model = AutoModelForCausalLM.from_pretrained(
                 str(model_path),
                 torch_dtype=dtype,
-                device_map="auto" if device == "cuda" else None,
+                device_map="auto" if use_cuda else None,
                 trust_remote_code=True,
             )
 
@@ -333,6 +333,11 @@ class Abliterator:
                 tokenizer.pad_token = tokenizer.eos_token
 
             model.eval()
+
+            # CRITICAL: Get actual device from model (handles multi-GPU and CPU offload)
+            # device_map="auto" may spread model across devices, so we get the device
+            # of the first parameter which is where inputs should be sent
+            device = next(model.parameters()).device
 
             if progress_callback:
                 progress_callback("Detecting layers...", 0.1)
@@ -697,7 +702,7 @@ class Abliterator:
         model,
         tokenizer,
         prompts: List[str],
-        device: str,
+        device: Any,  # torch.device or str - supports multi-GPU setups
         batch_size: int = 8,
         progress_callback: Optional[Callable[[str, float], None]] = None,
         use_chat_template: bool = True,
@@ -783,8 +788,8 @@ class Abliterator:
                     max_length=512
                 )
 
-                if device == "cuda":
-                    inputs = {k: v.cuda() for k, v in inputs.items()}
+                # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
+                inputs = {k: v.to(device) for k, v in inputs.items()}
 
                 with torch.no_grad():
                     outputs = model(**inputs, output_hidden_states=True)
@@ -1699,18 +1704,40 @@ class Abliterator:
                 progress_callback("Copying config files...", 0.95)
 
             # Copy config files (including index for sharded models)
-            for config_file in ["config.json", "tokenizer.json", "tokenizer_config.json",
-                               "special_tokens_map.json", "generation_config.json",
-                               "model.safetensors.index.json"]:
+            config_files = [
+                "config.json",
+                "generation_config.json",
+                "model.safetensors.index.json",
+            ]
+            for config_file in config_files:
                 src = model_path / config_file
                 if src.exists():
                     dst = output_dir / config_file
                     dst.write_bytes(src.read_bytes())
 
-            # Copy tokenizer model if exists
-            for tokenizer_file in model_path.glob("*.model"):
-                dst = output_dir / tokenizer_file.name
-                dst.write_bytes(tokenizer_file.read_bytes())
+            # Copy ALL tokenizer files (different tokenizers need different files)
+            # This comprehensive list covers: BPE, SentencePiece, WordPiece, Unigram, etc.
+            tokenizer_files = [
+                "tokenizer.json",           # Fast tokenizer (most common)
+                "tokenizer_config.json",    # Tokenizer configuration
+                "special_tokens_map.json",  # Special token mappings
+                "vocab.json",               # GPT-2, RoBERTa, etc.
+                "merges.txt",               # BPE merges (GPT-2, etc.)
+                "vocab.txt",                # WordPiece (BERT, etc.)
+                "added_tokens.json",        # Additional tokens
+                "tokenizer.model",          # SentencePiece model
+            ]
+            for tokenizer_file in tokenizer_files:
+                src = model_path / tokenizer_file
+                if src.exists():
+                    dst = output_dir / tokenizer_file
+                    dst.write_bytes(src.read_bytes())
+
+            # Also copy any .model files (SentencePiece variations)
+            for model_file in model_path.glob("*.model"):
+                dst = output_dir / model_file.name
+                if not dst.exists():  # Don't overwrite if already copied
+                    dst.write_bytes(model_file.read_bytes())
 
             # Save abliteration metadata
             metadata = {
