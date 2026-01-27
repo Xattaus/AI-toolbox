@@ -74,6 +74,7 @@ class AbliterationConfig:
     # Use method="gradient" to enable. More precise than mean_diff.
     gradient_steps: int = 50                     # Optimization steps for gradient method
     gradient_lr: float = 0.1                     # Learning rate for gradient optimization
+    refusal_tokens: Optional[List[str]] = None   # Refusal tokens for gradient (None = auto-detect language)
 
     # 3. Auto-tuning - Test in memory before saving
     use_auto_tune: bool = False                  # Enable auto-tuning with dry run
@@ -565,6 +566,7 @@ class Abliterator:
                             base_direction,
                             num_steps=config.gradient_steps,
                             lr=config.gradient_lr,
+                            refusal_tokens=config.refusal_tokens,  # Use config tokens (auto-detect if None)
                             progress_callback=None,  # Don't spam progress for each layer
                         )
                     elif config.method in ("projected", "pca"):
@@ -1032,6 +1034,56 @@ class Abliterator:
 
         return probe_accuracies
 
+    def _get_refusal_tokens_for_prompts(self, prompts: List[str]) -> List[str]:
+        """
+        Auto-detect language from prompts and return appropriate refusal tokens.
+
+        Supports: English, Finnish, German, French, Spanish, Italian, Swedish, Norwegian
+        """
+        # Language-specific refusal tokens
+        REFUSAL_TOKENS = {
+            "en": ["I", "cannot", "Sorry", "sorry", "can't", "unable", "don't", "will not"],
+            "fi": ["En", "en", "voi", "Anteeksi", "anteeksi", "pysty", "valitettavasti", "Valitettavasti"],
+            "de": ["Ich", "kann", "nicht", "Entschuldigung", "leider", "darf"],
+            "fr": ["Je", "ne", "peux", "pas", "Désolé", "désolé", "impossible"],
+            "es": ["No", "puedo", "Lo siento", "siento", "imposible", "lamento"],
+            "it": ["Non", "posso", "Mi dispiace", "dispiace", "scusa", "impossibile"],
+            "sv": ["Jag", "kan", "inte", "Tyvärr", "ledsen", "beklagar"],
+            "no": ["Jeg", "kan", "ikke", "Beklager", "dessverre"],
+        }
+
+        # Sample text from prompts for detection - split into words for accurate matching
+        import re
+        sample_text = " ".join(prompts[:10]).lower()
+        # Extract words (alphanumeric + common unicode letters)
+        words = set(re.findall(r'\b[\w\u00e0-\u00ff]+\b', sample_text))
+
+        # Language detection based on distinctive words (avoiding short common words)
+        # Only use words 3+ chars to avoid false positives like "er", "og", "und"
+        lang_indicators = {
+            "fi": ["mitä", "miten", "miksi", "onko", "voitko", "kerro", "kuinka", "minä", "sinä", "mita", "voiko"],
+            "de": ["wie", "warum", "kannst", "bitte", "erkläre", "nicht", "erklare"],
+            "fr": ["comment", "pourquoi", "expliquez", "pouvez", "vous"],
+            "es": ["cómo", "puedes", "explica", "puede", "como"],
+            "it": ["come", "perché", "puoi", "spiega", "cosa", "perche"],
+            "sv": ["hur", "varför", "förklara", "vilket", "varfor", "forklara"],
+            "no": ["hvordan", "hvorfor", "forklar", "hvilket"],
+        }
+
+        # Count matches for each language using word boundaries
+        lang_scores = {"en": 1}  # Default to English with slight preference
+        for lang, indicators in lang_indicators.items():
+            # Count how many indicator words are present as whole words
+            score = sum(2 for ind in indicators if ind in words)  # 2 points per match
+            if score > 0:
+                lang_scores[lang] = score
+
+        # Get the most likely language
+        detected_lang = max(lang_scores, key=lambda k: lang_scores[k])
+
+        # Return tokens for detected language (fallback to English if unknown)
+        return REFUSAL_TOKENS.get(detected_lang, REFUSAL_TOKENS["en"])
+
     def _compute_gradient_direction(
         self,
         model,
@@ -1041,7 +1093,7 @@ class Abliterator:
         initial_direction: Any,
         num_steps: int = 50,
         lr: float = 0.1,
-        refusal_tokens: List[str] = None,
+        refusal_tokens: Optional[List[str]] = None,
         progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> Any:
         """
@@ -1067,7 +1119,8 @@ class Abliterator:
         torch = self._torch
 
         if refusal_tokens is None:
-            refusal_tokens = ["I", "cannot", "Sorry", "sorry", "can't", "unable"]
+            # Auto-detect language from prompts and use appropriate refusal tokens
+            refusal_tokens = self._get_refusal_tokens_for_prompts(harmful_prompts)
 
         # Get refusal token IDs
         refusal_ids = []
