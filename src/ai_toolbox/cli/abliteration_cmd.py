@@ -185,15 +185,18 @@ kieltaytymiskayttaytyminen (refusal behavior).
   - 1.5-2.0 = aggressiivinen (voi rikkoa mallin)
 
 - [cyan]Method[/cyan]:
-  - projected: Gram-Schmidt ortogonalisointi (suositeltu)
-    Puhdistaa refusal-suunnan, sailyttaa normaalin kayttaytymisen
-  - gradient: Gradient Ascent -optimointi (tarkin, HIGH VRAM!)
-    Etsii suunnan joka maksimoi P("I cannot"). Kaanteinen fine-tuning.
-    Skalpelli vs. leka - tarkkuuskirurgia refusal-suunnalle.
-    [yellow]HUOM: Vaatii ~2x VRAM (gradient computation)![/yellow]
+  - [green]gradient[/green]: [bold]SUOSITELTU[/bold] - Tarkin tulos
+    Optimoi refusal-suunnan gradient ascentilla. Maksimoi
+    P("I cannot" | harmful prompt). Kaanteinen fine-tuning.
     Tunnistaa kielen automaattisesti (EN, FI, DE, FR, ES, IT, SV, NO).
-  - mean_diff: Yksinkertainen keskiarvoerotus (nopea, perus)
-  - pca: PCA-analyysi (vaatii sklearn)
+  - projected: Nopea ja hyva vaihtoehto
+    Gram-Schmidt ortogonalisointi puhdistaa refusal-suunnan.
+    Sailyttaa normaalin kayttaytymisen paremmin kuin mean_diff.
+  - mean_diff: Nopein, perusratkaisu
+    Yksinkertainen: harmful_mean - harmless_mean.
+    Hyva debuggaukseen ja nopeisiin testeihin.
+  - pca: Tilastollinen (vaatii sklearn)
+    Paakomponenttianalyysi loytaa dominantin suunnan.
 
 - [cyan]Smart Mode[/cyan] (v3.1, suositeltu):
   - [green]Smart Layer Selection[/green]: Analysoi signaalin voimakkuuden
@@ -372,10 +375,10 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         method_choice = questionary.select(
             "Method:",
             choices=[
-                questionary.Choice(title="projected  (Gram-Schmidt, suositeltu)", value="projected"),
-                questionary.Choice(title="gradient   (Gradient Ascent, tarkin, HIGH VRAM!)", value="gradient"),
-                questionary.Choice(title="mean_diff  (perus, nopea)", value="mean_diff"),
-                questionary.Choice(title="pca        (vaatii sklearn)", value="pca"),
+                questionary.Choice(title="gradient   (Suositeltu - tarkin, optimoi suunnan)", value="gradient"),
+                questionary.Choice(title="projected  (Nopea & hyva - Gram-Schmidt)", value="projected"),
+                questionary.Choice(title="mean_diff  (Nopein - pelkka keskiarvo)", value="mean_diff"),
+                questionary.Choice(title="pca        (Tilastollinen - vaatii sklearn)", value="pca"),
             ],
             style=custom_style,
             qmark=">>",
