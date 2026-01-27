@@ -182,6 +182,9 @@ kieltaytymiskayttaytyminen (refusal behavior).
 - [cyan]Method[/cyan]:
   - projected: Gram-Schmidt ortogonalisointi (suositeltu)
     Puhdistaa refusal-suunnan, sailyttaa normaalin kayttaytymisen
+  - gradient: Gradient Ascent -optimointi (tarkin, hidas)
+    Etsii suunnan joka maksimoi P("I cannot"). Kaanteinen fine-tuning.
+    Skalpelli vs. leka - tarkkuuskirurgia refusal-suunnalle.
   - mean_diff: Yksinkertainen keskiarvoerotus (nopea, perus)
   - pca: PCA-analyysi (vaatii sklearn)
 
@@ -369,6 +372,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             "Method:",
             choices=[
                 questionary.Choice(title="projected  (Gram-Schmidt, suositeltu)", value="projected"),
+                questionary.Choice(title="gradient   (Gradient Ascent, tarkin mutta hidas)", value="gradient"),
                 questionary.Choice(title="mean_diff  (perus, nopea)", value="mean_diff"),
                 questionary.Choice(title="pca        (vaatii sklearn)", value="pca"),
             ],

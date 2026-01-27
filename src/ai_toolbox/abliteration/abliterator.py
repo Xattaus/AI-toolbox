@@ -539,13 +539,44 @@ class Abliterator:
             # Compute refusal direction for each selected layer
             refusal_directions = {}
             missing_layers = []
-            for layer in smart_layers:
+            for i, layer in enumerate(smart_layers):
                 if layer in harmful_acts and layer in harmless_acts:
-                    direction = self._compute_refusal_vector(
+                    # First compute base direction using mean_diff
+                    base_direction = self._compute_refusal_vector(
                         harmful_acts[layer],
                         harmless_acts[layer],
-                        config.method
+                        "mean_diff"  # Always start with mean_diff as base
                     )
+
+                    if config.method == "gradient":
+                        # GRADIENT ASCENT: Optimize direction to maximize refusal probability
+                        # This is more precise than mean_diff but slower
+                        if progress_callback:
+                            progress_callback(
+                                f"Gradient optimization layer {layer} ({i+1}/{len(smart_layers)})...",
+                                0.90 + (i / len(smart_layers)) * 0.05
+                            )
+
+                        direction = self._compute_gradient_direction(
+                            model,
+                            tokenizer,
+                            harmful,  # Harmful prompts list (available in scope)
+                            layer,
+                            base_direction,
+                            num_steps=config.gradient_steps,
+                            lr=config.gradient_lr,
+                            progress_callback=None,  # Don't spam progress for each layer
+                        )
+                    elif config.method in ("projected", "pca"):
+                        # Use the specified method for direction computation
+                        direction = self._compute_refusal_vector(
+                            harmful_acts[layer],
+                            harmless_acts[layer],
+                            config.method
+                        )
+                    else:
+                        # Default: use mean_diff (already computed as base_direction)
+                        direction = base_direction
 
                     # Apply capability preservation if enabled
                     if config.use_capability_preservation and capability_acts:
