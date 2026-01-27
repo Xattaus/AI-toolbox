@@ -621,9 +621,16 @@ class Abliterator:
                         # This is more precise than mean_diff but slower
                         if progress_callback:
                             progress_callback(
-                                f"Gradient optimization layer {layer} ({i+1}/{len(smart_layers)})...",
+                                f"Gradient optimization layer {layer} ({i+1}/{len(smart_layers)}, {config.gradient_steps} steps)...",
                                 0.90 + (i / len(smart_layers)) * 0.05
                             )
+
+                        # Create a sub-progress callback for gradient steps
+                        def gradient_progress(msg, prog):
+                            if progress_callback:
+                                layer_progress = i / len(smart_layers)
+                                total_progress = 0.90 + layer_progress * 0.05 + prog * 0.05 / len(smart_layers)
+                                progress_callback(f"Layer {layer}: {msg}", total_progress)
 
                         direction = self._compute_gradient_direction(
                             model,
@@ -634,7 +641,7 @@ class Abliterator:
                             num_steps=config.gradient_steps,
                             lr=config.gradient_lr,
                             refusal_tokens=config.refusal_tokens,  # Use config tokens (auto-detect if None)
-                            progress_callback=None,  # Don't spam progress for each layer
+                            progress_callback=gradient_progress,  # Show gradient progress
                         )
                     elif config.method in ("projected", "pca"):
                         # Use the specified method for direction computation
