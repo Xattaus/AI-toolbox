@@ -192,9 +192,9 @@ kieltaytymiskayttaytyminen (refusal behavior).
   - projected: Nopea ja hyva vaihtoehto
     Gram-Schmidt ortogonalisointi puhdistaa refusal-suunnan.
     Sailyttaa normaalin kayttaytymisen paremmin kuin mean_diff.
-  - mean_diff: Nopein, perusratkaisu
-    Yksinkertainen: harmful_mean - harmless_mean.
-    Hyva debuggaukseen ja nopeisiin testeihin.
+  - mean_diff: Nopein, yksinkertainen
+    Laskee: harmful_mean - harmless_mean.
+    Toimii hyvin, mutta ei puhdista suuntaa.
   - pca: Tilastollinen (vaatii sklearn)
     Paakomponenttianalyysi loytaa dominantin suunnan.
 
@@ -376,9 +376,9 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             "Method:",
             choices=[
                 questionary.Choice(title="gradient   (Suositeltu - tarkin, optimoi suunnan)", value="gradient"),
-                questionary.Choice(title="projected  (Nopea & hyva - Gram-Schmidt)", value="projected"),
-                questionary.Choice(title="mean_diff  (Nopein - pelkka keskiarvo)", value="mean_diff"),
-                questionary.Choice(title="pca        (Tilastollinen - vaatii sklearn)", value="pca"),
+                questionary.Choice(title="projected  (Nopea & hyva - Gram-Schmidt puhdistus)", value="projected"),
+                questionary.Choice(title="mean_diff  (Nopein - yksinkertainen erotus)", value="mean_diff"),
+                questionary.Choice(title="pca        (Tilastollinen - paakomponentti)", value="pca"),
             ],
             style=custom_style,
             qmark=">>",
