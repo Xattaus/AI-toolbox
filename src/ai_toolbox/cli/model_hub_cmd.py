@@ -947,24 +947,46 @@ class ModelHubCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        choices = []
+        print_branded_header("LoRA-haku", f"{len(results)} tulosta")
+
+        # Create table for LoRA results
+        table = Table(
+            title=f"[bold orange1]LoRA-adapterit[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("LoRA", style="white", min_width=40)
+        table.add_column("Latauksia", style="cyan", width=12, justify="right")
+
         for i, result in enumerate(results, 1):
             downloads = f"{result.downloads:,}" if result.downloads else "0"
-            title = f"{result.model_id[:45]:<45} {downloads:>10}"
-            choices.append(questionary.Choice(title=title, value=result.model_id))
+            name = result.model_id[:45] if len(result.model_id) <= 45 else result.model_id[:42] + "..."
+            table.add_row(str(i), f"🔧 {name}", downloads)
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="Back", value="back"))
+        console.print(table)
+        console.print()
 
-        selected = questionary.select(
-            f"Valitse LoRA ({len(results)} tulosta):",
-            choices=choices,
+        # Get selection by number
+        answer = questionary.text(
+            f"Valitse numero [1-{len(results)}] (0 = palaa)",
             style=custom_style,
-            qmark=">>",
-            pointer=">"
         ).ask()
 
-        if selected is None or selected == "back":
+        if answer is None or answer.strip() in ("", "0", "q"):
+            return
+
+        try:
+            idx = int(answer.strip())
+            if not (1 <= idx <= len(results)):
+                print_warning(f"Valitse numero väliltä 1-{len(results)}")
+                return
+            selected = results[idx - 1].model_id
+        except ValueError:
+            print_warning("Anna kelvollinen numero")
             return
 
         console.print(f"\n[cyan]Haetaan tietoja: {selected}...[/cyan]")
@@ -986,7 +1008,7 @@ class ModelHubCommands:
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _view_downloaded_loras(self):
-        """Show downloaded LoRA adapters."""
+        """Show downloaded LoRA adapters with table-based deletion."""
         loras = self.downloader.list_downloaded_loras()
 
         if not loras:
@@ -995,38 +1017,55 @@ class ModelHubCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        self.downloader.print_loras_table(loras)
+        print_branded_header("Ladatut LoRAt", f"{len(loras)} adapteria")
 
+        # Create table for downloaded LoRAs
+        table = Table(
+            title=f"[bold orange1]Ladatut LoRA-adapterit[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("LoRA", style="white", min_width=35)
+        table.add_column("Koko", style="cyan", width=10, justify="right")
+
+        for i, lora in enumerate(loras, 1):
+            name = lora['name'][:35] if len(lora['name']) <= 35 else lora['name'][:32] + "..."
+            size = format_size(lora.get('size', 0)) if lora.get('size') else "-"
+            table.add_row(str(i), f"🔧 {name}", size)
+
+        console.print(table)
         console.print()
+
         if questionary.confirm(
             "Haluatko poistaa jonkin LoRAn?",
             style=custom_style,
             default=False
         ).ask():
-            choices = [
-                questionary.Choice(title=lora['name'], value=lora['model_id'])
-                for lora in loras
-            ]
-            choices.append(questionary.Choice(title="Cancel", value="cancel"))
-
-            to_delete = questionary.select(
-                "Valitse poistettava LoRA:",
-                choices=choices,
+            answer = questionary.text(
+                f"Poistettavan numero [1-{len(loras)}] (0 = peruuta)",
                 style=custom_style,
-                qmark=">>",
-                pointer=">"
             ).ask()
 
-            if to_delete and to_delete != "cancel":
-                if questionary.confirm(
-                    f"Vahvista poisto: {to_delete}?",
-                    style=custom_style,
-                    default=False
-                ).ask():
-                    if self.downloader.delete_lora(to_delete):
-                        print_success("LoRA poistettu")
-                    else:
-                        print_error("Poisto epäonnistui")
+            if answer and answer.strip() not in ("", "0", "q"):
+                try:
+                    idx = int(answer.strip())
+                    if 1 <= idx <= len(loras):
+                        to_delete = loras[idx - 1]['model_id']
+                        if questionary.confirm(
+                            f"Vahvista poisto: {loras[idx - 1]['name']}?",
+                            style=custom_style,
+                            default=False
+                        ).ask():
+                            if self.downloader.delete_lora(to_delete):
+                                print_success("LoRA poistettu")
+                            else:
+                                print_error("Poisto epäonnistui")
+                except ValueError:
+                    print_warning("Anna kelvollinen numero")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
