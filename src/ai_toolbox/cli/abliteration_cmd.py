@@ -180,8 +180,10 @@ kieltaytymiskayttaytyminen (refusal behavior).
   - 1.5-2.0 = aggressiivinen (voi rikkoa mallin)
 
 - [cyan]Method[/cyan]:
-  - mean_diff: Yksinkertainen keskiarvoerotus (nopea)
-  - pca: PCA-analyysi (tarkempi, vaatii sklearn)
+  - projected: Gram-Schmidt ortogonalisointi (suositeltu)
+    Puhdistaa refusal-suunnan, sailyttaa normaalin kayttaytymisen
+  - mean_diff: Yksinkertainen keskiarvoerotus (nopea, perus)
+  - pca: PCA-analyysi (vaatii sklearn)
 
 [dim]------------------------------------------[/dim]
 [bold yellow]VAROITUS[/bold yellow]
@@ -347,8 +349,9 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         method_choice = questionary.select(
             "Method:",
             choices=[
-                questionary.Choice(title="mean_diff  (nopea, suositeltu)", value="mean_diff"),
-                questionary.Choice(title="pca        (tarkempi, vaatii sklearn)", value="pca"),
+                questionary.Choice(title="projected  (Gram-Schmidt, suositeltu)", value="projected"),
+                questionary.Choice(title="mean_diff  (perus, nopea)", value="mean_diff"),
+                questionary.Choice(title="pca        (vaatii sklearn)", value="pca"),
             ],
             style=custom_style,
             qmark=">>",
@@ -364,7 +367,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         console.print("\n[bold cyan]4. BATCH SIZE[/bold cyan]")
         console.print("[dim]   Promptien kasittely kerralla[/dim]")
         console.print("[dim]   • Suurempi = nopeampi, enemman VRAM[/dim]")
-        console.print("[dim]   • Suositus: 4-8 (GPU), 1-2 (CPU)[/dim]\n")
+        console.print("[dim]   • Suositus: 2-4 (GPU), 1-2 (CPU)[/dim]\n")
 
         batch_size_str = questionary.text(
             "Batch size (default 8):",

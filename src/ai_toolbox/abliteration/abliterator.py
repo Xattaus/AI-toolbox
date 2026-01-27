@@ -20,12 +20,10 @@ import json
 import gc
 
 from ..core.paths import get_paths
-from .prompts import get_prompts, get_test_prompts
+from .prompts import get_prompts
 from .hooks import (
-    register_activation_hooks,
     get_model_layer_count,
     get_recommended_layers,
-    ActivationCache,
 )
 
 
@@ -37,7 +35,7 @@ class AbliterationConfig:
     output_name: str                          # Name for abliterated model
     strength: float = 1.0                     # Abliteration strength (0.0-2.0)
     target_layers: Optional[List[int]] = None # Layers to modify (None = auto)
-    method: str = "mean_diff"                 # "mean_diff" or "pca"
+    method: str = "projected"                 # "projected" (recommended), "mean_diff", or "pca"
     num_harmful: int = 64                     # Number of harmful prompts (0 = all)
     num_harmless: int = 64                    # Number of harmless prompts (0 = all)
     include_llama31_prompts: bool = False     # Use Llama 3.1 specific prompts
@@ -48,7 +46,13 @@ class AbliterationConfig:
     harmless_prompts_file: Optional[str] = None  # Path to harmless prompts file
 
     # Performance options
-    batch_size: int = 8                          # Prompt batch size for inference
+    batch_size: int = 8                          # Prompt batch size (lower = less VRAM)
+
+    # Refusal priming (recommended for stronger signal)
+    # Adds response prefix to prime the model into refusal/helpful mode
+    use_refusal_priming: bool = True             # Enable refusal priming
+    refusal_prefix: str = "I cannot"             # Prefix for harmful prompts (triggers refusal state)
+    helpful_prefix: str = "Sure, here"           # Prefix for harmless prompts (triggers helpful state)
 
     # Additional abliteration targets (optional, experimental)
     abliterate_embeddings: bool = False          # Also abliterate embed_tokens layer
@@ -334,10 +338,14 @@ class Abliterator:
                 if progress_callback:
                     progress_callback(f"Harmful: {msg}", 0.2 + prog * 0.3)
 
+            # Use refusal priming to get stronger signal
+            harmful_prefix = config.refusal_prefix if config.use_refusal_priming else None
+
             harmful_acts = self._run_prompts_batched(
                 model, tokenizer, harmful, device,
                 batch_size=config.batch_size,
-                progress_callback=harmful_progress
+                progress_callback=harmful_progress,
+                response_prefix=harmful_prefix,  # "I cannot" primes refusal state
             )
 
             # Clear memory after harmful processing
@@ -351,10 +359,14 @@ class Abliterator:
                 if progress_callback:
                     progress_callback(f"Harmless: {msg}", 0.5 + prog * 0.3)
 
+            # Use helpful priming to get stronger signal
+            helpful_prefix = config.helpful_prefix if config.use_refusal_priming else None
+
             harmless_acts = self._run_prompts_batched(
                 model, tokenizer, harmless, device,
                 batch_size=config.batch_size,
-                progress_callback=harmless_progress
+                progress_callback=harmless_progress,
+                response_prefix=helpful_prefix,  # "Sure, here" primes helpful state
             )
 
             # Clear memory after harmless processing
@@ -365,6 +377,7 @@ class Abliterator:
 
             # Compute refusal direction for each target layer
             refusal_directions = {}
+            missing_layers = []
             for layer in target_layers:
                 if layer in harmful_acts and layer in harmless_acts:
                     direction = self._compute_refusal_vector(
@@ -373,6 +386,23 @@ class Abliterator:
                         config.method
                     )
                     refusal_directions[layer] = direction
+                else:
+                    missing_layers.append(layer)
+
+            # CRITICAL: Check if we found any refusal directions
+            if not refusal_directions:
+                del model, harmful_acts, harmless_acts
+                self._clear_memory()
+                return {
+                    "success": False,
+                    "error": f"No refusal directions found! Target layers {target_layers} not found in activations. "
+                             f"Available harmful layers: {list(harmful_acts.keys())}, "
+                             f"Available harmless layers: {list(harmless_acts.keys())}. "
+                             "This may indicate a model architecture mismatch."
+                }
+
+            if missing_layers and progress_callback:
+                progress_callback(f"Warning: {len(missing_layers)} layers missing activations", 0.86)
 
             if progress_callback:
                 progress_callback("Cleaning up...", 0.95)
@@ -400,7 +430,9 @@ class Abliterator:
         prompts: List[str],
         device: str,
         batch_size: int = 8,
-        progress_callback: Optional[Callable[[str, float], None]] = None
+        progress_callback: Optional[Callable[[str, float], None]] = None,
+        use_chat_template: bool = True,
+        response_prefix: Optional[str] = None,
     ) -> Dict[int, Any]:
         """
         Run prompts through model in batches using Welford's algorithm for online mean.
@@ -415,6 +447,9 @@ class Abliterator:
             device: Device to use ('cuda' or 'cpu')
             batch_size: Number of prompts per batch
             progress_callback: Optional progress callback
+            use_chat_template: Apply chat template to prompts (required for instruct models)
+            response_prefix: Optional prefix to add after assistant header (e.g., "I cannot" or "Sure, here")
+                           This "primes" the model into refusal/helpful mode for stronger signal
 
         Returns:
             Dict of layer_idx -> mean activation tensor
@@ -438,6 +473,33 @@ class Abliterator:
                 progress_callback(f"Batch {current_batch_num}/{total_batches}", progress)
 
             try:
+                # CRITICAL: Apply chat template for instruct-tuned models!
+                # Without this, the model doesn't recognize the prompt as a user request
+                # and won't activate its refusal mechanism.
+                if use_chat_template and hasattr(tokenizer, 'apply_chat_template'):
+                    formatted_batch = []
+                    for prompt in batch:
+                        messages = [{"role": "user", "content": prompt}]
+                        try:
+                            formatted = tokenizer.apply_chat_template(
+                                messages,
+                                tokenize=False,
+                                add_generation_prompt=True  # Add assistant header to prime response
+                            )
+                            # Add response prefix to prime the model state
+                            # For harmful: "I cannot" primes refusal state
+                            # For harmless: "Sure, here" primes helpful state
+                            if response_prefix:
+                                formatted = formatted + response_prefix
+                            formatted_batch.append(formatted)
+                        except Exception:
+                            # Fallback if chat template fails
+                            fallback = prompt
+                            if response_prefix:
+                                fallback = prompt + "\n\n" + response_prefix
+                            formatted_batch.append(fallback)
+                    batch = formatted_batch
+
                 inputs = tokenizer(
                     batch,
                     return_tensors="pt",
@@ -531,7 +593,7 @@ class Abliterator:
         Args:
             harmful_act: Mean activation from harmful prompts
             harmless_act: Mean activation from harmless prompts
-            method: "mean_diff" or "pca"
+            method: "mean_diff", "projected", or "pca"
 
         Returns:
             Normalized refusal direction vector
@@ -541,6 +603,31 @@ class Abliterator:
         if method == "mean_diff":
             # Simple: difference of means
             refusal_dir = harmful_act - harmless_act
+            refusal_dir = refusal_dir / (refusal_dir.norm() + 1e-8)
+
+        elif method == "projected":
+            # Projected abliteration: Gram-Schmidt orthogonalization
+            # This removes the harmless component from refusal direction,
+            # preserving more of the model's normal behavior.
+            #
+            # Math:
+            #   1. raw_refusal = harmful - harmless
+            #   2. projection = (raw_refusal · harmless) / (harmless · harmless) * harmless
+            #   3. clean_refusal = raw_refusal - projection
+            #
+            # Result: refusal direction is orthogonal to harmless direction
+
+            raw_refusal = harmful_act - harmless_act
+
+            # Compute projection of refusal onto harmless direction
+            harmless_norm_sq = (harmless_act @ harmless_act) + 1e-8
+            projection_scalar = (raw_refusal @ harmless_act) / harmless_norm_sq
+            projection = projection_scalar * harmless_act
+
+            # Subtract projection (Gram-Schmidt)
+            refusal_dir = raw_refusal - projection
+
+            # Normalize
             refusal_dir = refusal_dir / (refusal_dir.norm() + 1e-8)
 
         elif method == "pca":
@@ -714,9 +801,10 @@ class Abliterator:
             if progress_callback:
                 progress_callback("Copying config files...", 0.95)
 
-            # Copy config files
+            # Copy config files (including index for sharded models)
             for config_file in ["config.json", "tokenizer.json", "tokenizer_config.json",
-                               "special_tokens_map.json", "generation_config.json"]:
+                               "special_tokens_map.json", "generation_config.json",
+                               "model.safetensors.index.json"]:
                 src = model_path / config_file
                 if src.exists():
                     dst = output_dir / config_file
@@ -817,19 +905,27 @@ class Abliterator:
             # Matrix weight [out, in]
             out_features, in_features = weight_gpu.shape
 
-            if in_features == refusal_gpu.shape[-1]:
-                # Project refusal direction out of input space
-                # Optimized: W @ (r ⊗ r^T) = (W @ r) ⊗ r^T
-                # This is O(out * in) instead of O(out * in * in)
-                dot = weight_gpu @ refusal_gpu  # [out]
-                weight_gpu = weight_gpu - strength * torch.outer(dot, refusal_gpu)
+            # IMPORTANT: Check out_features FIRST!
+            # Both o_proj [hidden, hidden] and down_proj [hidden, intermediate] write to
+            # the residual stream, so we need OUTPUT space projection.
+            # For square matrices (o_proj), both conditions would be true,
+            # so we must prioritize output projection.
 
-            elif out_features == refusal_gpu.shape[-1]:
-                # Project refusal direction out of output space
+            if out_features == refusal_gpu.shape[-1]:
+                # Project refusal direction out of output space (residual stream)
+                # Used for: o_proj, down_proj - layers that WRITE to residual stream
                 # Optimized: (r ⊗ r^T) @ W = r ⊗ (r^T @ W)
                 # This is O(out * in) instead of O(out * out * in)
                 dot = refusal_gpu @ weight_gpu  # [in]
                 weight_gpu = weight_gpu - strength * torch.outer(refusal_gpu, dot)
+
+            elif in_features == refusal_gpu.shape[-1]:
+                # Project refusal direction out of input space
+                # Used for: layers that READ from residual stream (not currently targeted)
+                # Optimized: W @ (r ⊗ r^T) = (W @ r) ⊗ r^T
+                # This is O(out * in) instead of O(out * in * in)
+                dot = weight_gpu @ refusal_gpu  # [out]
+                weight_gpu = weight_gpu - strength * torch.outer(dot, refusal_gpu)
 
         elif weight_gpu.dim() == 1:
             # Bias vector

@@ -214,8 +214,14 @@ def get_recommended_layers(num_layers: int) -> List[int]:
     """
     Get recommended layers for refusal direction extraction.
 
-    Typically the middle-to-late layers contain the strongest
-    refusal direction signal.
+    Research shows the refusal direction is typically strongest in
+    middle layers, but can vary by model architecture:
+    - Llama 3: Often layers 10-20 (of 32)
+    - Llama 3.1: May be slightly deeper
+    - Qwen/Mistral: Similar to Llama
+
+    We use a wider range (20%-80%) to be safe, as missing the refusal
+    layers completely will cause abliteration to fail.
 
     Args:
         num_layers: Total number of layers in model
@@ -226,13 +232,14 @@ def get_recommended_layers(num_layers: int) -> List[int]:
     if num_layers <= 0:
         return []
 
-    # Target middle 40% of layers (from 30% to 70%)
-    start = int(num_layers * 0.3)
-    end = int(num_layers * 0.7)
+    # Target wide middle range (20% to 80%) to ensure we capture refusal layers
+    # Better to include more layers than miss the critical ones
+    start = int(num_layers * 0.20)
+    end = int(num_layers * 0.80)
 
-    # Ensure at least a few layers
-    if end - start < 4:
-        start = max(0, num_layers // 2 - 2)
-        end = min(num_layers, num_layers // 2 + 2)
+    # Ensure at least 8 layers for reliable direction estimation
+    if end - start < 8:
+        start = max(0, num_layers // 2 - 4)
+        end = min(num_layers, num_layers // 2 + 4)
 
     return list(range(start, end))
