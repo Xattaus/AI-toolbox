@@ -408,24 +408,32 @@ class DatasetPrep:
 
         if source_format == DatasetFormat.CHAT:
             messages = item.get("messages", [])
-            instruction = ""
-            output = ""
+            # Kerää KAIKKI user-viestit instruction-kentään ja KAIKKI assistant-viestit output-kenttään
+            user_messages = []
+            assistant_messages = []
             for msg in messages:
                 if msg.get("role") == "user":
-                    instruction = msg.get("content", "")
+                    user_messages.append(msg.get("content", ""))
                 elif msg.get("role") == "assistant":
-                    output = msg.get("content", "")
+                    assistant_messages.append(msg.get("content", ""))
+            # Yhdistä viestit rivinvaihdoilla
+            instruction = "\n\n".join(user_messages) if user_messages else ""
+            output = "\n\n".join(assistant_messages) if assistant_messages else ""
             return {"instruction": instruction, "input": "", "output": output}
 
         if source_format == DatasetFormat.SHAREGPT:
             conversations = item.get("conversations", [])
-            instruction = ""
-            output = ""
+            # Kerää KAIKKI human-viestit ja KAIKKI assistant-viestit
+            human_messages = []
+            assistant_messages = []
             for conv in conversations:
                 if conv.get("from") in ["human", "user"]:
-                    instruction = conv.get("value", "")
+                    human_messages.append(conv.get("value", ""))
                 elif conv.get("from") in ["gpt", "assistant"]:
-                    output = conv.get("value", "")
+                    assistant_messages.append(conv.get("value", ""))
+            # Yhdistä viestit rivinvaihdoilla
+            instruction = "\n\n".join(human_messages) if human_messages else ""
+            output = "\n\n".join(assistant_messages) if assistant_messages else ""
             return {"instruction": instruction, "input": "", "output": output}
 
         if source_format == DatasetFormat.COMPLETION:
@@ -512,13 +520,16 @@ class DatasetPrep:
 
         if source_format == DatasetFormat.CHAT:
             messages = item.get("messages", [])
-            prompt = ""
-            completion = ""
+            # Kerää KAIKKI user-viestit prompt-kenttään ja KAIKKI assistant-viestit completion-kenttään
+            user_messages = []
+            assistant_messages = []
             for msg in messages:
                 if msg.get("role") == "user":
-                    prompt = msg.get("content", "")
+                    user_messages.append(msg.get("content", ""))
                 elif msg.get("role") == "assistant":
-                    completion = msg.get("content", "")
+                    assistant_messages.append(msg.get("content", ""))
+            prompt = "\n\n".join(user_messages) if user_messages else ""
+            completion = "\n\n".join(assistant_messages) if assistant_messages else ""
             return {"prompt": prompt, "completion": completion}
 
         return {"prompt": item.get("text", ""), "completion": item.get("response", "")}
@@ -1044,12 +1055,23 @@ class DatasetPrep:
                         all_data = json.loads(content)
                         data = all_data[:limit] if limit else all_data
                     else:
-                        # JSONL
+                        # JSONL - käsittele jokainen rivi erikseen virheenkäsittelyllä
+                        parse_errors = 0
                         for i, line in enumerate(content.split('\n')):
                             if line.strip():
-                                data.append(json.loads(line))
-                            if limit and i >= limit - 1:
+                                try:
+                                    data.append(json.loads(line))
+                                except json.JSONDecodeError as e:
+                                    parse_errors += 1
+                                    if parse_errors <= 3:
+                                        console.print(f"[yellow]Varoitus: Rivi {i+1} virheellinen JSON: {str(e)[:50]}[/yellow]")
+                                    elif parse_errors == 4:
+                                        console.print(f"[yellow]... lisää virheitä ohitetaan[/yellow]")
+                                    continue
+                            if limit and len(data) >= limit:
                                 break
+                        if parse_errors > 0:
+                            console.print(f"[yellow]Ohitettiin {parse_errors} virheellistä riviä[/yellow]")
 
         except Exception as e:
             console.print(f"[red]Virhe ladattaessa: {e}[/red]")

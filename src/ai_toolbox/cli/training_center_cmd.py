@@ -12,6 +12,7 @@ from rich.panel import Panel
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_warning,
     format_menu_item,
     MENU_STYLE,
@@ -72,7 +73,7 @@ class TrainingCenterCommands:
     def training_center_menu(self):
         """Training Center main menu."""
         while True:
-            print_mini_banner("Training Center", "Koulutus, datasetit, merget ja abliterointi")
+            print_branded_header("Training Center", "LoRA, datasetit, merget ja abliterointi")
 
             # Show status summary
             lora_status = self.trainer.get_status()
@@ -91,10 +92,10 @@ class TrainingCenterCommands:
             status_parts.append(f"[dim]Abliter:[/dim] [{abliter_color}]{'OK' if abliter_status['ready'] else '—'}[/{abliter_color}]")
             status_parts.append(f"[dim]Datasets:[/dim] [cyan]{dataset_status['datasets_count']}[/cyan]")
 
-            console.print("  " + "  │  ".join(status_parts) + "\n")
+            console.print("  " + "  |  ".join(status_parts) + "\n")
 
             choices = [
-                questionary.Separator("─── LoRA Training ───"),
+                questionary.Separator("--- LoRA Training ---"),
                 questionary.Choice(
                     title=format_menu_item("Quick Train", "Pikakoulutus oletusasetuksilla"),
                     value="lora_quick"
@@ -111,7 +112,7 @@ class TrainingCenterCommands:
                     title=format_menu_item("Merge Adapter", "Yhdista adapteri base-malliin"),
                     value="lora_merge"
                 ),
-                questionary.Separator("─── Dataset Tools ───"),
+                questionary.Separator("--- Dataset Tools ---"),
                 questionary.Choice(
                     title=format_menu_item("Inspect", "Tarkasta datasetin rakenne"),
                     value="dataset_inspect"
@@ -128,12 +129,12 @@ class TrainingCenterCommands:
                     title=format_menu_item("More Tools...", "Lisaa dataset-tyokaluja"),
                     value="dataset_more"
                 ),
-                questionary.Separator("─── Model Merging ───"),
+                questionary.Separator("--- Model Merging ---"),
                 questionary.Choice(
                     title=format_menu_item("Mergekit Wizard", "Kaikki merge-tyokalut"),
                     value="mergekit_wizard"
                 ),
-                questionary.Separator("─── Abliteration ───"),
+                questionary.Separator("--- Abliteration ---"),
                 questionary.Choice(
                     title=format_menu_item("Remove Censorship", "Poista kieltaytymiskaytos"),
                     value="abliterate"
@@ -142,9 +143,9 @@ class TrainingCenterCommands:
                     title=format_menu_item("Test Model", "Testaa abliteroitu malli"),
                     value="abliter_test"
                 ),
-                questionary.Separator("───────────────────────────────────"),
+                questionary.Separator("-----------------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa pavalikkoon"),
+                    title=format_menu_item("<- Back", "Palaa pavalikkoon"),
                     value="back"
                 ),
             ]
@@ -154,7 +155,7 @@ class TrainingCenterCommands:
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse, Enter vahvista)"
             ).ask()
 
@@ -212,7 +213,7 @@ class TrainingCenterCommands:
             print_mini_banner("Clean & Filter", "Siivoa ja suodata datasetteja")
 
             choices = [
-                questionary.Separator("─── Cleaning ───"),
+                questionary.Separator("--- Cleaning ---"),
                 questionary.Choice(
                     title=format_menu_item("Clean Dataset", "Siivoa ja normalisoi"),
                     value="clean"
@@ -225,9 +226,9 @@ class TrainingCenterCommands:
                     title=format_menu_item("Filter by Length", "Suodata pituuden mukaan"),
                     value="filter"
                 ),
-                questionary.Separator("───────────────────────────"),
+                questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Back", "Palaa valikkoon"),
                     value="back"
                 ),
             ]
@@ -237,7 +238,7 @@ class TrainingCenterCommands:
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse)"
             ).ask()
 
@@ -256,7 +257,7 @@ class TrainingCenterCommands:
             print_mini_banner("More Tools", "Lisaa dataset-tyokaluja")
 
             choices = [
-                questionary.Separator("─── Operations ───"),
+                questionary.Separator("--- Operations ---"),
                 questionary.Choice(
                     title=format_menu_item("Split Dataset", "Jaa train/test/val osiin"),
                     value="split"
@@ -273,9 +274,9 @@ class TrainingCenterCommands:
                     title=format_menu_item("Browse", "Selaa kaikki datasetit"),
                     value="browse"
                 ),
-                questionary.Separator("───────────────────────────"),
+                questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Back", "Palaa valikkoon"),
                     value="back"
                 ),
             ]
@@ -285,7 +286,7 @@ class TrainingCenterCommands:
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse)"
             ).ask()
 

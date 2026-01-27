@@ -253,8 +253,13 @@ class ModelMerger:
                 config_file = model_path.parent / "config.json"
 
             if config_file and config_file.exists():
-                with open(config_file, 'r') as f:
-                    configs.append(json.load(f))
+                try:
+                    with open(config_file, 'r') as f:
+                        configs.append(json.load(f))
+                except json.JSONDecodeError as e:
+                    return False, f"Virheellinen config.json: {model_path} - {e}", details
+                except IOError as e:
+                    return False, f"Ei voitu lukea config.json: {model_path} - {e}", details
             else:
                 return False, f"Config.json puuttuu: {model_path}", details
 
@@ -818,6 +823,14 @@ class ModelMerger:
 
     def estimate_merge_requirements(self, models: List[Path]) -> Dict[str, Any]:
         """Arvioi merge-operaation vaatimukset."""
+        if not models:
+            return {
+                "total_input_size_gb": 0,
+                "estimated_ram_gb": 0,
+                "estimated_output_size_gb": 0,
+                "num_models": 0,
+            }
+
         total_size = 0
         for model_path in models:
             info = self.get_model_info(model_path)

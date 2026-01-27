@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Optional, Callable
 
 import questionary
-from questionary import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -19,11 +18,14 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
+    format_menu_item,
+    MENU_STYLE,
 )
 from ..core.paths import get_paths
 from ..inference.benchmark import (
@@ -34,17 +36,8 @@ from ..inference.benchmark import (
 )
 from ..models.library import ModelLibrary
 
-# Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+# Use unified menu style
+custom_style = MENU_STYLE
 
 
 class BenchmarkCommands:
@@ -68,7 +61,7 @@ class BenchmarkCommands:
     def benchmark_menu(self):
         """Benchmark Runner sub-menu."""
         while True:
-            print_mini_banner("Benchmark Runner")
+            print_branded_header("Benchmark Suite", "Suorituskykytestaus ja vertailu")
 
             # Show status
             status = self.benchmark.get_status()
@@ -83,44 +76,48 @@ class BenchmarkCommands:
             console.print(f"[dim]Output: {status['benchmarks_dir']}[/dim]\n")
 
             choices = [
+                questionary.Separator("--- Testit -----------------------------------"),
                 questionary.Choice(
-                    title="Quick Benchmark       Nopea yhden mallin testi",
+                    title=format_menu_item("Quick Benchmark", "Nopea yhden mallin testi"),
                     value="quick"
                 ),
                 questionary.Choice(
-                    title="Compare Models        Vertaile useita malleja",
+                    title=format_menu_item("Compare Models", "Vertaile useita malleja"),
                     value="compare"
                 ),
                 questionary.Choice(
-                    title="Throughput Test       Mittaa tokens/second eri prompteilla",
+                    title=format_menu_item("Throughput Test", "Mittaa tokens/second"),
                     value="throughput"
                 ),
                 questionary.Choice(
-                    title="Memory Profile        Mittaa mallin muistinkaytto",
+                    title=format_menu_item("Memory Profile", "Mittaa muistinkäyttö"),
                     value="memory"
                 ),
-                questionary.Separator(),
+                questionary.Separator("--- Tulokset ---------------------------------"),
                 questionary.Choice(
-                    title="View Results          Nayta aiemmat tulokset",
+                    title=format_menu_item("View Results", "Näytä aiemmat tulokset"),
                     value="view"
                 ),
                 questionary.Choice(
-                    title="Export Results        Vie CSV/JSON",
+                    title=format_menu_item("Export Results", "Vie CSV/JSON"),
                     value="export"
                 ),
                 questionary.Choice(
-                    title="System Info           Nayta jarjestelmatiedot",
+                    title=format_menu_item("System Info", "Näytä järjestelmätiedot"),
                     value="sysinfo"
                 ),
-                questionary.Separator(),
-                questionary.Choice(title="Back                  Palaa", value="back"),
+                questionary.Separator("----------------------------------------------"),
+                questionary.Choice(
+                    title=format_menu_item("<- Palaa", ""),
+                    value="back"
+                ),
             ]
 
             choice = questionary.select(
-                "Benchmark Runner:",
+                "Valitse toiminto:",
                 choices=choices,
                 style=custom_style,
-                qmark=">>",
+                qmark="#",
                 pointer=">"
             ).ask()
 
@@ -230,9 +227,26 @@ class BenchmarkCommands:
 
         try:
             max_tokens = int(max_tokens)
-            num_runs = int(num_runs)
+            if max_tokens < 1:
+                print_warning("Max tokenit liian pieni, käytetään 1")
+                max_tokens = 1
+            elif max_tokens > 8192:
+                print_warning(f"Max tokenit {max_tokens} on suuri, käytetään 8192")
+                max_tokens = 8192
         except ValueError:
+            print_warning("Virheellinen max_tokens, käytetään oletusta: 128")
             max_tokens = 128
+
+        try:
+            num_runs = int(num_runs)
+            if num_runs < 1:
+                print_warning("Ajojen määrä liian pieni, käytetään 1")
+                num_runs = 1
+            elif num_runs > 100:
+                print_warning(f"Ajojen määrä {num_runs} on suuri, käytetään 100")
+                num_runs = 100
+        except ValueError:
+            print_warning("Virheellinen num_runs, käytetään oletusta: 3")
             num_runs = 3
 
         config = BenchmarkConfig(
@@ -486,14 +500,18 @@ class BenchmarkCommands:
 
         # Show last 15
         for r in results[-15:]:
-            timestamp = r.timestamp.split("T")[0] if r.timestamp else "-"
+            # Suojattu timestamp-parsing
+            try:
+                timestamp = r.timestamp.split("T")[0] if r.timestamp and "T" in r.timestamp else (r.timestamp[:10] if r.timestamp else "-")
+            except (TypeError, IndexError, AttributeError):
+                timestamp = "-"
             table.add_row(
                 timestamp,
-                r.model_name[:25],
-                f"{r.tokens_per_second:.1f}",
-                f"{r.total_time_ms:.0f} ms",
-                f"{r.memory_used_mb:.0f} MB",
-                r.prompt_name,
+                r.model_name[:25] if r.model_name else "-",
+                f"{r.tokens_per_second:.1f}" if r.tokens_per_second else "0.0",
+                f"{r.total_time_ms:.0f} ms" if r.total_time_ms else "-",
+                f"{r.memory_used_mb:.0f} MB" if r.memory_used_mb else "-",
+                r.prompt_name if r.prompt_name else "-",
             )
 
         console.print(table)

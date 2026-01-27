@@ -409,9 +409,16 @@ ennen isompaa ajoa.[/dim]
             style=custom_style,
         ).ask()
 
+        if not num_samples:
+            return
+
         try:
             num = int(num_samples)
-        except ValueError:
+            if num <= 0:
+                print_warning("Määrän pitää olla positiivinen, käytetään 10")
+                num = 10
+        except (ValueError, TypeError):
+            print_warning("Virheellinen arvo, käytetään oletusta: 10")
             num = 10
 
         output_path = self.trainer.datasets_dir / f"sample_{format_type}.jsonl"
@@ -639,14 +646,22 @@ ennen isompaa ajoa.[/dim]
             default=str(preset["rank"]),
             style=custom_style,
         ).ask()
-        rank = int(rank) if rank else preset["rank"]
+        try:
+            rank = int(rank) if rank else preset["rank"]
+        except ValueError:
+            print_warning(f"Virheellinen rank-arvo, käytetään oletusta: {preset['rank']}")
+            rank = preset["rank"]
 
         alpha = questionary.text(
             f"Alpha (suositus: {rank * 2}):",
             default=str(rank * 2),
             style=custom_style,
         ).ask()
-        alpha = int(alpha) if alpha else rank * 2
+        try:
+            alpha = int(alpha) if alpha else rank * 2
+        except ValueError:
+            print_warning(f"Virheellinen alpha-arvo, käytetään oletusta: {rank * 2}")
+            alpha = rank * 2
 
         # Target modules
         module_choices = [
@@ -675,21 +690,33 @@ ennen isompaa ajoa.[/dim]
             default=str(preset["learning_rate"]),
             style=custom_style,
         ).ask()
-        learning_rate = float(learning_rate) if learning_rate else preset["learning_rate"]
+        try:
+            learning_rate = float(learning_rate) if learning_rate else preset["learning_rate"]
+        except ValueError:
+            print_warning(f"Virheellinen learning rate, käytetään oletusta: {preset['learning_rate']}")
+            learning_rate = preset["learning_rate"]
 
         batch_size = questionary.text(
             f"Batch size (suositus: {preset['batch_size']}):",
             default=str(preset["batch_size"]),
             style=custom_style,
         ).ask()
-        batch_size = int(batch_size) if batch_size else preset["batch_size"]
+        try:
+            batch_size = int(batch_size) if batch_size else preset["batch_size"]
+        except ValueError:
+            print_warning(f"Virheellinen batch size, käytetään oletusta: {preset['batch_size']}")
+            batch_size = preset["batch_size"]
 
         epochs = questionary.text(
             "Epochs (suositus: 2):",
             default="2",
             style=custom_style,
         ).ask()
-        epochs = int(epochs) if epochs else 2
+        try:
+            epochs = int(epochs) if epochs else 2
+        except ValueError:
+            print_warning("Virheellinen epochs-arvo, käytetään oletusta: 2")
+            epochs = 2
 
         # 5. Quantization
         quant_choices = [

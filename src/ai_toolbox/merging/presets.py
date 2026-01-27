@@ -62,6 +62,10 @@ class MergePreset:
         # Yhdista oletusparametrit ja overridet
         params = {**self.default_params, **overrides}
 
+        # Defensiivinen tarkistus tyhjälle listalle
+        if not models:
+            raise ValueError("Merge vaatii vähintään yhden mallin")
+
         config: Dict[str, Any] = {
             "merge_method": self.method,
             "dtype": dtype,

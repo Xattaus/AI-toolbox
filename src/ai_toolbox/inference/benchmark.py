@@ -334,12 +334,15 @@ class BenchmarkRunner:
                 # Vastaus
                 last_response = response.get("choices", [{}])[0].get("text", "").strip()
 
-                # TTFT arvio (yksinkertainen - ensimmäisen ajon nopeus)
-                if run_idx == 0:
-                    # Arvioi TTFT: kokonaisaika / tokenimäärä * 1 token
-                    if comp_tokens > 0:
-                        ttft_estimate = run_time_ms / comp_tokens
-                        ttft_times.append(ttft_estimate)
+                # TTFT arvio - laske jokaiselle ajolle
+                # HUOM: Todellinen TTFT vaatisi streaming-API:a. Tämä on arvio
+                # perustuen prompt-prosessointiin (prompt_eval_time)
+                if comp_tokens > 0 and prompt_tokens > 0:
+                    # Arvio: prompt-prosessointi vie suurimman osan TTFT:stä
+                    # Käytämme kaavaa: total_time * (prompt_tokens / (prompt_tokens + comp_tokens))
+                    total_tokens = prompt_tokens + comp_tokens
+                    ttft_estimate = run_time_ms * (prompt_tokens / total_tokens)
+                    ttft_times.append(ttft_estimate)
 
             except Exception as e:
                 console.print(f"[red]Ajo {run_idx + 1} epäonnistui: {e}[/red]")
@@ -534,18 +537,28 @@ class BenchmarkRunner:
     # ==================== RESULTS MANAGEMENT ====================
 
     def save_result(self, result: BenchmarkResult) -> Path:
-        """Tallenna tulos."""
+        """Tallenna tulos atomaarisesti (temp-tiedosto + rename)."""
         results = self.load_results()
         results.append(result)
 
-        # Tallenna JSON
+        # Tallenna JSON atomaarisesti korruption estämiseksi
         data = {
             "version": "1.0",
             "results": [r.to_dict() for r in results],
         }
 
-        with open(self.results_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        # Kirjoita ensin temp-tiedostoon
+        temp_file = self.results_file.with_suffix('.tmp')
+        try:
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            # Korvaa alkuperäinen vasta kun kirjoitus onnistui
+            temp_file.replace(self.results_file)
+        except Exception as e:
+            # Siivoa temp-tiedosto virhetilanteessa
+            if temp_file.exists():
+                temp_file.unlink()
+            raise e
 
         return self.results_file
 

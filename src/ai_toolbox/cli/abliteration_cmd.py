@@ -185,6 +185,25 @@ kieltaytymiskayttaytyminen (refusal behavior).
   - mean_diff: Yksinkertainen keskiarvoerotus (nopea, perus)
   - pca: PCA-analyysi (vaatii sklearn)
 
+- [cyan]Smart Mode[/cyan] (v3.1, suositeltu):
+  - [green]Smart Layer Selection[/green]: Analysoi signaalin voimakkuuden
+    kerroksittain. Valitsee vain kerrokset joissa refusal-signaali
+    ylittaa kynnysarvon. Valtaa kohinan ja mallin vahingoittamisen.
+  - [green]Dynamic Strength[/green]: Skaalaa abliteroinnin voimakkuutta
+    signaalin mukaan. Vahva signaali = taysi poisto, heikko = varovainen.
+
+- [cyan]Advanced Options[/cyan] (v3.2):
+  - [green]Linear Probing[/green]: Kouluttaa luokittelijat kerroksittain
+    löytääkseen missä refusal-tieto oikeasti asuu (tarkkuus > 85%).
+    Kohdistaa leikkauksen vain oikeisiin kerroksiin.
+  - [green]Auto-tuning[/green]: Testaa eri voimakkuuksia muistissa
+    (dry run hooks), etsii optimaalisen strengthin binäärihaualla.
+    Ei tarvitse ajaa abliterointia moneen kertaan!
+  - [green]Capability Preservation[/green]: Kerää yleisia kykyprompteja
+    (matematiikka, koodaus, päättely) ja varmistaa, ettei refusal-
+    vektorin poistaminen vahingoita mallin yleistä älykkyyttä.
+    Tekee refusal-suunnan kohtisuoraksi yleiseen kapasiteettiin.
+
 [dim]------------------------------------------[/dim]
 [bold yellow]VAROITUS[/bold yellow]
 [yellow]Abliteroitu malli voi tuottaa haitallista sisaltoa.
@@ -382,9 +401,113 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             batch_size = 8
 
         # =====================================================================
-        # 5. PROMPT SOURCE
+        # 5. SMART MODE
         # =====================================================================
-        console.print("\n[bold cyan]5. PROMPT SOURCE[/bold cyan]")
+        console.print("\n[bold cyan]5. SMART MODE[/bold cyan]")
+        console.print("[dim]   Alykas kerros- ja voimakkuusvalinta[/dim]")
+        console.print("[dim]   • Smart layers: Valitsee vain kerrokset joissa signaali[/dim]")
+        console.print("[dim]   • Dynamic strength: Skaalaa voimakkuutta signaalin mukaan[/dim]\n")
+
+        smart_mode = questionary.select(
+            "Mode:",
+            choices=[
+                questionary.Choice(
+                    title="Smart (suositeltu)   Alykas kerros- ja voimakkuusvalinta",
+                    value="smart"
+                ),
+                questionary.Choice(
+                    title="Manual              Kiintea kerroslista ja voimakkuus",
+                    value="manual"
+                ),
+            ],
+            style=custom_style,
+            qmark=">>",
+            pointer=">"
+        ).ask()
+
+        if smart_mode is None:
+            return
+
+        use_smart_layers = smart_mode == "smart"
+        use_dynamic_strength = smart_mode == "smart"
+
+        # If smart mode, show threshold option
+        layer_signal_threshold = 0.5
+        if use_smart_layers:
+            console.print("\n[dim]   Signaalin kynnysarvo (0.0-1.0)[/dim]")
+            console.print("[dim]   • 0.3 = enemmän kerroksia, herkempi[/dim]")
+            console.print("[dim]   • 0.5 = tasapainoinen (oletus)[/dim]")
+            console.print("[dim]   • 0.7 = vähemmän kerroksia, konservatiivinen[/dim]\n")
+
+            threshold_str = questionary.text(
+                "Threshold (default 0.5):",
+                default="0.5",
+                style=custom_style,
+            ).ask()
+
+            try:
+                layer_signal_threshold = float(threshold_str)
+                layer_signal_threshold = max(0.0, min(1.0, layer_signal_threshold))
+            except ValueError:
+                layer_signal_threshold = 0.5
+
+        # =====================================================================
+        # 5b. ADVANCED OPTIONS (optional)
+        # =====================================================================
+        use_linear_probe = False
+        use_auto_tune = False
+        use_capability_preservation = False
+        probe_accuracy_threshold = 0.85
+
+        if questionary.confirm("Näytä edistyneet asetukset?", default=False, style=custom_style).ask():
+            console.print("\n[bold cyan]5b. ADVANCED OPTIONS[/bold cyan]")
+            console.print("[dim]   Edistyneemmat abliteration-tekniikat[/dim]\n")
+
+            # Linear Probing
+            console.print("[white]Linear Probing:[/white]")
+            console.print("[dim]   Kouluttaa luokittelijat löytääkseen oikeat refusal-kerrokset[/dim]")
+            use_linear_probe = questionary.confirm(
+                "Enable Linear Probing?",
+                default=False,
+                style=custom_style,
+            ).ask() or False
+
+            if use_linear_probe:
+                acc_str = questionary.text(
+                    "Probe accuracy threshold (default 0.85):",
+                    default="0.85",
+                    style=custom_style,
+                ).ask()
+                try:
+                    probe_accuracy_threshold = float(acc_str)
+                    probe_accuracy_threshold = max(0.5, min(1.0, probe_accuracy_threshold))
+                except ValueError:
+                    probe_accuracy_threshold = 0.85
+
+            # Auto-tuning
+            console.print("\n[white]Auto-tuning:[/white]")
+            console.print("[dim]   Testaa eri voimakkuuksia muistissa, löytää optimaalisen[/dim]")
+            console.print("[dim]   [yellow]HUOM: Lataa mallin uudelleen, vie aikaa![/yellow][/dim]")
+            use_auto_tune = questionary.confirm(
+                "Enable Auto-tuning?",
+                default=False,
+                style=custom_style,
+            ).ask() or False
+
+            # Capability Preservation
+            console.print("\n[white]Capability Preservation:[/white]")
+            console.print("[dim]   Varmistaa ettei mallin älykkyys heikkene[/dim]")
+            console.print("[dim]   Tekee refusal-suunnan kohtisuoraksi yleiseen kapasiteettiin[/dim]")
+            use_capability_preservation = questionary.confirm(
+                "Enable Capability Preservation?",
+                default=False,
+                style=custom_style,
+            ).ask() or False
+
+        # =====================================================================
+        # 6. PROMPT SOURCE
+        # =====================================================================
+        console.print("\n[bold cyan]6. PROMPT SOURCE[/bold cyan]")
         console.print("[dim]   Mista harmful/harmless promptit ladataan[/dim]\n")
 
         # Check for saved prompt files in datasets/abliteration/
@@ -494,9 +617,9 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
                 return
 
         # =====================================================================
-        # 6. EXTRA TARGETS (experimental)
+        # 7. EXTRA TARGETS (experimental)
         # =====================================================================
-        console.print("\n[bold cyan]6. EXTRA TARGETS (experimental)[/bold cyan]")
+        console.print("\n[bold cyan]7. EXTRA TARGETS (experimental)[/bold cyan]")
         console.print("[dim]   Valinnaiset lisakohteet abliteroinnille[/dim]")
         console.print("[dim]   • embed_tokens = embedding layer[/dim]")
         console.print("[dim]   • lm_head = output layer[/dim]\n")
@@ -514,9 +637,9 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         ).ask()
 
         # =====================================================================
-        # 7. OUTPUT NAME
+        # 8. OUTPUT NAME
         # =====================================================================
-        console.print("\n[bold cyan]7. OUTPUT NAME[/bold cyan]")
+        console.print("\n[bold cyan]8. OUTPUT NAME[/bold cyan]")
         console.print("[dim]   Tulostiedoston nimi[/dim]\n")
 
         default_name = f"{info.get('name', 'model')[:30]}-abliterated"
@@ -546,6 +669,22 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             extra_targets.append("lm_head")
         extra_targets_str = ", ".join(extra_targets) if extra_targets else "None"
 
+        # Build smart mode string
+        if use_smart_layers:
+            smart_mode_str = f"Smart (threshold={layer_signal_threshold})"
+        else:
+            smart_mode_str = "Manual (fixed layers & strength)"
+
+        # Build advanced options string
+        advanced_opts = []
+        if use_linear_probe:
+            advanced_opts.append(f"Linear Probe ({probe_accuracy_threshold:.0%})")
+        if use_auto_tune:
+            advanced_opts.append("Auto-tune")
+        if use_capability_preservation:
+            advanced_opts.append("Capability Preservation")
+        advanced_str = ", ".join(advanced_opts) if advanced_opts else "None"
+
         # Show summary
         console.print("\n")
         console.print(Panel(
@@ -553,6 +692,8 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             f"[bold]Architecture:[/bold]   {info.get('architecture', 'Unknown')}\n"
             f"[bold]Strength:[/bold]       {strength:.1f}\n"
             f"[bold]Method:[/bold]         {method_choice}\n"
+            f"[bold]Smart Mode:[/bold]     {smart_mode_str}\n"
+            f"[bold]Advanced:[/bold]       {advanced_str}\n"
             f"[bold]Batch Size:[/bold]     {batch_size}\n"
             f"[bold]Prompts:[/bold]        {prompt_info}\n"
             f"[bold]Extra Targets:[/bold]  {extra_targets_str}\n"
@@ -580,6 +721,15 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             batch_size=batch_size,
             abliterate_embeddings=abliterate_embeddings or False,
             abliterate_lm_head=abliterate_lm_head or False,
+            # Smart abliteration options
+            use_smart_layers=use_smart_layers,
+            layer_signal_threshold=layer_signal_threshold,
+            use_dynamic_strength=use_dynamic_strength,
+            # Advanced options
+            use_linear_probe=use_linear_probe,
+            probe_accuracy_threshold=probe_accuracy_threshold,
+            use_auto_tune=use_auto_tune,
+            use_capability_preservation=use_capability_preservation,
         )
 
         # Run abliteration
@@ -615,28 +765,71 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             result = result_holder[0]
 
         if result and result.success:
+            # Build smart mode result info
+            smart_info = ""
+            if result.layer_signals:
+                # Show signal statistics
+                signals = list(result.layer_signals.values())
+                avg_signal = sum(signals) / len(signals) if signals else 0
+                smart_info = f"\n[white]Layer signaalit:[/white] avg={avg_signal:.2f}, min={min(signals):.2f}, max={max(signals):.2f}"
+
+            if result.layer_strengths:
+                # Show strength statistics
+                strengths = list(result.layer_strengths.values())
+                avg_strength = sum(strengths) / len(strengths) if strengths else 0
+                smart_info += f"\n[white]Dynaamiset voimakkuudet:[/white] avg={avg_strength:.2f}, min={min(strengths):.2f}, max={max(strengths):.2f}"
+
+            # Show probe accuracies if available
+            if result.probe_accuracies:
+                probe_accs = list(result.probe_accuracies.values())
+                avg_acc = sum(probe_accs) / len(probe_accs) if probe_accs else 0
+                smart_info += f"\n[white]Probe tarkkuudet:[/white] avg={avg_acc:.0%}, max={max(probe_accs):.0%}"
+
+            # Show auto-tune result if used
+            if result.auto_tuned_strength is not None:
+                smart_info += f"\n[white]Auto-tuned strength:[/white] {result.auto_tuned_strength:.2f}"
+
             console.print(Panel(
                 f"[green]Abliteration valmis![/green]\n\n"
                 f"[white]Tiedosto:[/white] {result.output_path}\n"
                 f"[white]Muokatut kerrokset:[/white] {len(result.modified_layers)}\n"
                 f"[white]Muokatut painot:[/white] {result.modified_weights}\n"
-                f"[white]Aika:[/white] {result.elapsed_seconds:.1f}s",
+                f"[white]Aika:[/white] {result.elapsed_seconds:.1f}s"
+                f"{smart_info}",
                 title="[bold green]Success[/bold green]",
                 border_style="green"
             ))
 
             # Add to library
             try:
+                abliteration_details = {
+                    "method": result.method_used,
+                    "strength": result.strength_applied,
+                    "source_model": str(model_path),
+                    "modified_layers": result.modified_layers,
+                    # Smart abliteration info
+                    "use_smart_layers": use_smart_layers,
+                    "use_dynamic_strength": use_dynamic_strength,
+                    "layer_signal_threshold": layer_signal_threshold,
+                    # Advanced options
+                    "use_linear_probe": use_linear_probe,
+                    "use_auto_tune": use_auto_tune,
+                    "use_capability_preservation": use_capability_preservation,
+                }
+                if result.layer_signals:
+                    abliteration_details["layer_signals"] = {str(k): v for k, v in result.layer_signals.items()}
+                if result.layer_strengths:
+                    abliteration_details["layer_strengths"] = {str(k): v for k, v in result.layer_strengths.items()}
+                if result.probe_accuracies:
+                    abliteration_details["probe_accuracies"] = {str(k): v for k, v in result.probe_accuracies.items()}
+                if result.auto_tuned_strength is not None:
+                    abliteration_details["auto_tuned_strength"] = result.auto_tuned_strength
+
                 entry = self.library.add_model(
                     path=result.output_path,
                     source="abliterated",
                     source_id=str(model_path),
-                    abliteration_info={
-                        "method": result.method_used,
-                        "strength": result.strength_applied,
-                        "source_model": str(model_path),
-                        "modified_layers": result.modified_layers,
-                    }
+                    abliteration_info=abliteration_details
                 )
                 print_success(f"Lisatty kirjastoon: {entry.name}")
             except Exception as e:

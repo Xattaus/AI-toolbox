@@ -269,7 +269,9 @@ class OllamaManager:
         lines = []
 
         # FROM directive with GGUF path
-        lines.append(f"FROM {config.gguf_path}")
+        # Ollama vaatii forward slash -polut myös Windowsilla
+        gguf_path_normalized = str(config.gguf_path).replace('\\', '/')
+        lines.append(f"FROM {gguf_path_normalized}")
         lines.append("")
 
         # System prompt
@@ -458,16 +460,18 @@ class OllamaManager:
             )
 
             output_lines = []
-            while True:
-                line = process.stdout.readline()
-                if not line and process.poll() is not None:
-                    break
-                if line:
-                    output_lines.append(line.strip())
-                    if callback:
-                        callback(line.strip())
-                    else:
-                        console.print(f"  {line.strip()}")
+            # Tarkista että stdout on käytettävissä
+            if process.stdout:
+                while True:
+                    line = process.stdout.readline()
+                    if not line and process.poll() is not None:
+                        break
+                    if line:
+                        output_lines.append(line.strip())
+                        if callback:
+                            callback(line.strip())
+                        else:
+                            console.print(f"  {line.strip()}")
 
             if process.returncode != 0:
                 return False, f"Failed to pull model: {' '.join(output_lines[-3:])}"

@@ -51,7 +51,7 @@ def run_ollama_wizard():
         choice = questionary.select(
             "",
             choices=[
-                questionary.Separator("─── Luo & Testaa ───"),
+                questionary.Separator("--- Luo & Testaa ---"),
                 questionary.Choice(
                     title=format_menu_item("Create Model", "Luo Ollama-malli GGUF:sta"),
                     value="create"
@@ -64,7 +64,7 @@ def run_ollama_wizard():
                     title=format_menu_item("Abliteration Test", "Testaa sensuurin poisto"),
                     value="abltest"
                 ),
-                questionary.Separator("─── Hallinta ───"),
+                questionary.Separator("--- Hallinta ---"),
                 questionary.Choice(
                     title=format_menu_item("List Models", "Näytä kaikki Ollama-mallit"),
                     value="list"
@@ -81,15 +81,15 @@ def run_ollama_wizard():
                     title=format_menu_item("Delete Model", "Poista malli"),
                     value="delete"
                 ),
-                questionary.Separator("─────────────────────────────"),
+                questionary.Separator("-----------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa päävalikkoon"),
+                    title=format_menu_item("<- Back", "Palaa päävalikkoon"),
                     value="back"
                 ),
             ],
             style=MENU_STYLE,
             qmark="",
-            pointer="▸",
+            pointer=">",
         ).ask()
 
         if choice == "back" or choice is None:
@@ -705,7 +705,7 @@ def _abliteration_test(manager: OllamaManager):
         f"[bold]Kieli:[/bold]      {'Suomi 🇫🇮' if lang == 'fi' else 'English 🇬🇧'}\n"
         f"[bold]Testejä:[/bold]    {len(test_prompts)}\n"
         f"[bold]Kategoriat:[/bold] {cat_display}",
-        title="[bold cyan]━━━ Testin asetukset ━━━[/bold cyan]",
+        title="[bold cyan]=== Testin asetukset ===[/bold cyan]",
         border_style="cyan"
     ))
     console.print()
@@ -801,17 +801,21 @@ def _abliteration_test(manager: OllamaManager):
         verdict_color = "red"
         verdict_desc = "Malli kieltäytyy useimmista kysymyksistä."
 
-    # Build summary
+    # Build summary - suojaa division by zero
+    answered_pct = (answered/total*100) if total > 0 else 0
+    refused_pct = (refused/total*100) if total > 0 else 0
+    errors_pct = (errors/total*100) if total > 0 else 0
+
     summary_lines = [
-        "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓",
+        "┏===============================================┓",
         "┃  [bold]📊 YHTEENVETO[/bold]                                ┃",
-        "┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫",
-        f"┃  ✅ Vastasi:     [green]{answered:>3}[/green] / {total:<3}  ({answered/total*100:>5.1f}%)       ┃",
-        f"┃  ❌ Kieltäytyi:  [red]{refused:>3}[/red] / {total:<3}  ({refused/total*100:>5.1f}%)       ┃",
-        f"┃  ⚠️  Virheitä:    [yellow]{errors:>3}[/yellow] / {total:<3}  ({errors/total*100:>5.1f}%)       ┃",
-        "┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫",
+        "┣===============================================┫",
+        f"┃  ✅ Vastasi:     [green]{answered:>3}[/green] / {total:<3}  ({answered_pct:>5.1f}%)       ┃",
+        f"┃  ❌ Kieltäytyi:  [red]{refused:>3}[/red] / {total:<3}  ({refused_pct:>5.1f}%)       ┃",
+        f"┃  ⚠️  Virheitä:    [yellow]{errors:>3}[/yellow] / {total:<3}  ({errors_pct:>5.1f}%)       ┃",
+        "┣===============================================┫",
         f"┃  [bold]PISTEET: {score:>5.1f} / 100[/bold]                       ┃",
-        "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛",
+        "┗===============================================┛",
     ]
 
     console.print("\n".join(summary_lines))

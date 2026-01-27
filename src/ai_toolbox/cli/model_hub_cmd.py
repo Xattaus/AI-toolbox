@@ -7,7 +7,7 @@ Combines the functionality of download_cmd.py and library_cmd.py.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import questionary
 from rich.console import Console
@@ -55,8 +55,10 @@ class ModelHubCommands:
 
     def model_hub_menu(self):
         """Model Hub main menu."""
+        from ..core.ui import print_branded_header
+
         while True:
-            print_mini_banner("Model Hub")
+            print_branded_header("Model Hub", "Lataa, selaa ja hallitse malleja")
 
             # Show stats
             stats = self.library.get_stats()
@@ -65,55 +67,55 @@ class ModelHubCommands:
 
             choices = [
                 questionary.Choice(
-                    title="Selaa kirjastoa         Browse all models",
+                    title=format_menu_item("Selaa kirjastoa", "Kaikki mallit"),
                     value="browse"
                 ),
-                questionary.Separator("── Lataa ──"),
+                questionary.Separator("--- Lataa ------------------------------------"),
                 questionary.Choice(
-                    title="Hae HuggingFacesta      Search and download",
+                    title=format_menu_item("Hae HuggingFacesta", "Etsi ja lataa malleja"),
                     value="search"
                 ),
                 questionary.Choice(
-                    title="Lataa ID:lla            Download by model ID",
+                    title=format_menu_item("Lataa ID:llä", "Suora lataus model ID:llä"),
                     value="direct"
                 ),
                 questionary.Choice(
-                    title="Suositut mallit         Popular models",
+                    title=format_menu_item("Suositut mallit", "Eniten ladatut"),
                     value="popular"
                 ),
                 questionary.Choice(
-                    title="Lataa LoRA              Download LoRA adapter",
+                    title=format_menu_item("Lataa LoRA", "LoRA-adapterit"),
                     value="lora"
                 ),
-                questionary.Separator("── Hallinta ──"),
+                questionary.Separator("--- Hallinta ---------------------------------"),
                 questionary.Choice(
-                    title="Lisaa malli             Add model to library",
+                    title=format_menu_item("Lisää malli", "Lisää paikallinen malli"),
                     value="add"
                 ),
                 questionary.Choice(
-                    title="Paivita kirjasto        Refresh library",
+                    title=format_menu_item("Päivitä kirjasto", "Skannaa uudet mallit"),
                     value="refresh"
                 ),
                 questionary.Choice(
-                    title="Skannaa kansio          Scan folder for models",
+                    title=format_menu_item("Skannaa kansio", "Etsi malleja kansiosta"),
                     value="scan"
                 ),
                 questionary.Choice(
-                    title="Kirjaston terveys       Library health check",
+                    title=format_menu_item("Kirjaston terveys", "Tarkista ja siivoa"),
                     value="health"
                 ),
-                questionary.Separator(),
+                questionary.Separator("----------------------------------------------"),
                 questionary.Choice(
-                    title="Palaa                   Back",
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]
 
             choice = questionary.select(
-                "Model Hub:",
+                "Valitse toiminto:",
                 choices=choices,
                 style=custom_style,
-                qmark=">>",
+                qmark="#",
                 pointer=">"
             ).ask()
 
@@ -146,11 +148,11 @@ class ModelHubCommands:
             print_mini_banner("Library Browser", "Selaa ja hallinnoi malleja")
 
             stats = self.library.get_stats()
-            console.print(f"  [dim]Models:[/dim] [cyan]{stats['total_models']}[/cyan]  │  "
+            console.print(f"  [dim]Models:[/dim] [cyan]{stats['total_models']}[/cyan]  |  "
                          f"[dim]Size:[/dim] [cyan]{stats['total_size_gb']:.1f} GB[/cyan]\n")
 
             choices = [
-                questionary.Separator("─── Browse ───"),
+                questionary.Separator("--- Browse ---"),
                 questionary.Choice(
                     title=format_menu_item("Categorized View", "Ryhmitelty nakyma (suositeltu)"),
                     value="categorized"
@@ -163,7 +165,7 @@ class ModelHubCommands:
                     title=format_menu_item("Tree View", "Hierarkkinen puunakyma"),
                     value="tree"
                 ),
-                questionary.Separator("─── Filter ───"),
+                questionary.Separator("--- Filter ---"),
                 questionary.Choice(
                     title=format_menu_item("GGUF Models", "Vain GGUF-mallit"),
                     value="gguf"
@@ -184,7 +186,7 @@ class ModelHubCommands:
                     title=format_menu_item("Ollama Models", "Ollama-mallit"),
                     value="ollama"
                 ),
-                questionary.Separator("─── Tools ───"),
+                questionary.Separator("--- Tools ---"),
                 questionary.Choice(
                     title=format_menu_item("Search", "Hae kirjastosta"),
                     value="search"
@@ -193,9 +195,9 @@ class ModelHubCommands:
                     title=format_menu_item("Cleanup", "Siivoa duplikaatit ja puuttuvat"),
                     value="cleanup"
                 ),
-                questionary.Separator("───────────────────────────────────"),
+                questionary.Separator("-----------------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa"),
+                    title=format_menu_item("<- Back", "Palaa"),
                     value="back"
                 ),
             ]
@@ -205,7 +207,7 @@ class ModelHubCommands:
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse)"
             ).ask()
 
@@ -244,7 +246,7 @@ class ModelHubCommands:
 
         if total == 0:
             print_warning("Kirjasto on tyhjä.")
-            console.print("[dim]Lataa malleja Model Hub → Hae HuggingFacesta[/dim]")
+            console.print("[dim]Lataa malleja Model Hub -> Hae HuggingFacesta[/dim]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
@@ -353,13 +355,18 @@ class ModelHubCommands:
         format_filter: Optional[str] = None,
         source_filter: Optional[str] = None,
         category_filter: Optional[str] = None,
+        filter_models: Optional[List] = None,
     ):
         """Browse models with interactive selection."""
-        models = self.library.list_models(
-            format_filter=format_filter,
-            source_filter=source_filter,
-            category_filter=category_filter,
-        )
+        # Käytä annettuja malleja tai hae kirjastosta
+        if filter_models is not None:
+            models = filter_models
+        else:
+            models = self.library.list_models(
+                format_filter=format_filter,
+                source_filter=source_filter,
+                category_filter=category_filter,
+            )
 
         if not models:
             print_warning("Kirjastosta ei loytynyt malleja.")
@@ -514,7 +521,8 @@ class ModelHubCommands:
             print_warning(f"Malleja ei loytynyt haulla '{query}'")
         else:
             console.print(f"\n[green]Loytyi {len(results)} vastaavaa mallia:[/green]\n")
-            self._browse_models()
+            # Näytä vain hakutulokset, ei kaikkia malleja
+            self._browse_models(filter_models=results)
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -1146,8 +1154,11 @@ class ModelHubCommands:
                 default=False
             ).ask()
 
-            self.library.remove_model(model.id, delete_files=delete_files)
-            print_success("Malli poistettu")
+            success = self.library.remove_model(model.id, delete_files=delete_files)
+            if success:
+                print_success("Malli poistettu")
+            else:
+                print_error("Mallin poisto epäonnistui")
 
     def _remove_ollama_model(self, model):
         """Remove Ollama model with full cleanup including ollama rm."""

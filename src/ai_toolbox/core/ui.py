@@ -477,27 +477,27 @@ def print_branded_header(title: str, subtitle: str = ""):
     """
     width = 60
 
-    # Top border with brand color
-    console.print(f"\n[orange1]{'━' * width}[/orange1]")
+    # Top border with brand color (use ASCII-safe characters for Windows)
+    console.print(f"\n[orange1]{'=' * width}[/orange1]")
 
     # Logo line
-    console.print(f"[bold orange1]  ▣ AI TOOLBOX[/bold orange1] [dim]│[/dim] [bold white]{title}[/bold white]")
+    console.print(f"[bold orange1]  # AI TOOLBOX[/bold orange1] [dim]|[/dim] [bold white]{title}[/bold white]")
 
     # Subtitle if provided
     if subtitle:
         console.print(f"[dim]  {subtitle}[/dim]")
 
     # Bottom border
-    console.print(f"[orange1]{'━' * width}[/orange1]\n")
+    console.print(f"[orange1]{'=' * width}[/orange1]\n")
 
 
 def print_branded_footer(message: str = ""):
     """Print a branded footer."""
     width = 60
-    console.print(f"\n[dim]{'─' * width}[/dim]")
+    console.print(f"\n[dim]{'-' * width}[/dim]")
     if message:
         console.print(f"[dim]  {message}[/dim]")
-    console.print(f"[dim orange3]  ▣ AI TOOLBOX[/dim orange3]")
+    console.print(f"[dim orange3]  # AI TOOLBOX[/dim orange3]")
     console.print()
 
 
@@ -586,8 +586,12 @@ def create_model_table(
             table.add_row(*row)
             continue
 
-        # Format display name
-        display_name = format_display_name(model.name, max_length=max_name_length)
+        # Format display name - don't include quant if we have a quant column
+        display_name = format_display_name(
+            model.name,
+            max_length=max_name_length,
+            include_quant=not show_quant  # Only show in name if no quant column
+        )
 
         # Build row
         row = []
@@ -605,7 +609,8 @@ def create_model_table(
             row.append(quant)
 
         if show_size:
-            size_str = format_size(model.size_bytes) if model.size_bytes else "-"
+            # Käytä is not None jotta 0 näytetään oikein
+            size_str = format_size(model.size_bytes) if model.size_bytes is not None else "-"
             row.append(size_str)
 
         if show_source:
@@ -613,7 +618,11 @@ def create_model_table(
             row.append(source)
 
         if show_date:
-            date = model.added_date[:10] if model.added_date else "-"
+            # Suojaa väärän muotoisen päivämäärän varalta
+            try:
+                date = model.added_date[:10] if model.added_date else "-"
+            except (TypeError, IndexError):
+                date = "-"
             row.append(date)
 
         table.add_row(*row)
@@ -809,8 +818,8 @@ def display_model_details(model, show_path: bool = True):
     table.add_column("Key", style="cyan", width=15)
     table.add_column("Value", style="white")
 
-    # Add details
-    display_name = format_display_name(model.name, max_length=50)
+    # Add details - don't include quant in name since it's shown separately
+    display_name = format_display_name(model.name, max_length=50, include_quant=False)
     table.add_row("Nimi", f"[bold]{display_name}[/bold]")
     table.add_row("Täysi nimi", f"[dim]{model.name}[/dim]")
     table.add_row("Formaatti", model.format.upper() if model.format else "-")
@@ -1008,9 +1017,10 @@ def format_model_choice_title(model, category_key: str = None, index: int = None
         icon = cat_icons.get(model.category, '📄')
 
     # Get display name (clean version for readability)
+    # Don't include quant since it's shown separately in line 2
     if use_display_name:
         from ..models.library import format_display_name
-        display_name = format_display_name(model.name, max_length=45)
+        display_name = format_display_name(model.name, max_length=45, include_quant=False)
     else:
         display_name = model.name if len(model.name) <= 45 else model.name[:42] + "..."
 
@@ -1020,7 +1030,7 @@ def format_model_choice_title(model, category_key: str = None, index: int = None
     else:
         line1 = f"{icon} {display_name}"
 
-    # Line 2: Details
+    # Line 2: Details (quant shown here, not in name)
     size_str = format_size(model.size_bytes)
     format_str = model.format.upper()
     quant_str = f"[{model.quantization}]" if model.quantization else ""

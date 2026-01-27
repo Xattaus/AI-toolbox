@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 import questionary
-from questionary import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -18,27 +17,21 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
+    format_menu_item,
+    MENU_STYLE,
 )
 from ..core.paths import get_paths
 from ..models.downloader import ModelDownloader
 from ..models.library import ModelLibrary
 
-# Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+# Use unified menu style
+custom_style = MENU_STYLE
 
 
 class SettingsCommands:
@@ -62,48 +55,52 @@ class SettingsCommands:
     def settings_menu(self):
         """Settings sub-menu."""
         while True:
-            print_mini_banner("Settings")
+            print_branded_header("Asetukset", "Polut, tokenit ja järjestelmä")
 
             choices = [
+                questionary.Separator("--- Konfiguraatio ----------------------------"),
                 questionary.Choice(
-                    title="Show All Paths          Nayta kaikki polut",
+                    title=format_menu_item("Show All Paths", "Näytä kaikki polut"),
                     value="show_paths"
                 ),
                 questionary.Choice(
-                    title="HuggingFace Token       HF-token asetukset",
+                    title=format_menu_item("HuggingFace Token", "HF-token asetukset"),
                     value="hf_token"
                 ),
                 questionary.Choice(
-                    title="Clear Cache             Tyhjenna valimuisti",
+                    title=format_menu_item("Clear Cache", "Tyhjennä välimuisti"),
                     value="clear_cache"
                 ),
-                questionary.Separator("── Kirjasto ──"),
+                questionary.Separator("--- Kirjasto ---------------------------------"),
                 questionary.Choice(
-                    title="Library Cleanup         Duplikaattien ja puuttuvien siivous",
+                    title=format_menu_item("Library Cleanup", "Siivoa duplikaatit"),
                     value="library_cleanup"
                 ),
                 questionary.Choice(
-                    title="Orphan Cleanup          Orpo-tiedostojen siivous",
+                    title=format_menu_item("Orphan Cleanup", "Orpo-tiedostojen siivous"),
                     value="orphan_cleanup"
                 ),
                 questionary.Choice(
-                    title="Disk Analysis           Levytilan analyysi",
+                    title=format_menu_item("Disk Analysis", "Levytilan analyysi"),
                     value="disk_analysis"
                 ),
-                questionary.Separator(),
+                questionary.Separator("--- Järjestelmä ------------------------------"),
                 questionary.Choice(
-                    title="System Info             Jarjestelmatiedot",
+                    title=format_menu_item("System Info", "Järjestelmätiedot"),
                     value="sysinfo"
                 ),
-                questionary.Separator(),
-                questionary.Choice(title="Back                    Palaa", value="back"),
+                questionary.Separator("----------------------------------------------"),
+                questionary.Choice(
+                    title=format_menu_item("<- Palaa", ""),
+                    value="back"
+                ),
             ]
 
             choice = questionary.select(
-                "Asetukset:",
+                "Valitse toiminto:",
                 choices=choices,
                 style=custom_style,
-                qmark=">>",
+                qmark="#",
                 pointer=">"
             ).ask()
 
@@ -399,8 +396,8 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             default=True,
             style=custom_style
         ).ask():
-            results = self.library.cleanup_library()
-            print_success(f"Poistettu {results['missing']} puuttuvaa ja {results['duplicates']} duplikaattia")
+            results = self.library.cleanup_library() or {}
+            print_success(f"Poistettu {results.get('missing', 0)} puuttuvaa ja {results.get('duplicates', 0)} duplikaattia")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -416,10 +413,10 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
         console.print("[cyan]Etsitaan orpo-tiedostoja...[/cyan]\n")
 
-        orphan_stats = self.library.get_orphan_stats()
-        orphans = self.library.find_orphaned_files()
+        orphan_stats = self.library.get_orphan_stats() or {}
+        orphans = self.library.find_orphaned_files() or {}
 
-        if orphan_stats['total_count'] == 0:
+        if orphan_stats.get('total_count', 0) == 0:
             console.print("[green]Ei orpo-tiedostoja! Kirjasto on siisti.[/green]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
@@ -430,18 +427,18 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         table.add_column("Maara", justify="right")
         table.add_column("Koko", justify="right", style="yellow")
 
-        for category, cat_stats in orphan_stats['by_category'].items():
-            if cat_stats['count'] > 0:
+        for category, cat_stats in orphan_stats.get('by_category', {}).items():
+            if cat_stats.get('count', 0) > 0:
                 table.add_row(
                     category.upper(),
-                    str(cat_stats['count']),
-                    format_size(cat_stats['size_bytes'])
+                    str(cat_stats.get('count', 0)),
+                    format_size(cat_stats.get('size_bytes', 0))
                 )
 
         table.add_row(
             "[bold]YHTEENSA[/bold]",
-            f"[bold]{orphan_stats['total_count']}[/bold]",
-            f"[bold]{format_size(orphan_stats['total_size_bytes'])}[/bold]"
+            f"[bold]{orphan_stats.get('total_count', 0)}[/bold]",
+            f"[bold]{format_size(orphan_stats.get('total_size_bytes', 0))}[/bold]"
         )
 
         console.print(table)
@@ -457,20 +454,24 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 if files:
                     console.print(f"\n[bold cyan]{category.upper()}:[/bold cyan]")
                     for f in files[:10]:
-                        icon = "[dim]folder[/dim]" if f['is_directory'] else "[dim]file[/dim]"
-                        console.print(f"  {icon}  {f['name']} ({format_size(f['size_bytes'])})")
+                        is_dir = f.get('is_directory', False)
+                        icon = "[dim]folder[/dim]" if is_dir else "[dim]file[/dim]"
+                        name = f.get('name', 'tuntematon')
+                        size = f.get('size_bytes', 0)
+                        console.print(f"  {icon}  {name} ({format_size(size)})")
                     if len(files) > 10:
                         console.print(f"  [dim]... ja {len(files) - 10} muuta[/dim]")
 
         console.print()
 
         # Cleanup options
+        orphan_total_size = orphan_stats.get('total_size_bytes', 0)
         if questionary.confirm(
-            f"Poista kaikki orvot? (vapautuu {format_size(orphan_stats['total_size_bytes'])})",
+            f"Poista kaikki orvot? (vapautuu {format_size(orphan_total_size)})",
             default=False,
             style=custom_style
         ).ask():
-            deleted = self.library.cleanup_orphans(dry_run=False)
+            deleted = self.library.cleanup_orphans(dry_run=False) or []
             print_success(f"Poistettu {len(deleted)} orpo-tiedostoa")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
@@ -485,13 +486,13 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        stats = self.library.get_stats()
-        category_stats = self.library.get_category_stats()
-        orphan_stats = self.library.get_orphan_stats()
+        stats = self.library.get_stats() or {}
+        category_stats = self.library.get_category_stats() or {}
+        orphan_stats = self.library.get_orphan_stats() or {}
 
         console.print("[bold]Levytilan jakautuminen kategorioittain:[/bold]\n")
 
-        total = stats['total_size_bytes'] + orphan_stats['total_size_bytes']
+        total = stats.get('total_size_bytes', 0) + orphan_stats.get('total_size_bytes', 0)
         max_bar_width = 35
 
         categories = [
@@ -519,16 +520,18 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             console.print()
 
         # Orphan space
-        if orphan_stats['total_size_bytes'] > 0:
-            bar_width = int((orphan_stats['total_size_bytes'] / total) * max_bar_width)
+        orphan_size = orphan_stats.get('total_size_bytes', 0)
+        orphan_count = orphan_stats.get('total_count', 0)
+        if orphan_size > 0:
+            bar_width = int((orphan_size / total) * max_bar_width) if total > 0 else 0
             bar = "█" * bar_width + "░" * (max_bar_width - bar_width)
-            pct = orphan_stats['total_size_bytes'] / total * 100
+            pct = (orphan_size / total * 100) if total > 0 else 0
 
             console.print("⚠️  Orvot tiedostot")
-            console.print(f"  [red]{bar}[/red] {format_size(orphan_stats['total_size_bytes']):>10} ({orphan_stats['total_count']} kpl) {pct:5.1f}%")
+            console.print(f"  [red]{bar}[/red] {format_size(orphan_size):>10} ({orphan_count} kpl) {pct:5.1f}%")
             console.print()
 
         console.print(f"[bold]Yhteensa: {format_size(total)}[/bold]")
-        console.print(f"[dim]Malleja kirjastossa: {stats['total_models']}[/dim]")
+        console.print(f"[dim]Malleja kirjastossa: {stats.get('total_models', 0)}[/dim]")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()

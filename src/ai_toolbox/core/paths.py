@@ -57,8 +57,12 @@ class ToolboxPaths:
         if (cwd / 'src' / 'ai_toolbox').exists():
             return cwd
 
-        # Fallback: use this file's location anyway
-        return possible_root
+        # Fallback: käytä tiedoston sijaintikansiota (ei possible_root joka voi olla väärä)
+        # Tämä on turvallisempi koska tiedämme ainakin missä koodi sijaitsee
+        fallback = this_file.parent.parent.parent  # <root>/src/ai_toolbox -> <root>/src
+        if fallback.name == 'src':
+            fallback = fallback.parent  # <root>
+        return fallback
 
     def _ensure_directories(self):
         """Create required directories if they don't exist."""

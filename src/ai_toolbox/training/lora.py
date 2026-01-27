@@ -1484,15 +1484,19 @@ class LoRATrainer:
                 progress_callback("[Unsloth] Valmistellaan LoRA...")
 
             # Lisää LoRA-adapterit Unslothin optimoidulla metodilla
+            # Käytä config.lora.target_modules jos määritelty, muuten Unslothin oletukset
+            unsloth_default_modules = [
+                "q_proj", "k_proj", "v_proj", "o_proj",
+                "gate_proj", "up_proj", "down_proj",
+            ]
+            target_modules = config.lora.target_modules if config.lora.target_modules else unsloth_default_modules
+
             model = FastLanguageModel.get_peft_model(
                 model,
                 r=config.lora.rank,
                 lora_alpha=config.lora.alpha,
                 lora_dropout=config.lora.dropout,
-                target_modules=[
-                    "q_proj", "k_proj", "v_proj", "o_proj",
-                    "gate_proj", "up_proj", "down_proj",
-                ],  # Unsloth valitsee automaattisesti parhaat
+                target_modules=target_modules,
                 bias="none",
                 use_gradient_checkpointing="unsloth",  # Unslothin optimoitu GC
                 random_state=42,

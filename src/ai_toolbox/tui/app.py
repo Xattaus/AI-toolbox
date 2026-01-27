@@ -264,7 +264,7 @@ class ToolboxApp(App):
         button_id = event.button.id
         
         # Päivitä aktiivinen nappi tyylittelyä varten
-        for btn in self.query(Sidebar).query(Button):
+        for btn in self.query("Sidebar Button"):
             btn.remove_class("-active")
         event.button.add_class("-active")
 

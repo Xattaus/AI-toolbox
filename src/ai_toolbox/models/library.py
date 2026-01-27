@@ -6,6 +6,7 @@ Manage and browse your local AI models.
 """
 
 import os
+import re
 import json
 import shutil
 from pathlib import Path
@@ -38,76 +39,137 @@ CATEGORY_ICONS = {
 # NAME FORMATTING UTILITIES
 # ============================================================================
 
-def format_display_name(full_name: str, max_length: int = 40) -> str:
+def format_display_name(
+    full_name: str,
+    max_length: int = 40,
+    include_quant: bool = False
+) -> str:
     """
     Create a clean, readable display name from a full model name.
-
-    Handles common patterns like:
-    - HuggingFace names: "org/model-name" -> "model-name"
-    - Long merge names: "slerp_model1_model2-q8_0" -> "slerp: model1+model2 [Q8_0]"
-    - Quantization suffixes: "-q4_k_m", "-q8_0" -> " [Q4_K_M]"
 
     Args:
         full_name: The full model name
         max_length: Maximum length for display
+        include_quant: Whether to include quantization in name (False if shown separately)
 
     Returns:
         Shortened, cleaned display name
     """
     name = full_name
 
-    # Remove common prefixes/suffixes that add noise
-    # Strip path components if present
+    # Strip path components
     if "/" in name:
         name = name.split("/")[-1]
+    if "\\" in name:
+        name = name.split("\\")[-1]
 
-    # Extract quantization suffix for separate display
+    # Remove file extension
+    if name.endswith(".gguf"):
+        name = name[:-5]
+
+    # Extract and remove quantization suffix
     quant_suffix = ""
-    quant_patterns = [
-        "-q8_0", "-q6_k", "-q5_k_m", "-q5_k_s", "-q4_k_m", "-q4_k_s",
-        "-q4_0", "-q3_k_m", "-q3_k_s", "-q2_k", "-f16", "-f32",
-        "_q8_0", "_q6_k", "_q5_k_m", "_q5_k_s", "_q4_k_m", "_q4_k_s",
-        "_q4_0", "_q3_k_m", "_q3_k_s", "_q2_k", "_f16", "_f32",
-    ]
-    for pattern in quant_patterns:
-        if name.lower().endswith(pattern):
-            quant_suffix = f" [{pattern[1:].upper()}]"
-            name = name[:-len(pattern)]
-            break
+    detected_quant = ""
 
-    # Clean up merge method prefixes for better display
+    # Pattern 1: Bracketed format " [Q8_0]" or "[Q8_0]"
+    bracket_match = re.search(r'\s*\[([QFqf]\d+[_]?\d*[KkMmSsLl]*)\]$', name)
+    if bracket_match:
+        detected_quant = bracket_match.group(1).upper()
+        name = name[:bracket_match.start()]
+
+    # Pattern 2: Suffix format "-q8_0" or "_q8_0"
+    if not detected_quant:
+        quant_patterns = [
+            "-q8_0", "-q6_k", "-q5_k_m", "-q5_k_s", "-q4_k_m", "-q4_k_s",
+            "-q4_0", "-q3_k_m", "-q3_k_s", "-q2_k", "-f16", "-f32",
+            "_q8_0", "_q6_k", "_q5_k_m", "_q5_k_s", "_q4_k_m", "_q4_k_s",
+            "_q4_0", "_q3_k_m", "_q3_k_s", "_q2_k", "_f16", "_f32",
+            "-iq4_nl", "-iq4_xs", "-iq3_s", "-iq3_m", "-iq3_xs",
+            "-iq2_s", "-iq2_xs", "-iq1_s", "-iq1_m",
+        ]
+        for pattern in quant_patterns:
+            if name.lower().endswith(pattern):
+                detected_quant = pattern[1:].upper()
+                name = name[:-len(pattern)]
+                break
+
+    # Add quant suffix only if requested
+    if detected_quant and include_quant:
+        quant_suffix = f" [{detected_quant}]"
+
+    # Use extract_model_identity for cleaner names
+    clean_name = extract_model_identity(name)
+
+    # Check if it's a merge (has method prefix)
     merge_prefixes = {
-        "slerp_": "SLERP: ",
-        "dare_ties_": "DARE: ",
-        "dare_linear_": "DARE-L: ",
-        "ties_": "TIES: ",
-        "linear_": "LINEAR: ",
-        "della_": "DELLA: ",
-        "merged_": "",
-        "advanced_": "ADV: ",
+        "slerp_": "SLERP",
+        "dare_ties_": "DARE",
+        "dare_linear_": "DARE-L",
+        "dare_": "DARE",
+        "ties_": "TIES",
+        "linear_": "LINEAR",
+        "della_": "DELLA",
+        "merged_": "Merged",
+        "advanced_": "ADV",
     }
-    for prefix, replacement in merge_prefixes.items():
-        if name.lower().startswith(prefix):
-            name = replacement + name[len(prefix):]
+
+    method = None
+    name_lower = name.lower()
+    for prefix, method_name in merge_prefixes.items():
+        if name_lower.startswith(prefix):
+            method = method_name
+            # Extract model parts after prefix
+            rest = name[len(prefix):]
+
+            # Handle various separators: _, -, +, " + "
+            # First normalize "+" with spaces
+            rest = re.sub(r'\s*\+\s*', '_', rest)
+
+            # Split by common separators
+            parts = re.split(r'[-_]', rest)
+
+            # Filter and extract identities
+            skip_words = {
+                'and', 'more', 'abliterated', 'abliter', 'uncensored',
+                'instruct', 'chat', 'base', 'sft', 'hf', 'llama',
+                '8b', '7b', '13b', '14b', '32b', '70b', '3', '3.1', '2'
+            }
+
+            identities = []
+            for part in parts:
+                part_clean = part.strip()
+                # Skip short parts and common words
+                if len(part_clean) < 2 or part_clean.lower() in skip_words:
+                    continue
+                # Skip parts that are just numbers
+                if part_clean.isdigit():
+                    continue
+
+                ident = extract_model_identity(part_clean)
+                # Only add if meaningful and not duplicate
+                if ident and len(ident) >= 2 and ident.lower() not in [i.lower() for i in identities]:
+                    identities.append(ident)
+
+            if identities:
+                clean_name = "-".join(identities[:3])
+                if len(identities) > 3:
+                    clean_name += f"+{len(identities)-3}"
             break
 
-    # Replace underscores/hyphens between model names with "+"
-    # Only if there are multiple model-like segments
-    parts = name.replace("-", "_").split("_")
-    if len(parts) > 2:
-        # Try to identify model names and join them nicely
-        clean_parts = [p for p in parts if len(p) > 1]
-        if len(clean_parts) <= 3:
-            name = " + ".join(clean_parts)
-        else:
-            # Too many parts, just truncate
-            name = "_".join(clean_parts[:3]) + "..."
+    # Build final name
+    if method:
+        final_name = f"{method}: {clean_name}"
+    else:
+        final_name = clean_name
 
-    # Final length check
-    if len(name) + len(quant_suffix) > max_length:
-        name = name[:max_length - len(quant_suffix) - 3] + "..."
+    # Add quant suffix if requested
+    final_name += quant_suffix
 
-    return name + quant_suffix
+    # Truncate if needed
+    if len(final_name) > max_length:
+        final_name = final_name[:max_length - 3] + "..."
+
+    return final_name
 
 
 def extract_model_identity(full_name: str) -> str:
@@ -129,8 +191,6 @@ def extract_model_identity(full_name: str) -> str:
     Returns:
         Short, unique identifier for the model
     """
-    import re
-
     # Start with the base name
     name = full_name
 

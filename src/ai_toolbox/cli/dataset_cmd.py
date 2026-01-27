@@ -589,22 +589,43 @@ class DatasetCommands:
         console.print("[dim]Jata tyhjäksi ohittaaksesi[/dim]\n")
 
         # Ask for criteria
-        min_chars = questionary.text("Min merkkimaara:", default="", style=custom_style).ask()
-        max_chars = questionary.text("Max merkkimaara:", default="", style=custom_style).ask()
+        min_chars_str = questionary.text("Min merkkimaara:", default="", style=custom_style).ask()
+        max_chars_str = questionary.text("Max merkkimaara:", default="", style=custom_style).ask()
+
+        # Parse with error handling
+        try:
+            min_chars_val = int(min_chars_str) if min_chars_str else None
+        except ValueError:
+            print_warning(f"Virheellinen min merkkimaara '{min_chars_str}', ohitetaan")
+            min_chars_val = None
+
+        try:
+            max_chars_val = int(max_chars_str) if max_chars_str else None
+        except ValueError:
+            print_warning(f"Virheellinen max merkkimaara '{max_chars_str}', ohitetaan")
+            max_chars_val = None
 
         config = FilterConfig(
-            min_chars=int(min_chars) if min_chars else None,
-            max_chars=int(max_chars) if max_chars else None,
+            min_chars=min_chars_val,
+            max_chars=max_chars_val,
         )
 
         # Token-based filtering
         if self.dataset_prep._deps["transformers"]:
             use_tokens = questionary.confirm("Suodata myos tokenimaaran mukaan?", default=False, style=custom_style).ask()
             if use_tokens:
-                min_tokens = questionary.text("Min tokeneita:", default="", style=custom_style).ask()
-                max_tokens = questionary.text("Max tokeneita:", default="", style=custom_style).ask()
-                config.min_tokens = int(min_tokens) if min_tokens else None
-                config.max_tokens = int(max_tokens) if max_tokens else None
+                min_tokens_str = questionary.text("Min tokeneita:", default="", style=custom_style).ask()
+                max_tokens_str = questionary.text("Max tokeneita:", default="", style=custom_style).ask()
+                try:
+                    config.min_tokens = int(min_tokens_str) if min_tokens_str else None
+                except ValueError:
+                    print_warning(f"Virheellinen min tokeneita '{min_tokens_str}', ohitetaan")
+                    config.min_tokens = None
+                try:
+                    config.max_tokens = int(max_tokens_str) if max_tokens_str else None
+                except ValueError:
+                    print_warning(f"Virheellinen max tokeneita '{max_tokens_str}', ohitetaan")
+                    config.max_tokens = None
 
         # Output
         output_path = self.dataset_prep.output_dir / f"{source_path.stem}_filtered.jsonl"
@@ -668,7 +689,11 @@ class DatasetCommands:
             style=custom_style,
         ).ask()
 
-        sample_limit = int(sample_size) if sample_size else None
+        try:
+            sample_limit = int(sample_size) if sample_size else None
+        except ValueError:
+            print_warning(f"Virheellinen näytekoko '{sample_size}', käytetään oletusta 1000")
+            sample_limit = 1000
 
         # Execute
         console.print("\n[cyan]Lasketaan tokeneita...[/cyan]\n")

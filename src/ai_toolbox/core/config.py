@@ -89,8 +89,18 @@ def save_config(config: Optional[ToolboxConfig] = None):
     config_file = get_paths().config_file
     config_file.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(config_file, 'w', encoding='utf-8') as f:
-        json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
+    # Atomaarinen tallennus: temp-tiedosto + rename
+    temp_file = config_file.with_suffix('.tmp')
+    try:
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
+        temp_file.replace(config_file)
+    except (OSError, IOError, PermissionError) as e:
+        # Siivoa temp-tiedosto ja ilmoita virheestä
+        if temp_file.exists():
+            temp_file.unlink()
+        from rich.console import Console
+        Console().print(f"[red]Virhe tallennettaessa asetuksia: {e}[/red]")
 
 
 def update_config(**kwargs) -> ToolboxConfig:

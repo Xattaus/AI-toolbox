@@ -277,8 +277,11 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         try:
             ratio = float(ratio_str)
-            ratio = max(0.0, min(1.0, ratio))
+            if ratio < 0.0 or ratio > 1.0:
+                print_warning(f"Ratio {ratio:.2f} rajattu välille 0.0-1.0")
+                ratio = max(0.0, min(1.0, ratio))
         except ValueError:
+            print_warning("Virheellinen ratio, käytetään oletusta: 0.5")
             ratio = 0.5
 
         console.print(f"\n[dim]Ratio {ratio:.2f}: {100-ratio*100:.0f}% malli 1, {ratio*100:.0f}% malli 2[/dim]")
@@ -397,8 +400,11 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         try:
             density = float(density_str)
-            density = max(0.0, min(1.0, density))
+            if density < 0.0 or density > 1.0:
+                print_warning(f"Density {density:.2f} rajattu välille 0.0-1.0")
+                density = max(0.0, min(1.0, density))
         except ValueError:
+            print_warning("Virheellinen density, käytetään oletusta: 0.5")
             density = 0.5
 
         # Output name
@@ -510,7 +516,12 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 end = int(end_str)
                 start = max(0, min(num_layers-1, start))
                 end = max(0, min(num_layers-1, end))
+                # Varmista että start <= end
+                if start > end:
+                    print_warning(f"Aloituskerros ({start}) > lopetuskerros ({end}), vaihdetaan järjestys")
+                    start, end = end, start
             except ValueError:
+                print_warning("Virheellinen kerrosarvo, käytetään oletuksia")
                 start, end = 0, num_layers - 1
 
             layer_config[model] = (start, end)
@@ -785,11 +796,12 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         # Show differences
         if details.get("vocab_warning"):
+            vocab_sizes = details.get('vocab_sizes', [])
+            vocab_info = ""
+            if len(vocab_sizes) >= 2:
+                vocab_info = f"\n[white]Vocab sizes:[/white]\n  Malli 1: {vocab_sizes[0]}\n  Malli 2: {vocab_sizes[1]}\n"
             console.print(Panel(
-                f"[yellow]{details['vocab_warning']}[/yellow]\n\n"
-                f"[white]Vocab sizes:[/white]\n"
-                f"  Malli 1: {details['vocab_sizes'][0]}\n"
-                f"  Malli 2: {details['vocab_sizes'][1]}\n\n"
+                f"[yellow]{details['vocab_warning']}[/yellow]\n{vocab_info}\n"
                 f"[dim]Advanced Merge kasittelee eron automaattisesti.[/dim]",
                 title="[yellow]Huomio[/yellow]",
                 border_style="yellow"
@@ -924,7 +936,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         if result["success"]:
             original_vocabs = result.get("original_vocab_sizes", [])
             vocab_info = ""
-            if original_vocabs:
+            if len(original_vocabs) >= 2:
                 vocab_info = f"\n[white]Alkuperaiset vocab:[/white] {original_vocabs[0]} / {original_vocabs[1]}"
 
             console.print(Panel(
@@ -987,12 +999,12 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 status_items.append(f"[dim]Configs:[/dim] [cyan]{len(configs)}[/cyan]")
 
             if status_items:
-                console.print("  " + "  │  ".join(status_items))
+                console.print("  " + "  |  ".join(status_items))
                 console.print()
 
             # Build menu choices with consistent formatting
             choices = [
-                questionary.Separator("─── Merge Tools ───"),
+                questionary.Separator("--- Merge Tools ---"),
                 questionary.Choice(
                     title=format_menu_item("New Merge", "Luo uusi merge wizardilla"),
                     value="new_merge"
@@ -1005,7 +1017,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                     title=format_menu_item("Config Manager", f"YAML-hallinta ({len(configs)} tallennettua)"),
                     value="config_manager"
                 ),
-                questionary.Separator("─── Info ───"),
+                questionary.Separator("--- Info ---"),
                 questionary.Choice(
                     title=format_menu_item("Merge Methods", "Tietoa eri menetelmista"),
                     value="info"
@@ -1013,16 +1025,16 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             ]
 
             if not mergekit_installed:
-                choices.append(questionary.Separator("─── Setup ───"))
+                choices.append(questionary.Separator("--- Setup ---"))
                 choices.append(questionary.Choice(
                     title=format_menu_item("Install Mergekit", "Asenna mergekit-kirjasto"),
                     value="install"
                 ))
 
             choices.extend([
-                questionary.Separator("───────────────────────────"),
+                questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa edelliseen valikkoon"),
+                    title=format_menu_item("<- Back", "Palaa edelliseen valikkoon"),
                     value="back"
                 ),
             ])
@@ -1032,7 +1044,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse, Enter vahvista)"
             ).ask()
 
@@ -1103,7 +1115,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         print_section_header("Step 1: Merge Method", "Valitse yhdistamistapa")
 
         method_choices = [
-            questionary.Separator("─── Interpolation ───"),
+            questionary.Separator("--- Interpolation ---"),
             questionary.Choice(
                 title=format_menu_item("SLERP", "Kaksi mallia, tasainen interpolointi"),
                 value="slerp"
@@ -1112,7 +1124,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 title=format_menu_item("LINEAR", "Painotettu keskiarvo"),
                 value="linear"
             ),
-            questionary.Separator("─── Task Vectors ───"),
+            questionary.Separator("--- Task Vectors ---"),
             questionary.Choice(
                 title=format_menu_item("DARE-TIES", "2+ mallia, alykas harvennus (suositeltu)"),
                 value="dare_ties"
@@ -1129,14 +1141,14 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 title=format_menu_item("Task Arithmetic", "Additiivinen task vector merge"),
                 value="task_arithmetic"
             ),
-            questionary.Separator("─── Advanced ───"),
+            questionary.Separator("--- Advanced ---"),
             questionary.Choice(
                 title=format_menu_item("DELLA", "DARE + pruning + rescale"),
                 value="della"
             ),
-            questionary.Separator("───────────────────────────"),
+            questionary.Separator("---------------------------"),
             questionary.Choice(
-                title=format_menu_item("← Cancel", "Peruuta"),
+                title=format_menu_item("<- Cancel", "Peruuta"),
                 value="back"
             ),
         ]
@@ -1146,7 +1158,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             choices=method_choices,
             style=custom_style,
             qmark="",
-            pointer="▸",
+            pointer=">",
             instruction="(↑↓ valitse)"
         ).ask()
 
@@ -1351,7 +1363,11 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             ).ask()
             try:
                 slerp_t = float(ratio_str) if ratio_str else 0.5
+                if slerp_t < 0.0 or slerp_t > 1.0:
+                    print_warning(f"SLERP t {slerp_t:.2f} rajattu välille 0.0-1.0")
+                    slerp_t = max(0.0, min(1.0, slerp_t))
             except ValueError:
+                print_warning("Virheellinen t, käytetään oletusta: 0.5")
                 slerp_t = 0.5
             console.print(f"[dim]t={slerp_t:.2f}: {(1-slerp_t)*100:.0f}% malli 1, {slerp_t*100:.0f}% malli 2[/dim]")
 
@@ -1363,7 +1379,11 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             ).ask()
             try:
                 ties_density = float(density_str) if density_str else 0.5
+                if ties_density < 0.0 or ties_density > 1.0:
+                    print_warning(f"Density {ties_density:.2f} rajattu välille 0.0-1.0")
+                    ties_density = max(0.0, min(1.0, ties_density))
             except ValueError:
+                print_warning("Virheellinen density, käytetään oletusta: 0.5")
                 ties_density = 0.5
             console.print(f"[dim]Density {ties_density:.2f}: sailytetaan {ties_density*100:.0f}% painoista[/dim]")
 
@@ -1541,16 +1561,16 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                         "advanced": "Advanced",
                         "experimental": "Experimental",
                     }.get(category.value, category.value.upper())
-                    choices.append(questionary.Separator(f"─── {cat_name} ───"))
+                    choices.append(questionary.Separator(f"--- {cat_name} ---"))
 
                     for preset in by_category[category]:
                         preset_key = [k for k, v in PRESETS.items() if v == preset][0]
                         title = format_menu_item(preset.name, preset.description[:35])
                         choices.append(questionary.Choice(title=title, value=preset_key))
 
-            choices.append(questionary.Separator("───────────────────────────"))
+            choices.append(questionary.Separator("---------------------------"))
             choices.append(questionary.Choice(
-                title=format_menu_item("← Back", "Palaa valikkoon"),
+                title=format_menu_item("<- Back", "Palaa valikkoon"),
                 value="back"
             ))
 
@@ -1559,7 +1579,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse)"
             ).ask()
 
@@ -1717,7 +1737,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 console.print("  [dim]Ei tallennettuja konfiguraatioita[/dim]\n")
 
             choices = [
-                questionary.Separator("─── Actions ───"),
+                questionary.Separator("--- Actions ---"),
                 questionary.Choice(
                     title=format_menu_item("Load & Run", "Lataa YAML ja aja merge"),
                     value="load"
@@ -1730,14 +1750,14 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                     title=format_menu_item("Export", "Vie YAML toiseen sijaintiin"),
                     value="export"
                 ),
-                questionary.Separator("─── History ───"),
+                questionary.Separator("--- History ---"),
                 questionary.Choice(
                     title=format_menu_item("Merge History", "Nae aiemmat merget"),
                     value="history"
                 ),
-                questionary.Separator("───────────────────────────"),
+                questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("← Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Back", "Palaa valikkoon"),
                     value="back"
                 ),
             ]
@@ -1747,7 +1767,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 choices=choices,
                 style=custom_style,
                 qmark="",
-                pointer="▸",
+                pointer=">",
                 instruction="(↑↓ valitse)"
             ).ask()
 

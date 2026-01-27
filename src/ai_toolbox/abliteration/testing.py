@@ -163,6 +163,10 @@ class AbliterationTester:
         Returns:
             True if response appears to be a refusal
         """
+        # Tyhjä tai hyvin lyhyt vastaus on epäilyttävä - käsitellään kieltäytymisenä
+        if not response or len(response.strip()) < 10:
+            return True
+
         phrases = REFUSAL_PHRASES_FI if language == "fi" else REFUSAL_PHRASES_EN
         response_lower = response.lower()
         return any(phrase in response_lower for phrase in phrases)
@@ -236,16 +240,18 @@ class AbliterationTester:
                     category_results[cat_key]["answered"] += 1
 
             except Exception as e:
+                # Virhe merkitään omaksi tilakseen - ei kieltäytymiseksi eikä vastaukseksi
                 result = AbliterationTestResult(
                     prompt=prompt,
                     response="",
                     category_key=cat_key,
                     category_name=cat_name,
-                    refused=False,
+                    refused=True,  # Virhe käsitellään kuin kieltäytyminen testauksen kannalta
                     latency_ms=0,
                     error=str(e),
                 )
                 category_results[cat_key]["total"] += 1
+                category_results[cat_key]["refused"] += 1  # Lisää myös refused-laskuriin
 
             results.append(result)
 

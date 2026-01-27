@@ -3,13 +3,19 @@ AI TOOLBOX - CLI Application
 ============================
 
 Main CLI application entry point.
-Restructured menu: 16 options → 7 options for better usability.
+Beautiful TUI with orange branding and clean Finnish interface.
 """
 
 import questionary
-from questionary import Style
 
-from ..core.ui import console, print_toolbox_banner, print_error
+from ..core.ui import (
+    console,
+    print_toolbox_banner,
+    print_error,
+    MENU_STYLE,
+    format_menu_item,
+    print_branded_footer,
+)
 from ..models.library import ModelLibrary
 from ..models.downloader import ModelDownloader
 from ..conversion.converter import GGUFConverter
@@ -21,25 +27,13 @@ from ..inference.assistant import ai_assistant_menu
 from ..merging.merger import ModelMerger
 from ..abliteration.abliterator import Abliterator
 
-# New unified command modules
+# Unified command modules
 from .model_hub_cmd import ModelHubCommands
 from .gguf_tools_cmd import GGUFToolsCommands
 from .training_center_cmd import TrainingCenterCommands
 from .benchmark_cmd import BenchmarkCommands
 from .settings_cmd import SettingsCommands
 from .ollama_cmd import run_ollama_wizard
-
-# Questionary style used throughout the app
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
 
 
 class AIToolbox:
@@ -88,58 +82,59 @@ class AIToolbox:
             except Exception as e:
                 print_error(f"Error occurred: {e}")
 
-        console.print("\n[bold cyan]Thank you for using AI TOOLBOX![/bold cyan]\n")
+        print_branded_footer("Kiitos kun käytit AI Toolboxia!")
 
     def main_menu(self):
-        """Display and handle the main menu (7 options)."""
+        """Display and handle the main menu."""
+        # Build menu with consistent formatting
         choices = [
-            questionary.Separator("── Chat & Assistentit ──"),
+            questionary.Separator("--- Keskustelu ----------------------------------"),
             questionary.Choice(
-                title="  Tool Master           Chat with AI Master",
+                title=format_menu_item("Tool Master", "Keskustele AI Masterin kanssa"),
                 value="chat"
             ),
             questionary.Choice(
-                title="  Claude Assistant      Claude CLI for development",
+                title=format_menu_item("Claude Assistant", "Claude CLI kehitykseen"),
                 value="assistant"
             ),
-            questionary.Separator("── Mallien hallinta ──"),
+            questionary.Separator("--- Mallien hallinta -------------------------"),
             questionary.Choice(
-                title="  Model Hub             Download, browse & manage models",
+                title=format_menu_item("Model Hub", "Lataa, selaa ja hallitse malleja"),
                 value="model_hub"
             ),
             questionary.Choice(
-                title="  GGUF Tools            Convert, quantize & VRAM calc",
+                title=format_menu_item("GGUF Tools", "Muunna, kvantisoi ja laske VRAM"),
                 value="gguf_tools"
             ),
             questionary.Choice(
-                title="  Ollama Manager        Create and manage Ollama models",
+                title=format_menu_item("Ollama Manager", "Luo ja hallitse Ollama-malleja"),
                 value="ollama"
             ),
-            questionary.Separator("── Kehittyneet tyokalut ──"),
+            questionary.Separator("--- Kehittyneet työkalut ---------------------"),
             questionary.Choice(
-                title="  Training Center       LoRA, datasets, merging & abliteration",
+                title=format_menu_item("Training Center", "LoRA, datasetit, yhdistäminen"),
                 value="training_center"
             ),
             questionary.Choice(
-                title="  Benchmark Suite       Performance testing & comparison",
+                title=format_menu_item("Benchmark Suite", "Suorituskykytestaus"),
                 value="benchmark"
             ),
-            questionary.Separator(),
+            questionary.Separator("----------------------------------------------"),
             questionary.Choice(
-                title="  Asetukset             Configuration",
+                title=format_menu_item("Asetukset", "Polut ja konfiguraatio"),
                 value="settings"
             ),
             questionary.Choice(
-                title="  Poistu                Exit",
+                title=format_menu_item("<- Poistu", ""),
                 value="exit"
             ),
         ]
 
         choice = questionary.select(
-            "AI TOOLBOX:",
+            "Valitse toiminto:",
             choices=choices,
-            style=custom_style,
-            qmark=">>",
+            style=MENU_STYLE,
+            qmark="#",
             pointer=">"
         ).ask()
 
@@ -165,8 +160,8 @@ class AIToolbox:
     def _confirm_exit(self) -> bool:
         """Confirm exit from the application."""
         return questionary.confirm(
-            "Exit AI Toolbox?",
-            style=custom_style,
+            "Poistu AI Toolboxista?",
+            style=MENU_STYLE,
             default=True
         ).ask()
 

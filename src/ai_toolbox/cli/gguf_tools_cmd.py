@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Optional
 
 import questionary
-from questionary import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -23,31 +22,25 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
+    format_menu_item,
     create_model_preview_card,
     format_model_choice_title,
     build_model_choices,
     CATEGORY_CONFIG,
+    MENU_STYLE,
 )
 from ..core.paths import get_paths, get_gguf_dir
 from ..models.library import ModelLibrary
 from ..conversion.converter import GGUFConverter
 
-# Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+# Use unified menu style
+custom_style = MENU_STYLE
 
 
 class GGUFToolsCommands:
@@ -69,7 +62,7 @@ class GGUFToolsCommands:
     def gguf_tools_menu(self):
         """GGUF Tools main menu."""
         while True:
-            print_mini_banner("GGUF Tools")
+            print_branded_header("GGUF Tools", "Muunna, kvantisoi ja hallitse GGUF-malleja")
 
             # Show GGUF stats
             gguf_dir = get_gguf_dir()
@@ -78,49 +71,49 @@ class GGUFToolsCommands:
             console.print(f"[dim]GGUF-malleja: {len(gguf_files)} ({format_size(total_size)})[/dim]\n")
 
             choices = [
-                questionary.Separator("── Konvertointi ──"),
+                questionary.Separator("--- Konvertointi -----------------------------"),
                 questionary.Choice(
-                    title="HuggingFace -> GGUF      Lataa ja muunna",
+                    title=format_menu_item("HuggingFace -> GGUF", "Lataa ja muunna"),
                     value="hf"
                 ),
                 questionary.Choice(
-                    title="Paikallinen -> GGUF      Muunna paikallinen malli",
+                    title=format_menu_item("Paikallinen -> GGUF", "Muunna levyltä"),
                     value="local"
                 ),
                 questionary.Choice(
-                    title="Kirjastosta -> GGUF      Muunna kirjastosta",
+                    title=format_menu_item("Kirjastosta -> GGUF", "Muunna kirjastosta"),
                     value="library"
                 ),
-                questionary.Separator("── Kvantisointi ──"),
+                questionary.Separator("--- Kvantisointi -----------------------------"),
                 questionary.Choice(
-                    title="Kvantisoi GGUF           Pienenna GGUF-mallia",
+                    title=format_menu_item("Kvantisoi GGUF", "Pienennä GGUF-mallia"),
                     value="quantize"
                 ),
                 questionary.Choice(
-                    title="Konvertoi & Kvantisoi    Yhdistetysti",
+                    title=format_menu_item("Konvertoi & Kvantisoi", "Yhdistetty prosessi"),
                     value="convert_quantize"
                 ),
-                questionary.Separator("── Tyokalut ──"),
+                questionary.Separator("--- Työkalut ---------------------------------"),
                 questionary.Choice(
-                    title="VRAM-laskuri             Laske muistivaatimukset",
+                    title=format_menu_item("VRAM-laskuri", "Laske muistivaatimukset"),
                     value="vram"
                 ),
                 questionary.Choice(
-                    title="Kvantisointityypit       Nayta kvantisointityypit",
+                    title=format_menu_item("Kvantisointityypit", "Vertaile Q-tasoja"),
                     value="quants"
                 ),
-                questionary.Separator(),
+                questionary.Separator("----------------------------------------------"),
                 questionary.Choice(
-                    title="Palaa                    Back",
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]
 
             choice = questionary.select(
-                "GGUF Tools:",
+                "Valitse toiminto:",
                 choices=choices,
                 style=custom_style,
-                qmark=">>",
+                qmark="#",
                 pointer=">"
             ).ask()
 
@@ -207,7 +200,7 @@ class GGUFToolsCommands:
 
     def _convert_from_library(self):
         """Convert model from library to GGUF."""
-        print_mini_banner("Library → GGUF Konvertointi")
+        print_mini_banner("Library -> GGUF Konvertointi")
 
         # Get convertible models
         convertible = self.library.get_convertible_models()
@@ -490,7 +483,7 @@ class GGUFToolsCommands:
         # Add orphan files (not in library) with simple format
         if orphan_files:
             choices.append(questionary.Separator(
-                f"\n{'─' * 60}\n   📄 Ei kirjastossa ({len(orphan_files)})\n{'─' * 60}"
+                f"\n{'-' * 60}\n   📄 Ei kirjastossa ({len(orphan_files)})\n{'-' * 60}"
             ))
             for f in sorted(orphan_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
                 size = format_size(f.stat().st_size)
@@ -498,7 +491,7 @@ class GGUFToolsCommands:
                 title = f"📄 {f.stem}\n     GGUF  {size}"
                 choices.append(questionary.Choice(title=title, value=f))
 
-        choices.append(questionary.Separator("\n" + "─" * 60))
+        choices.append(questionary.Separator("\n" + "-" * 60))
         choices.append(questionary.Choice(title="⬅️  Palaa / Back", value=None))
 
         selected = questionary.select(
@@ -632,6 +625,7 @@ class GGUFToolsCommands:
                 text=True,
                 encoding='utf-8',
                 errors='replace',
+                timeout=7200,  # 2 tunnin timeout - suuret mallit voivat kestää kauan
             )
 
             if output_path.exists() and output_path.stat().st_size > 0:
