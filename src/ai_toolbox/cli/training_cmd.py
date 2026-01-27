@@ -20,12 +20,14 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
 )
+from .helpers import MENU_STYLE
 from ..core.paths import get_paths
 from ..training.lora import (
     LoRATrainer,
@@ -431,101 +433,133 @@ ennen isompaa ajoa.[/dim]
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _select_model_for_training(self) -> Optional[Path]:
-        """Select model for training."""
-        choices = []
+        """Select model for training using table."""
+        # Collect models from all sources
+        all_items = []
 
         # Library safetensors/pytorch models
         models = self.library.list_models(format_filter="safetensors")
         models.extend(self.library.list_models(format_filter="pytorch"))
-
-        if models:
-            choices.append(questionary.Separator("-- Kirjaston mallit --"))
-            for m in models[:15]:
-                size = format_size(m.size_bytes)
-                choices.append(questionary.Choice(
-                    title=f"[lib] {m.name[:30]:<30} {m.format.upper():<12} {size:>10}",
-                    value=("library", m.path)
-                ))
+        for m in models[:15]:
+            all_items.append(("library", m.name, m.format.upper(), m.size_bytes, m.path))
 
         # Downloaded HuggingFace models (downloads folder)
         downloaded = self.downloader.list_downloaded()
-        if downloaded:
-            choices.append(questionary.Separator("-- Ladatut HF-mallit --"))
-            for d in downloaded[:10]:
-                size = format_size(d['size'])
-                name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
-                choices.append(questionary.Choice(
-                    title=f"[hf]  {name[:30]:<30} {'HF':<12} {size:>10}",
-                    value=("download", d['path'])
-                ))
+        for d in downloaded[:10]:
+            name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
+            all_items.append(("hf", name, "HF", d['size'], d['path']))
 
-        if not models and not downloaded:
+        if not all_items:
             console.print("[yellow]Ei malleja kirjastossa tai ladattuna.[/yellow]")
             console.print(f"[dim]Lataa malli ensin: Model Download -> Search/Download[/dim]\n")
-
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Peruuta", value=("cancel", None)))
-
-        result = questionary.select(
-            "Valitse base-malli:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
-        ).ask()
-
-        if result is None or result[0] == "cancel":
+            questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        return Path(result[1])
+        # Create table
+        print_branded_header("Valitse base-malli")
+        table = Table(
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            border_style="orange3",
+        )
+        table.add_column("#", style="bold yellow", width=4)
+        table.add_column("Lahde", style="dim", width=8)
+        table.add_column("Nimi", style="cyan")
+        table.add_column("Tyyppi", style="yellow", width=12)
+        table.add_column("Koko", justify="right", width=10)
+
+        for i, (source, name, fmt, size_bytes, _) in enumerate(all_items, 1):
+            size = format_size(size_bytes)
+            src_tag = "[lib]" if source == "library" else "[hf]"
+            table.add_row(str(i), src_tag, name[:40], fmt, size)
+
+        console.print(table)
+        console.print()
+
+        # Get selection
+        answer = questionary.text(
+            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):",
+            style=MENU_STYLE
+        ).ask()
+
+        if answer is None or answer.strip() == "" or answer.strip() == "0":
+            return None
+
+        try:
+            idx = int(answer.strip()) - 1
+            if 0 <= idx < len(all_items):
+                return Path(all_items[idx][4])
+            else:
+                print_warning("Virheellinen valinta")
+                return None
+        except ValueError:
+            print_warning("Syota numero")
+            return None
 
     def _select_dataset_for_training(self) -> Optional[Path]:
-        """Select dataset for training."""
-        choices = []
+        """Select dataset for training using table."""
+        # Collect datasets from all sources
+        all_items = []
 
         # Trainer datasets (datasets/ folder)
         datasets = self.trainer.list_datasets()
-        if datasets:
-            choices.append(questionary.Separator("-- Training Datasets --"))
-            for ds in datasets:
-                size = format_size(ds["size_bytes"])
-                choices.append(questionary.Choice(
-                    title=f"[ds]  {ds['name'][:30]:<30} {ds['format'] or '?':<10} {size:>10}",
-                    value=ds["path"]
-                ))
+        for ds in datasets:
+            all_items.append(("dataset", ds['name'], ds['format'] or '?', ds['size_bytes'], ds['path']))
 
         # Processed datasets (datasets/processed/ folder)
         processed_dir = get_paths().processed_dir
         if processed_dir.exists():
             processed = list(processed_dir.glob("*.jsonl")) + list(processed_dir.glob("*.json"))
-            if processed:
-                choices.append(questionary.Separator("-- Processed Datasets --"))
-                for p in processed[:10]:
-                    size = format_size(p.stat().st_size)
-                    choices.append(questionary.Choice(
-                        title=f"[pr]  {p.name[:30]:<30} {'JSONL':<10} {size:>10}",
-                        value=p
-                    ))
+            for p in processed[:10]:
+                all_items.append(("processed", p.name, "JSONL", p.stat().st_size, p))
 
-        if not datasets and not (processed_dir.exists() and any(processed_dir.iterdir())):
+        if not all_items:
             console.print("[yellow]Ei datasetteja.[/yellow]")
             console.print(f"[dim]Luo tai kasittele datasetteja: Dataset Prep[/dim]\n")
-
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Peruuta", value="cancel"))
-
-        result = questionary.select(
-            "Valitse dataset:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
-        ).ask()
-
-        if result is None or result == "cancel":
+            questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        return Path(result) if isinstance(result, str) else result
+        # Create table
+        print_branded_header("Valitse dataset")
+        table = Table(
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            border_style="orange3",
+        )
+        table.add_column("#", style="bold yellow", width=4)
+        table.add_column("Tyyppi", style="dim", width=10)
+        table.add_column("Nimi", style="cyan")
+        table.add_column("Formaatti", style="yellow", width=10)
+        table.add_column("Koko", justify="right", width=10)
+
+        for i, (source, name, fmt, size_bytes, _) in enumerate(all_items, 1):
+            size = format_size(size_bytes)
+            src_tag = "[ds]" if source == "dataset" else "[pr]"
+            table.add_row(str(i), src_tag, name[:40], fmt, size)
+
+        console.print(table)
+        console.print()
+
+        # Get selection
+        answer = questionary.text(
+            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):",
+            style=MENU_STYLE
+        ).ask()
+
+        if answer is None or answer.strip() == "" or answer.strip() == "0":
+            return None
+
+        try:
+            idx = int(answer.strip()) - 1
+            if 0 <= idx < len(all_items):
+                path = all_items[idx][4]
+                return Path(path) if isinstance(path, str) else path
+            else:
+                print_warning("Virheellinen valinta")
+                return None
+        except ValueError:
+            print_warning("Syota numero")
+            return None
 
     def _quick_train_wizard(self):
         """Quick training wizard."""

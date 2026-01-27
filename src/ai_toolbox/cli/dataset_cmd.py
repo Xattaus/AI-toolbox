@@ -18,12 +18,14 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
 )
+from .helpers import MENU_STYLE
 from ..core.paths import get_paths
 from ..training.dataset import (
     DatasetPrep,
@@ -141,7 +143,7 @@ class DatasetCommands:
                 self._browse_datasets()
 
     def _select_dataset(self, prompt: str = "Valitse dataset:") -> Optional[Path]:
-        """Helper: Select dataset from file list."""
+        """Helper: Select dataset from file list using table."""
         datasets = self.dataset_prep.list_datasets(include_processed=True)
 
         if not datasets:
@@ -150,28 +152,46 @@ class DatasetCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        choices = []
-        for ds in datasets:
+        # Create table
+        print_branded_header(prompt)
+        table = Table(
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            border_style="orange3",
+        )
+        table.add_column("#", style="bold yellow", width=4)
+        table.add_column("Nimi", style="cyan")
+        table.add_column("Formaatti", style="yellow", width=10)
+        table.add_column("Koko", justify="right", width=10)
+        table.add_column("Tyyppi", style="dim", width=12)
+
+        for i, ds in enumerate(datasets, 1):
             size = format_size(ds["size_bytes"])
-            processed_tag = " [processed]" if ds.get("is_processed") else ""
-            title = f"{ds['name']:<35} {ds['format']:<10} {size:>10}{processed_tag}"
-            choices.append(questionary.Choice(title=title, value=ds["path"]))
+            dtype = "processed" if ds.get("is_processed") else "original"
+            table.add_row(str(i), ds['name'][:40], ds['format'], size, dtype)
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Back", value="back"))
+        console.print(table)
+        console.print()
 
-        result = questionary.select(
-            prompt,
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+        # Get selection
+        answer = questionary.text(
+            f"Valitse numero [1-{len(datasets)}] (0 = peruuta):",
+            style=MENU_STYLE
         ).ask()
 
-        if result is None or result == "back":
+        if answer is None or answer.strip() == "" or answer.strip() == "0":
             return None
 
-        return result
+        try:
+            idx = int(answer.strip()) - 1
+            if 0 <= idx < len(datasets):
+                return datasets[idx]["path"]
+            else:
+                print_warning("Virheellinen valinta")
+                return None
+        except ValueError:
+            print_warning("Syota numero")
+            return None
 
     def _browse_datasets(self):
         """Browse datasets."""
