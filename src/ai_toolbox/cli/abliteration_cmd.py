@@ -873,23 +873,40 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             return
 
         # Step 1: Model selection
-        console.print("\n[bold]Vaihe 1: Valitse testattava Ollama-malli[/bold]\n")
-        choices = [
-            questionary.Choice(f"{m.name} ({m.size})", value=m.name)
-            for m in models
-        ]
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice("<-  Peruuta", value=None))
+        print_branded_header("Valitse testattava Ollama-malli")
 
-        selected = questionary.select(
-            "Valitse malli:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+        table = Table(
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            border_style="orange3",
+        )
+        table.add_column("#", style="bold yellow", width=4)
+        table.add_column("Nimi", style="cyan")
+        table.add_column("Koko", justify="right", width=12)
+
+        for i, m in enumerate(models, 1):
+            table.add_row(str(i), m.name, m.size)
+
+        console.print(table)
+        console.print()
+
+        answer = questionary.text(
+            f"Valitse numero [1-{len(models)}] (0 = peruuta):",
+            style=MENU_STYLE
         ).ask()
 
-        if selected is None:
+        if answer is None or answer.strip() == "" or answer.strip() == "0":
+            return
+
+        try:
+            idx = int(answer.strip()) - 1
+            if 0 <= idx < len(models):
+                selected = models[idx].name
+            else:
+                print_warning("Virheellinen valinta")
+                return
+        except ValueError:
+            print_warning("Syota numero")
             return
 
         # Step 2: Language selection
