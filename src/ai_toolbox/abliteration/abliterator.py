@@ -48,6 +48,13 @@ class AbliterationConfig:
     # Performance options
     batch_size: int = 8                          # Prompt batch size (lower = less VRAM)
 
+    # GPU/Memory offload mode - controls how model is loaded when VRAM is limited
+    # "auto"           - Let transformers decide (may compute on CPU if offloaded there)
+    # "sequential_cpu" - Keep layers on CPU, move to GPU one-by-one for computation (all compute on GPU)
+    # "sequential_disk"- Keep layers on disk, move to GPU one-by-one (for very large models)
+    # "gpu_only"       - Force all on GPU (fails if doesn't fit)
+    offload_mode: str = "auto"
+
     # Refusal priming (recommended for stronger signal)
     # Adds response prefix to prime the model into refusal/helpful mode
     use_refusal_priming: bool = True             # Enable refusal priming
@@ -316,13 +323,73 @@ class Abliterator:
             dtype = getattr(torch, config.dtype, torch.float16)
             use_cuda = torch.cuda.is_available()
 
-            # Load model
-            model = AutoModelForCausalLM.from_pretrained(
-                str(model_path),
-                torch_dtype=dtype,
-                device_map="auto" if use_cuda else None,
-                trust_remote_code=True,
-            )
+            # Offload hook (for sequential modes)
+            offload_hook = None
+
+            # Load model based on offload_mode
+            if config.offload_mode == "gpu_only":
+                # Force everything on GPU - fails if doesn't fit
+                if not use_cuda:
+                    return {"success": False, "error": "gpu_only mode requires CUDA"}
+                model = AutoModelForCausalLM.from_pretrained(
+                    str(model_path),
+                    torch_dtype=dtype,
+                    device_map=None,
+                    trust_remote_code=True,
+                ).cuda()
+                device = torch.device("cuda")
+
+            elif config.offload_mode == "sequential_cpu" and use_cuda:
+                # Load to CPU, then use accelerate hook to move layers to GPU one-by-one
+                # ALL computation happens on GPU, but only one layer at a time
+                if progress_callback:
+                    progress_callback("Loading model (sequential CPU offload)...", 0.0)
+                try:
+                    from accelerate import cpu_offload_with_hook
+                except ImportError:
+                    return {"success": False, "error": "sequential_cpu requires accelerate: pip install accelerate"}
+
+                model = AutoModelForCausalLM.from_pretrained(
+                    str(model_path),
+                    torch_dtype=dtype,
+                    device_map=None,  # Load to CPU first
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                )
+                # Wrap with offload hook - moves layers to GPU only during forward pass
+                model, offload_hook = cpu_offload_with_hook(model, device=torch.device("cuda"))
+                device = torch.device("cuda")
+
+            elif config.offload_mode == "sequential_disk" and use_cuda:
+                # Load with disk offloading for very large models
+                # Layers are loaded from disk to GPU one-by-one
+                if progress_callback:
+                    progress_callback("Loading model (sequential disk offload)...", 0.0)
+
+                offload_folder = self.paths.root / "cache" / "offload"
+                offload_folder.mkdir(parents=True, exist_ok=True)
+
+                model = AutoModelForCausalLM.from_pretrained(
+                    str(model_path),
+                    torch_dtype=dtype,
+                    device_map="auto",
+                    offload_folder=str(offload_folder),
+                    offload_state_dict=True,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                )
+                device = torch.device("cuda")
+
+            else:
+                # "auto" mode - let transformers/accelerate decide
+                model = AutoModelForCausalLM.from_pretrained(
+                    str(model_path),
+                    torch_dtype=dtype,
+                    device_map="auto" if use_cuda else None,
+                    trust_remote_code=True,
+                )
+                # Get actual device from model (may be mixed for large models)
+                device = next(model.parameters()).device
 
             tokenizer = AutoTokenizer.from_pretrained(
                 str(model_path),
@@ -333,11 +400,6 @@ class Abliterator:
                 tokenizer.pad_token = tokenizer.eos_token
 
             model.eval()
-
-            # CRITICAL: Get actual device from model (handles multi-GPU and CPU offload)
-            # device_map="auto" may spread model across devices, so we get the device
-            # of the first parameter which is where inputs should be sent
-            device = next(model.parameters()).device
 
             if progress_callback:
                 progress_callback("Detecting layers...", 0.1)
