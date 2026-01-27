@@ -13,14 +13,19 @@ from questionary import Style
 from rich.console import Console
 from rich.panel import Panel
 
+from rich.table import Table
+from rich import box
+
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
     print_info,
     format_size,
+    MENU_STYLE,
 )
 from ..core.paths import get_paths
 from ..abliteration.abliterator import Abliterator, AbliterationConfig
@@ -218,65 +223,10 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _select_model(self, prompt: str = "Valitse malli:") -> Optional[Path]:
-        """Select model from library for abliteration."""
-        choices = []
-
-        def format_date(date_str: str) -> str:
-            """Format ISO date to readable format."""
-            if not date_str:
-                return "?"
-            try:
-                from datetime import datetime
-                dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                return dt.strftime("%d.%m.%Y")
-            except:
-                return date_str[:10] if len(date_str) >= 10 else date_str
-
-        def format_source(source: str) -> str:
-            """Format source for display."""
-            source_map = {
-                "huggingface": "HF",
-                "local": "Local",
-                "merged": "Merged",
-                "abliterated": "Ablit",
-            }
-            return source_map.get(source, source[:6])
-
+        """Select model from library for abliteration using table."""
         # Library safetensors models only (needed for abliteration)
         models = self.library.list_models(format_filter="safetensors")
-
-        if models:
-            choices.append(questionary.Separator("-- Kirjaston SafeTensors-mallit --"))
-            for m in models[:15]:
-                size = format_size(m.size_bytes)
-                date = format_date(m.added_date)
-                src = format_source(m.source)
-                # Rivi 1: Nimi ja koko
-                # Rivi 2: Lisatiedot
-                title = (
-                    f"{m.name[:42]:<42} {size:>10}\n"
-                    f"      {src:<8} | Lisatty: {date}"
-                )
-                choices.append(questionary.Choice(
-                    title=title,
-                    value=("library", m.path)
-                ))
-
-        # Downloaded HuggingFace models
         downloaded = self.downloader.list_downloaded()
-        if downloaded:
-            choices.append(questionary.Separator("-- Ladatut HF-mallit --"))
-            for d in downloaded[:10]:
-                size = format_size(d['size'])
-                name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
-                title = (
-                    f"{name[:42]:<42} {size:>10}\n"
-                    f"      HF       | HuggingFace"
-                )
-                choices.append(questionary.Choice(
-                    title=title,
-                    value=("download", d['path'])
-                ))
 
         if not models and not downloaded:
             print_warning("Ei SafeTensors-malleja kirjastossa tai ladattuna.")
@@ -285,21 +235,70 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Peruuta", value=("cancel", None)))
+        print_branded_header("Abliteration", prompt)
 
-        result = questionary.select(
-            prompt,
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
-        ).ask()
+        # Build unified list for selection
+        all_items = []  # List of (path, source_type)
+        idx = 1
 
-        if result is None or result[0] == "cancel":
-            return None
+        # Create table
+        table = Table(
+            title=f"[bold orange1]SafeTensors-mallit[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("Malli", style="white", min_width=35)
+        table.add_column("Koko", style="cyan", width=10, justify="right")
+        table.add_column("Lahde", style="dim", width=10)
 
-        return Path(result[1])
+        # Add library models
+        if models:
+            table.add_row("", "[bold green]--- Kirjasto ---[/bold green]", "", "")
+            for m in models[:12]:
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                name = m.name[:35] if len(m.name) <= 35 else m.name[:32] + "..."
+                source = m.source[:8] if m.source else "Local"
+                table.add_row(str(idx), f"🏠 {name}", size, source)
+                all_items.append((m.path, "library"))
+                idx += 1
+
+        # Add downloaded models
+        if downloaded:
+            table.add_row("", "[bold cyan]--- HuggingFace ---[/bold cyan]", "", "")
+            for d in downloaded[:8]:
+                size = format_size(d['size'])
+                name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
+                name = name[:35] if len(name) <= 35 else name[:32] + "..."
+                table.add_row(str(idx), f"🤗 {name}", size, "HF")
+                all_items.append((d['path'], "download"))
+                idx += 1
+
+        console.print(table)
+        console.print()
+
+        # Get selection by number
+        while True:
+            answer = questionary.text(
+                f"Valitse numero [1-{len(all_items)}] (0 = peruuta)",
+                style=MENU_STYLE,
+            ).ask()
+
+            if answer is None or answer.strip() in ("", "0", "q"):
+                return None
+
+            try:
+                sel_idx = int(answer.strip())
+                if 1 <= sel_idx <= len(all_items):
+                    path, _ = all_items[sel_idx - 1]
+                    return Path(path)
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(all_items)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
     def _full_abliteration_wizard(self):
         """Full abliteration wizard."""

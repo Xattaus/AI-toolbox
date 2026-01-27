@@ -238,9 +238,7 @@ class ModelHubCommands:
                 self._cleanup_library()
 
     def _browse_models_categorized(self):
-        """Browse models in categorized view - clean two-line format."""
-        print_mini_banner("Kirjasto")
-
+        """Browse models in categorized view using table."""
         # Get grouped models
         grouped = self.library.get_models_grouped_by_format()
 
@@ -248,44 +246,92 @@ class ModelHubCommands:
         total = sum(len(models) for models in grouped.values())
 
         if total == 0:
+            print_branded_header("Kirjasto", "Tyhjä")
             print_warning("Kirjasto on tyhjä.")
             console.print("[dim]Lataa malleja Model Hub -> Hae HuggingFacesta[/dim]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        console.print(f"\n[bold cyan]Mallikirjasto[/bold cyan]")
-        console.print(f"[dim]Yhteensä {total} mallia[/dim]\n")
+        print_branded_header("Kirjasto", f"{total} mallia")
+
+        # Category config
+        category_icons = {
+            'safetensors': ('🏠', 'SafeTensors', 'green'),
+            'gguf_f16': ('📦', 'GGUF F16/F32', 'yellow'),
+            'gguf_quantized': ('⚡', 'GGUF Quantized', 'cyan'),
+            'merged': ('🔀', 'Merged', 'magenta'),
+            'ollama': ('🤖', 'Ollama', 'blue'),
+            'adapter': ('🔧', 'Adapters', 'white'),
+            'other': ('📄', 'Other', 'dim'),
+        }
+
+        # Build unified list for selection
+        all_models = []
+        idx = 1
+
+        # Create table
+        table = Table(
+            title=f"[bold orange1]Mallikirjasto ({total})[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("Malli", style="white", min_width=30)
+        table.add_column("Tyyppi", style="green", width=8, justify="center")
+        table.add_column("Quant", style="yellow", width=8, justify="center")
+        table.add_column("Koko", style="cyan", width=10, justify="right")
 
         # Order categories logically
         category_order = ['safetensors', 'gguf_f16', 'gguf_quantized', 'merged', 'ollama', 'adapter', 'other']
-        ordered_grouped = {k: grouped.get(k, []) for k in category_order if grouped.get(k)}
 
-        # Build choices with two-line format - NO duplicate panel!
-        choices = build_model_choices(ordered_grouped)
+        for cat_key in category_order:
+            models = grouped.get(cat_key, [])
+            if not models:
+                continue
 
-        if not choices:
-            print_warning("Ei malleja")
-            return
+            icon, cat_name, color = category_icons.get(cat_key, ('📄', cat_key, 'dim'))
+            table.add_row("", f"[bold {color}]--- {icon} {cat_name} ({len(models)}) ---[/bold {color}]", "", "", "")
 
-        selected = questionary.select(
-            "Valitse malli:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">",
-            use_indicator=True,
-        ).ask()
+            for m in models[:8]:  # Max 8 per category
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                quant = m.quantization if m.quantization else "-"
+                name = m.name[:30] if len(m.name) <= 30 else m.name[:27] + "..."
+                fmt = m.format.upper() if m.format else "?"
+                table.add_row(str(idx), f"{icon} {name}", fmt, quant, size)
+                all_models.append(m)
+                idx += 1
 
-        if not selected:
-            return
-
-        # Show detailed preview card
-        console.print()
-        console.print(create_model_preview_card(selected, show_path=True))
+        console.print(table)
         console.print()
 
-        # Model actions
-        self._model_actions_menu(selected)
+        # Get selection by number
+        while True:
+            answer = questionary.text(
+                f"Valitse numero [1-{len(all_models)}] (0 = palaa)",
+                style=custom_style,
+            ).ask()
+
+            if answer is None or answer.strip() in ("", "0", "q"):
+                return
+
+            try:
+                sel_idx = int(answer.strip())
+                if 1 <= sel_idx <= len(all_models):
+                    selected = all_models[sel_idx - 1]
+                    # Show detailed preview card
+                    console.print()
+                    console.print(create_model_preview_card(selected, show_path=True))
+                    console.print()
+                    # Model actions
+                    self._model_actions_menu(selected)
+                    return
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(all_models)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
     def _model_actions_menu(self, model):
         """Show actions menu for a selected model."""
