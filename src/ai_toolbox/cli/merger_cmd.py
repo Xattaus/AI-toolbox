@@ -17,6 +17,7 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
@@ -28,6 +29,7 @@ from ..core.ui import (
     print_divider,
     create_summary_panel,
     create_result_panel,
+    select_model_from_table,
     MENU_STYLE,
 )
 from ..core.paths import get_paths
@@ -142,92 +144,31 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _select_model_for_merge(self, prompt: str = "Valitse malli:") -> Optional[Path]:
-        """Select model from library for merging."""
-        choices = []
-
-        def format_date(date_str: str) -> str:
-            """Format ISO date to readable format."""
-            if not date_str:
-                return "?"
-            try:
-                from datetime import datetime
-                dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                return dt.strftime("%d.%m.%Y")
-            except:
-                return date_str[:10] if len(date_str) >= 10 else date_str
-
-        def format_source(source: str) -> str:
-            """Format source for display."""
-            source_map = {
-                "huggingface": "HF",
-                "local": "Local",
-                "converted": "GGUF",
-                "merged": "Merged",
-                "trained": "LoRA",
-                "abliterated": "Ablit",
-            }
-            return source_map.get(source, source[:6])
-
-        # Library safetensors/pytorch models
+        """Select model from library for merging using table-based selection."""
+        # Get safetensors and pytorch models (mergeable formats)
         models = self.library.list_models(format_filter="safetensors")
         models.extend(self.library.list_models(format_filter="pytorch"))
 
-        if models:
-            choices.append(questionary.Separator("-- Kirjaston mallit --"))
-            for m in models[:15]:
-                size = format_size(m.size_bytes)
-                date = format_date(m.added_date)
-                src = format_source(m.source)
-                quant = f" ({m.quantization})" if m.quantization else ""
-                # Rivi 1: Nimi ja koko
-                # Rivi 2: Lisatiedot
-                title = (
-                    f"{m.name[:42]:<42} {size:>10}\n"
-                    f"      {m.format.upper():<10} | {src:<6} | {date}"
-                    f"{quant}"
-                )
-                choices.append(questionary.Choice(
-                    title=title,
-                    value=("library", m.path)
-                ))
-
-        # Downloaded HuggingFace models
-        downloaded = self.downloader.list_downloaded()
-        if downloaded:
-            choices.append(questionary.Separator("-- Ladatut HF-mallit --"))
-            for d in downloaded[:10]:
-                size = format_size(d['size'])
-                name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
-                title = (
-                    f"{name[:42]:<42} {size:>10}\n"
-                    f"      SAFETENSORS  | HF     | Ladattu"
-                )
-                choices.append(questionary.Choice(
-                    title=title,
-                    value=("download", d['path'])
-                ))
-
-        if not models and not downloaded:
-            print_warning("Ei malleja kirjastossa tai ladattuna.")
+        if not models:
+            print_warning("Ei malleja kirjastossa.")
             console.print("[dim]Lataa malli ensin: Model Download[/dim]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Peruuta", value=("cancel", None)))
+        # Use table-based selection
+        selected = select_model_from_table(
+            models=models[:20],  # Max 20
+            title="Model Merger",
+            subtitle=prompt,
+            show_size=True,
+            show_quant=False,  # Not relevant for merge
+            show_format=True,
+        )
 
-        result = questionary.select(
-            prompt,
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
-        ).ask()
-
-        if result is None or result[0] == "cancel":
+        if selected is None:
             return None
 
-        return Path(result[1])
+        return Path(selected.path)
 
     def _slerp_merge_wizard(self):
         """SLERP merge wizard."""

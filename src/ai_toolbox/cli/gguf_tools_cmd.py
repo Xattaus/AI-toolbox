@@ -32,6 +32,8 @@ from ..core.ui import (
     create_model_preview_card,
     format_model_choice_title,
     build_model_choices,
+    select_model_from_table,
+    create_model_table,
     CATEGORY_CONFIG,
     MENU_STYLE,
 )
@@ -441,8 +443,8 @@ class GGUFToolsCommands:
     # ==================== QUANTIZATION ====================
 
     def _quantize_tool(self):
-        """Quantize GGUF models."""
-        print_mini_banner("Quantize Tool")
+        """Quantize GGUF models using table-based selection."""
+        print_branded_header("Quantize Tool", "Kvantisoi GGUF-malleja")
 
         # Get GGUF models from library using new methods
         quantizable = self.library.get_quantizable_models()  # F16/F32 - recommended
@@ -465,55 +467,91 @@ class GGUFToolsCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        # Count total
-        total = len(quantizable) + len(already_quantized) + len(orphan_files)
-        console.print(f"\n[bold cyan]Valitse GGUF-malli kvantisoitavaksi[/bold cyan]")
-        console.print(f"[dim]Yhteensä {total} GGUF-mallia[/dim]\n")
+        # Build unified list with index for table selection
+        all_models = []  # List of (model_or_path, category, index)
+        idx = 1
 
-        # Build categorized models dict for library models
-        models_by_category = {}
+        # Create table
+        table = Table(
+            title=f"[bold orange1]GGUF-mallit kvantisoitavaksi[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("Malli", style="white", min_width=30)
+        table.add_column("Quant", style="yellow", width=8, justify="center")
+        table.add_column("Koko", style="cyan", width=10, justify="right")
+        table.add_column("Tyyppi", style="dim", width=12)
+
+        # Add F16/F32 models (recommended for quantization)
         if quantizable:
-            models_by_category['gguf_f16'] = quantizable
+            table.add_row("", "[bold green]--- Suositeltu (F16/F32) ---[/bold green]", "", "", "")
+            for m in quantizable[:10]:
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                quant = m.quantization or "F16"
+                name = m.name[:35] if len(m.name) <= 35 else m.name[:32] + "..."
+                table.add_row(str(idx), f"📦 {name}", quant, size, "Kirjasto")
+                all_models.append((m, "quantizable"))
+                idx += 1
+
+        # Add already quantized models
         if already_quantized:
-            models_by_category['gguf_quantized'] = already_quantized
+            table.add_row("", "[bold yellow]--- Jo kvantisoidut ---[/bold yellow]", "", "", "")
+            for m in already_quantized[:10]:
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                quant = m.quantization or "-"
+                name = m.name[:35] if len(m.name) <= 35 else m.name[:32] + "..."
+                table.add_row(str(idx), f"⚡ {name}", quant, size, "Kirjasto")
+                all_models.append((m, "quantized"))
+                idx += 1
 
-        # Build choices with two-line format
-        choices = build_model_choices(models_by_category, include_back=False)
-
-        # Add orphan files (not in library) with simple format
+        # Add orphan files
         if orphan_files:
-            choices.append(questionary.Separator(
-                f"\n{'-' * 60}\n   📄 Ei kirjastossa ({len(orphan_files)})\n{'-' * 60}"
-            ))
-            for f in sorted(orphan_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
+            table.add_row("", "[bold dim]--- Ei kirjastossa ---[/bold dim]", "", "", "")
+            for f in sorted(orphan_files, key=lambda x: x.stat().st_mtime, reverse=True)[:5]:
                 size = format_size(f.stat().st_size)
-                # Full filename, two lines
-                title = f"📄 {f.stem}\n     GGUF  {size}"
-                choices.append(questionary.Choice(title=title, value=f))
+                name = f.stem[:35] if len(f.stem) <= 35 else f.stem[:32] + "..."
+                table.add_row(str(idx), f"📄 {name}", "-", size, "Tiedosto")
+                all_models.append((f, "orphan"))
+                idx += 1
 
-        choices.append(questionary.Separator("\n" + "-" * 60))
-        choices.append(questionary.Choice(title="⬅️  Palaa / Back", value=None))
+        console.print(table)
+        console.print()
 
-        selected = questionary.select(
-            "Malli:",
-            choices=choices,
-            style=custom_style,
-            use_indicator=True,
-        ).ask()
+        # Get selection by number
+        while True:
+            answer = questionary.text(
+                f"Valitse numero [1-{len(all_models)}] (0 = peruuta)",
+                style=custom_style,
+            ).ask()
 
-        if not selected:
-            return
+            if answer is None or answer.strip() in ("", "0", "q"):
+                return
 
-        # Convert ModelEntry to Path if needed, or show preview for library models
-        if hasattr(selected, 'path'):
+            try:
+                sel_idx = int(answer.strip())
+                if 1 <= sel_idx <= len(all_models):
+                    selected_item, category = all_models[sel_idx - 1]
+                    break
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(all_models)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
+
+        # Convert to Path
+        if hasattr(selected_item, 'path'):
             # It's a ModelEntry - show preview
             console.print()
-            console.print(create_model_preview_card(selected, show_path=True))
+            console.print(create_model_preview_card(selected_item, show_path=True))
             console.print()
-            selected = Path(selected.path)
+            selected = Path(selected_item.path)
         else:
             # It's already a Path (orphan file)
-            console.print(f"\n[dim]Tiedosto: {selected}[/dim]\n")
+            console.print(f"\n[dim]Tiedosto: {selected_item}[/dim]\n")
+            selected = selected_item
 
         # Select target quantization
         quant_choices = [

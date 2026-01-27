@@ -25,6 +25,7 @@ from ..core.ui import (
     print_info,
     format_size,
     format_menu_item,
+    select_model_from_table,
     MENU_STYLE,
 )
 from ..core.paths import get_paths
@@ -139,7 +140,7 @@ class BenchmarkCommands:
                 self._show_system_info()
 
     def _select_gguf_model(self, prompt: str = "Valitse GGUF-malli:") -> Optional[Path]:
-        """Helper: Select GGUF model from library."""
+        """Helper: Select GGUF model from library using table-based selection."""
         gguf_models = self.library.list_models(format_filter="gguf")
 
         if not gguf_models:
@@ -149,28 +150,20 @@ class BenchmarkCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        choices = []
-        for model in gguf_models[:20]:  # Max 20
-            size = format_size(model.size_bytes)
-            quant = model.quantization or "-"
-            title = f"{model.name[:35]:<35} {quant:<8} {size:>10}"
-            choices.append(questionary.Choice(title=title, value=model.path))
+        # Use table-based selection
+        selected = select_model_from_table(
+            models=gguf_models[:20],  # Max 20
+            title="Benchmark",
+            subtitle=prompt,
+            show_size=True,
+            show_quant=True,
+            show_format=False,  # All are GGUF
+        )
 
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Back", value="back"))
-
-        result = questionary.select(
-            prompt,
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
-        ).ask()
-
-        if result is None or result == "back":
+        if selected is None:
             return None
 
-        return Path(result)
+        return Path(selected.path)
 
     def _quick_benchmark_wizard(self):
         """Quick benchmark for a single model."""
