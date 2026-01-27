@@ -18,6 +18,7 @@ from rich import box
 from ..core.ui import (
     console,
     print_mini_banner,
+    print_branded_header,
     print_success,
     print_error,
     print_warning,
@@ -25,6 +26,8 @@ from ..core.ui import (
     format_size,
     format_menu_item,
     create_model_preview_card,
+    create_model_table,
+    select_model_from_table,
     build_model_choices,
     CATEGORY_CONFIG,
     MENU_STYLE,
@@ -376,31 +379,52 @@ class ModelHubCommands:
         category_icons = {"base": "🏠", "adapter": "🔧", "merged": "🔀", "ollama": "🤖"}
 
         while True:
-            choices = []
-            for model in models[:20]:
-                size_str = format_size(model.size_bytes)
-                quant = f"[{model.quantization}]" if model.quantization else ""
+            print_branded_header("Kirjasto", f"{len(models)} mallia")
+
+            # Create table for models
+            table = Table(
+                title=f"[bold orange1]Mallit[/bold orange1]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                border_style="orange3",
+                padding=(0, 1),
+            )
+            table.add_column("#", style="bold yellow", width=4, justify="right")
+            table.add_column("Malli", style="white", min_width=30)
+            table.add_column("Tyyppi", style="green", width=8, justify="center")
+            table.add_column("Quant", style="yellow", width=8, justify="center")
+            table.add_column("Koko", style="cyan", width=10, justify="right")
+
+            display_models = models[:20]
+            for i, model in enumerate(display_models, 1):
+                size_str = format_size(model.size_bytes) if model.size_bytes else "-"
+                quant = model.quantization if model.quantization else "-"
                 icon = category_icons.get(model.category, "📄")
-                date_str = model.added_date[:16].replace("T", " ") if model.added_date else ""
-                title = f"{icon} {model.name}\n   {model.format.upper()} {quant} | {size_str} | {date_str}"
-                choices.append(questionary.Choice(title=title, value=model.id))
+                name = model.name[:35] if len(model.name) <= 35 else model.name[:32] + "..."
+                fmt = model.format.upper() if model.format else "?"
+                table.add_row(str(i), f"{icon} {name}", fmt, quant, size_str)
 
-            choices.append(questionary.Separator())
-            choices.append(questionary.Choice(title="Back", value="back"))
+            console.print(table)
+            console.print()
 
-            choice = questionary.select(
-                f"Valitse malli ({len(models)} yhteensa):",
-                choices=choices,
+            # Get selection by number
+            answer = questionary.text(
+                f"Valitse numero [1-{len(display_models)}] (0 = palaa)",
                 style=custom_style,
-                qmark=">>",
-                pointer=">",
-                use_indicator=True,
             ).ask()
 
-            if choice is None or choice == "back":
+            if answer is None or answer.strip() in ("", "0", "q"):
                 break
 
-            self._show_model_details(choice)
+            try:
+                idx = int(answer.strip())
+                if 1 <= idx <= len(display_models):
+                    self._show_model_details(display_models[idx - 1].id)
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(display_models)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
     def _show_model_details(self, model_id: str):
         """Show detailed model information."""
@@ -575,29 +599,48 @@ class ModelHubCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _select_from_search_results(self, results):
-        """Allow user to select from search results."""
+        """Allow user to select from search results using table."""
         while True:
-            choices = []
+            print_branded_header("Hakutulokset", f"{len(results)} mallia")
+
+            # Create table for search results
+            table = Table(
+                title=f"[bold orange1]HuggingFace-mallit[/bold orange1]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                border_style="orange3",
+                padding=(0, 1),
+            )
+            table.add_column("#", style="bold yellow", width=4, justify="right")
+            table.add_column("Malli", style="white", min_width=40)
+            table.add_column("Latauksia", style="cyan", width=12, justify="right")
+
             for i, result in enumerate(results, 1):
                 downloads = f"{result.downloads:,}" if result.downloads else "0"
-                title = f"{result.model_id[:40]:<40} Latauksia:{downloads:>12}"
-                choices.append(questionary.Choice(title=title, value=result.model_id))
+                model_name = result.model_id[:45] if len(result.model_id) <= 45 else result.model_id[:42] + "..."
+                table.add_row(str(i), f"🤗 {model_name}", downloads)
 
-            choices.append(questionary.Separator())
-            choices.append(questionary.Choice(title="Back", value="back"))
+            console.print(table)
+            console.print()
 
-            selected = questionary.select(
-                "Valitse malli nahdaksesi tiedot:",
-                choices=choices,
+            # Get selection by number
+            answer = questionary.text(
+                f"Valitse numero [1-{len(results)}] (0 = palaa)",
                 style=custom_style,
-                qmark=">>",
-                pointer=">"
             ).ask()
 
-            if selected is None or selected == "back":
+            if answer is None or answer.strip() in ("", "0", "q"):
                 break
 
-            self._show_download_details(selected)
+            try:
+                idx = int(answer.strip())
+                if 1 <= idx <= len(results):
+                    self._show_download_details(results[idx - 1].model_id)
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(results)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
     def _show_download_details(self, model_id: str):
         """Show model details in preview panel and offer download."""
