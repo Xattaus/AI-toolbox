@@ -1144,7 +1144,7 @@ class Abliterator:
 
         for step in range(num_steps):
             optimizer.zero_grad()
-            total_loss = 0.0
+            valid_prompts = 0
 
             for prompt in sample_prompts:
                 try:
@@ -1197,16 +1197,24 @@ class Abliterator:
 
                             # We want to maximize refusal probability, so minimize negative
                             loss = -torch.log(refusal_probs + 1e-8).mean()
-                            total_loss += loss
+
+                            # VRAM OPTIMIZATION: Call backward() immediately per prompt
+                            # This uses gradient accumulation - PyTorch automatically sums
+                            # gradients in .grad, so the result is mathematically identical
+                            # but only requires memory for ONE prompt at a time instead of all 8
+                            loss.backward()
+                            valid_prompts += 1
 
                     finally:
                         handle.remove()
 
+                    # Cleanup to free VRAM immediately
+                    del outputs, logits, probs, refusal_probs, loss, inputs
+
                 except Exception:
                     continue
 
-            if total_loss != 0:
-                total_loss.backward()
+            if valid_prompts > 0:
                 optimizer.step()
 
                 # Re-normalize direction
