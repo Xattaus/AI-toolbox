@@ -412,26 +412,50 @@ class ModelLibrary:
             self._auto_scan()
 
     def _load_index(self):
-        """Load the library index from disk."""
-        if self.index_file.exists():
+        """Load the library index from disk (falls back to .bak if corrupt)."""
+        self._models = {}
+
+        for candidate in (self.index_file, self.index_file.with_suffix('.json.bak')):
+            if not candidate.exists():
+                continue
             try:
-                with open(self.index_file, 'r', encoding='utf-8') as f:
+                with open(candidate, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    for model_id, model_data in data.get('models', {}).items():
-                        self._models[model_id] = ModelEntry(**model_data)
+                for model_id, model_data in data.get('models', {}).items():
+                    self._models[model_id] = ModelEntry(**model_data)
+                if candidate != self.index_file:
+                    console.print("[yellow]Kirjastoindeksi palautettu varmuuskopiosta (.bak)[/yellow]")
+                return
             except (json.JSONDecodeError, TypeError) as e:
-                console.print(f"[yellow]Warning: Could not load library index: {e}[/yellow]")
+                console.print(f"[yellow]Warning: Could not load {candidate.name}: {e}[/yellow]")
                 self._models = {}
 
     def _save_index(self):
-        """Save the library index to disk."""
+        """Save the library index to disk atomically (temp file + replace).
+
+        library.json is the single source of truth for the whole library -
+        a crash mid-write must never corrupt it. The previous version is
+        kept as library.json.bak for recovery.
+        """
         data = {
             'version': '1.0',
             'updated': datetime.now().isoformat(),
             'models': {mid: asdict(model) for mid, model in self._models.items()}
         }
-        with open(self.index_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+
+        temp_file = self.index_file.with_suffix('.json.tmp')
+        backup_file = self.index_file.with_suffix('.json.bak')
+        try:
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            if self.index_file.exists():
+                shutil.copy2(self.index_file, backup_file)
+            temp_file.replace(self.index_file)
+        except OSError as e:
+            if temp_file.exists():
+                temp_file.unlink()
+            console.print(f"[red]Virhe tallennettaessa kirjastoindeksia: {e}[/red]")
+            raise
 
     def _auto_scan(self):
         """Automatically scan the models directory for existing models."""

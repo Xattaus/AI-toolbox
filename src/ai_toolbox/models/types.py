@@ -161,3 +161,74 @@ class ModelTreeNode:
     @property
     def has_children(self) -> bool:
         return len(self.children) > 0
+
+
+@dataclass
+class ExtendedModelInfo:
+    """Extended model information with full metadata from HuggingFace."""
+
+    # Basic info
+    model_id: str
+    author: str
+    downloads: int = 0
+    likes: int = 0
+    pipeline_tag: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+    last_modified: str = ""
+
+    # Extended fields
+    gated: Optional[str] = None  # "auto", "manual", or None
+    license: Optional[str] = None  # "mit", "apache-2.0", "llama3", etc.
+    library_name: Optional[str] = None  # "transformers", "gguf", etc.
+    card_data: Optional[Dict[str, Any]] = None  # Full YAML frontmatter
+
+    # Computed/analyzed fields
+    model_size_estimate: Optional[str] = None  # "7B", "13B", "70B"
+    parameter_count: Optional[int] = None  # Actual parameter count
+    compatible_apps: List[str] = field(default_factory=list)  # ["ollama", "llama.cpp"]
+    inference_providers: List[str] = field(default_factory=list)  # ["hf-inference", "together"]
+
+    # File information
+    has_safetensors: bool = False
+    has_gguf: bool = False
+    total_size_bytes: int = 0
+    gguf_variants: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Technical details
+    architecture: Optional[str] = None  # "LlamaForCausalLM"
+    context_length: Optional[int] = None  # Max context window
+    base_model: Optional[str] = None  # For fine-tuned models
+    languages: List[str] = field(default_factory=list)  # ["en", "fi"]
+
+
+@dataclass
+class HFSearchResult:
+    """Simplified search result from HuggingFace with extended metadata."""
+
+    model_id: str
+    author: str
+    downloads: int
+    likes: int
+    pipeline_tag: Optional[str]
+    tags: List[str]
+    last_modified: str
+
+    # Extended fields for rich display
+    gated: Optional[str] = None
+    license: Optional[str] = None
+    library_name: Optional[str] = None
+    model_size: Optional[str] = None
+    compatible_apps: List[str] = field(default_factory=list)
+    has_gguf: bool = False
+    has_safetensors: bool = False
+
+
+@dataclass
+class GGUFFileInfo:
+    """Information about a specific GGUF file variant."""
+
+    filename: str
+    size_bytes: int
+    quantization: Optional[str] = None  # "Q4_K_M", "Q5_K_S", etc.
+    quality_score: float = 3.0  # 1-5 scale based on perplexity
+    estimated_vram_gb: float = 0.0  # Estimated VRAM needed

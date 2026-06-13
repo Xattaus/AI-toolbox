@@ -7,7 +7,7 @@ Download models from HuggingFace Hub with duplicate detection.
 
 import os
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any, Callable, Tuple
 
 from huggingface_hub import (
     HfApi,
@@ -32,7 +32,8 @@ from rich import box
 
 from ..core.paths import get_downloads_dir, get_loras_dir
 from ..core.ui import format_size
-from .types import ModelSearchResult, ModelDetails
+from .types import ModelSearchResult, ModelDetails, ExtendedModelInfo, HFSearchResult
+from .hf_search import HFSearchEngine, SearchFilters, SearchResult, ModelCardInfo
 
 console = Console()
 
@@ -57,8 +58,36 @@ class ModelDownloader:
             self.download_dir = get_downloads_dir()
 
         self.download_dir.mkdir(parents=True, exist_ok=True)
-        self.token = token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+        self.token = (
+            token
+            or os.environ.get("HF_TOKEN")
+            or os.environ.get("HUGGINGFACE_TOKEN")
+            or self._token_from_config()
+        )
         self.api = HfApi(token=self.token)
+        self._search_engine = None  # Lazy-loaded HFSearchEngine
+
+    @staticmethod
+    def _token_from_config() -> Optional[str]:
+        """Read HF token from the toolbox config file (Settings menu)."""
+        try:
+            from ..core.config import get_config
+            return get_config().hf_token
+        except Exception:
+            return None
+
+    def set_token(self, token: Optional[str]):
+        """Set or clear the HF token at runtime (recreates API clients)."""
+        self.token = token
+        self.api = HfApi(token=self.token)
+        self._search_engine = None  # Recreate lazily with new token
+
+    @property
+    def search_engine(self) -> HFSearchEngine:
+        """Get or create the HFSearchEngine instance."""
+        if self._search_engine is None:
+            self._search_engine = HFSearchEngine(token=self.token)
+        return self._search_engine
 
     def search_models(
         self,
@@ -67,33 +96,90 @@ class ModelDownloader:
         filter_task: Optional[str] = None,
         sort: str = "downloads",
     ) -> List[ModelSearchResult]:
-        """Search for models on HuggingFace Hub."""
-        try:
-            models = self.api.list_models(
-                search=query,
-                limit=limit,
-                sort=sort,
-                direction=-1,
-                task=filter_task,
-            )
+        """
+        Search for models on HuggingFace Hub.
 
-            results = []
-            for model in models:
-                results.append(ModelSearchResult(
-                    model_id=model.id,
-                    author=model.author or "Unknown",
-                    downloads=model.downloads or 0,
-                    likes=model.likes or 0,
-                    pipeline_tag=model.pipeline_tag,
-                    tags=model.tags or [],
-                    last_modified=str(model.lastModified) if model.lastModified else "",
-                ))
+        This is a backward-compatible wrapper around the new HFSearchEngine.
+        For advanced filtering, use search_models_advanced() instead.
+        """
+        # Build filters for the new engine
+        filters = SearchFilters(
+            query=query,
+            tasks=[filter_task] if filter_task else [],
+        )
 
-            return results
+        # Use new search engine
+        results, _ = self.search_engine.search(filters, sort=sort, limit=limit)
 
-        except Exception as e:
-            console.print(f"[red]Search error: {e}[/red]")
-            return []
+        # Convert to legacy format for backward compatibility
+        legacy_results = []
+        for result in results:
+            legacy_results.append(ModelSearchResult(
+                model_id=result.model_id,
+                author=result.author,
+                downloads=result.downloads,
+                likes=result.likes,
+                pipeline_tag=result.pipeline_tag,
+                tags=result.tags,
+                last_modified=result.last_modified,
+            ))
+
+        return legacy_results
+
+    def search_models_advanced(
+        self,
+        filters: SearchFilters,
+        sort: str = "downloads",
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Tuple[List[SearchResult], int]:
+        """
+        Advanced model search with full filtering capabilities.
+
+        Args:
+            filters: SearchFilters object with all filter criteria
+            sort: Sort field (downloads, likes, lastModified)
+            limit: Maximum results
+            offset: Pagination offset
+
+        Returns:
+            Tuple of (results list, total count estimate)
+        """
+        return self.search_engine.search(filters, sort=sort, limit=limit, offset=offset)
+
+    def get_model_card(self, model_id: str) -> Optional[ModelCardInfo]:
+        """
+        Get detailed model card information with full metadata.
+
+        Args:
+            model_id: HuggingFace model ID (e.g., "meta-llama/Llama-2-7b")
+
+        Returns:
+            ModelCardInfo with comprehensive model information
+        """
+        return self.search_engine.get_model_card(model_id)
+
+    def get_gguf_variants(self, model_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all GGUF quantization variants for a model.
+
+        Args:
+            model_id: HuggingFace model ID
+
+        Returns:
+            List of dicts with variant info (filename, size, quantization, quality)
+        """
+        variants = self.search_engine.get_gguf_variants(model_id)
+        return [
+            {
+                "filename": v.filename,
+                "size_bytes": v.size_bytes,
+                "quantization": v.quantization,
+                "quality_score": v.quality_score,
+                "estimated_vram_gb": v.estimated_vram_gb,
+            }
+            for v in variants
+        ]
 
     def get_model_details(self, model_id: str) -> Optional[ModelDetails]:
         """Get detailed information about a model."""

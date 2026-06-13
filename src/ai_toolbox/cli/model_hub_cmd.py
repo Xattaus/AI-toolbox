@@ -7,7 +7,7 @@ Combines the functionality of download_cmd.py and library_cmd.py.
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 import questionary
 from rich.console import Console
@@ -35,6 +35,17 @@ from ..core.ui import (
 from ..core.paths import get_paths
 from ..models.downloader import ModelDownloader
 from ..models.library import ModelLibrary
+from ..models.hf_search import SearchFilters, SearchResult, ModelCardInfo
+from ..models.hf_filters import (
+    TASK_CATEGORIES,
+    LIBRARIES,
+    LICENSES,
+    APP_CHOICES,
+    SEARCH_PRESETS,
+    SORT_OPTIONS,
+    QUANTIZATION_QUALITY,
+    get_quality_stars,
+)
 
 # Use unified menu style
 custom_style = MENU_STYLE
@@ -200,7 +211,7 @@ class ModelHubCommands:
                 ),
                 questionary.Separator("-----------------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]
@@ -542,12 +553,12 @@ class ModelHubCommands:
         ))
 
         choices = [
-            questionary.Choice(title="Convert to GGUF", value="convert"),
-            questionary.Choice(title="Edit Tags", value="tags"),
-            questionary.Choice(title="Open Folder", value="folder"),
-            questionary.Choice(title="Remove", value="remove"),
+            questionary.Choice(title=format_menu_item("Convert to GGUF", "Muunna GGUF-muotoon"), value="convert"),
+            questionary.Choice(title=format_menu_item("Edit Tags", "Muokkaa tageja"), value="tags"),
+            questionary.Choice(title=format_menu_item("Open Folder", "Avaa kansio"), value="folder"),
+            questionary.Choice(title=format_menu_item("Remove", "Poista kirjastosta"), value="remove"),
             questionary.Separator(),
-            questionary.Choice(title="Back", value="back"),
+            questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
         ]
 
         action = questionary.select(
@@ -599,78 +610,324 @@ class ModelHubCommands:
     # ==================== DOWNLOAD ====================
 
     def _search_hf_models(self):
-        """Search for models on HuggingFace Hub."""
+        """Advanced HuggingFace search with multiple modes."""
+        print_mini_banner("HuggingFace-haku", "Etsi malleja HuggingFacesta")
+
+        # Search mode selection
+        mode_choices = [
+            questionary.Choice(
+                title=format_menu_item("Pikahaku", "Tekstihaku suosituimmista"),
+                value="quick"
+            ),
+            questionary.Choice(
+                title=format_menu_item("Suodatettu haku", "Kaikki suodattimet"),
+                value="filtered"
+            ),
+            questionary.Choice(
+                title=format_menu_item("Suositut kategoriat", "Valmiit hakupohjat"),
+                value="presets"
+            ),
+            questionary.Separator(),
+            questionary.Choice(
+                title=format_menu_item("<- Palaa", ""),
+                value="back"
+            ),
+        ]
+
+        mode = questionary.select(
+            "Hakutapa:",
+            choices=mode_choices,
+            style=custom_style,
+            qmark="#",
+            pointer=">"
+        ).ask()
+
+        if mode is None or mode == "back":
+            return
+        elif mode == "quick":
+            self._search_quick()
+        elif mode == "filtered":
+            self._search_filtered()
+        elif mode == "presets":
+            self._search_presets()
+
+    def _search_quick(self):
+        """Quick text-based search."""
         query = questionary.text(
-            "Hakusana (esim. 'llama', 'mistral', 'qwen'):",
+            "Hakusana (esim. 'llama', 'mistral', 'qwen', 'coder'):",
             style=custom_style,
         ).ask()
 
         if not query:
             return
 
-        task_choices = [
-            questionary.Choice(title="Kaikki tehtavat", value=None),
-            questionary.Choice(title="Tekstin generointi (LLM)", value="text-generation"),
-            questionary.Choice(title="Teksti-tekstiksi", value="text2text-generation"),
-            questionary.Choice(title="Piirteiden poiminta", value="feature-extraction"),
-        ]
-
-        task = questionary.select(
-            "Suodata tehtavan mukaan:",
-            choices=task_choices,
-            style=custom_style,
-        ).ask()
-
         console.print(f"\n[cyan]Haetaan '{query}'...[/cyan]\n")
 
-        results = self.downloader.search_models(query, limit=15, filter_task=task)
+        # Use new search engine
+        filters = SearchFilters(query=query)
+        results, total = self.downloader.search_models_advanced(filters, limit=20)
 
         if not results:
             print_warning("Malleja ei loytynyt")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        self._select_from_search_results(results)
+        self._display_search_results(results, total, f"Hakutulokset: '{query}'")
 
-    def _browse_popular_models(self):
-        """Browse popular/trending models."""
-        console.print("\n[cyan]Haetaan suosittuja malleja...[/cyan]\n")
+    def _search_filtered(self):
+        """Full filter search interface."""
+        filters = SearchFilters()
 
-        results = self.downloader.search_models("", limit=20, sort="downloads")
+        # 1. Text search (optional)
+        query = questionary.text(
+            "Hakusana (valinnainen, Enter ohittaa):",
+            style=custom_style,
+        ).ask()
+        filters.query = query if query else None
 
-        if results:
-            self._select_from_search_results(results)
-        else:
-            print_warning("Suosittujen mallien hakeminen epäonnistui")
+        # 2. Task category selection
+        category_choices = [
+            questionary.Choice(title="Kaikki tehtavat", value=None),
+            questionary.Choice(title="NLP / Tekstimallit", value="NLP"),
+            questionary.Choice(title="Kuva & Video", value="Vision"),
+            questionary.Choice(title="Audio / Puhe", value="Audio"),
+            questionary.Choice(title="Multimodaaliset (VLM)", value="Multimodal"),
+        ]
+
+        category = questionary.select(
+            "Tehtavakategoria:",
+            choices=category_choices,
+            style=custom_style,
+        ).ask()
+
+        if category:
+            # Show tasks in category
+            tasks = TASK_CATEGORIES.get(category, {})
+            task_choices = [questionary.Choice(title=v, value=k) for k, v in tasks.items()]
+
+            if task_choices:
+                selected_tasks = questionary.checkbox(
+                    "Valitse tehtavat:",
+                    choices=task_choices,
+                    style=custom_style,
+                ).ask()
+                filters.tasks = selected_tasks or []
+
+        # 3. Library/format filter
+        library_choices = [
+            questionary.Choice(title="Kaikki formaatit", value=None),
+            questionary.Choice(title="GGUF (llama.cpp, Ollama)", value="gguf"),
+            questionary.Choice(title="SafeTensors (HF Transformers)", value="safetensors"),
+            questionary.Choice(title="Diffusers (kuvagenerointi)", value="diffusers"),
+            questionary.Choice(title="PEFT/LoRA (adapterit)", value="peft"),
+            questionary.Choice(title="ONNX", value="onnx"),
+        ]
+
+        library = questionary.select(
+            "Formaatti/kirjasto:",
+            choices=library_choices,
+            style=custom_style,
+        ).ask()
+        filters.libraries = [library] if library else []
+
+        # 4. Application compatibility
+        app_choices = [
+            questionary.Choice(title="Ei rajoitusta", value=None),
+        ] + [
+            questionary.Choice(title=name, value=app_id) for app_id, name in APP_CHOICES
+        ]
+
+        app = questionary.select(
+            "Yhteensopiva sovellus:",
+            choices=app_choices,
+            style=custom_style,
+        ).ask()
+        filters.apps = [app] if app else []
+
+        # 5. Author/organization (optional)
+        author = questionary.text(
+            "Tekija/organisaatio (valinnainen, esim. 'meta-llama', 'mistralai'):",
+            style=custom_style,
+        ).ask()
+        filters.author = author if author else None
+
+        # 6. Gated filter
+        gated_choices = [
+            questionary.Choice(title="Kaikki mallit", value=None),
+            questionary.Choice(title="Vain avoimet (ei kirjautumista)", value=False),
+            questionary.Choice(title="Vain gated (vaatii hyvaksynnan)", value=True),
+        ]
+
+        gated = questionary.select(
+            "Saatavuus:",
+            choices=gated_choices,
+            style=custom_style,
+        ).ask()
+        filters.gated = gated
+
+        # 7. License filter
+        common_licenses = [
+            "apache-2.0", "mit", "llama3.1", "llama3.2", "llama3.3",
+            "gemma", "cc-by-4.0", "cc-by-nc-4.0", "openrail",
+        ]
+        license_choices = [
+            questionary.Choice(title="Kaikki lisenssit", value=None),
+        ] + [
+            questionary.Choice(
+                title=LICENSES.get(lic, {}).get("name", lic),
+                value=lic,
+            )
+            for lic in common_licenses
+        ]
+
+        license_id = questionary.select(
+            "Lisenssi:",
+            choices=license_choices,
+            style=custom_style,
+        ).ask()
+        filters.license_filter = license_id
+
+        # 8. Sort order
+        sort_choices = [
+            questionary.Choice(title="Lataukset (suosituin)", value="downloads"),
+            questionary.Choice(title="Tykkäykset", value="likes"),
+            questionary.Choice(title="Viimeksi paivitetty", value="lastModified"),
+        ]
+
+        sort = questionary.select(
+            "Jarjestys:",
+            choices=sort_choices,
+            style=custom_style,
+        ).ask()
+
+        # Execute search
+        console.print("\n[cyan]Haetaan suodatetuilla kriteereilla...[/cyan]\n")
+
+        results, total = self.downloader.search_models_advanced(filters, sort=sort, limit=25)
+
+        if not results:
+            print_warning("Malleja ei loytynyt annetuilla suodattimilla")
             questionary.press_any_key_to_continue(style=custom_style).ask()
+            return
 
-    def _select_from_search_results(self, results):
-        """Allow user to select from search results using table."""
+        self._display_search_results(results, total, "Suodatetut tulokset")
+
+    def _search_presets(self):
+        """Search using predefined presets."""
+        preset_choices = []
+        for preset_id, preset_data in SEARCH_PRESETS.items():
+            preset_choices.append(questionary.Choice(
+                title=format_menu_item(preset_data["name"], preset_data["description"]),
+                value=preset_id
+            ))
+
+        preset_choices.append(questionary.Separator())
+        preset_choices.append(questionary.Choice(
+            title=format_menu_item("<- Palaa", ""),
+            value="back"
+        ))
+
+        preset_id = questionary.select(
+            "Valitse kategoria:",
+            choices=preset_choices,
+            style=custom_style,
+            qmark="#",
+            pointer=">"
+        ).ask()
+
+        if preset_id is None or preset_id == "back":
+            return
+
+        preset = SEARCH_PRESETS.get(preset_id)
+        if not preset:
+            return
+
+        console.print(f"\n[cyan]Haetaan: {preset['name']}...[/cyan]\n")
+
+        # Build filters from preset
+        preset_filters = preset.get("filters", {})
+        filters = SearchFilters(
+            query=preset_filters.get("query"),
+            tasks=preset_filters.get("tasks", []),
+            libraries=preset_filters.get("libraries", []),
+        )
+
+        results, total = self.downloader.search_models_advanced(filters, limit=25)
+
+        if not results:
+            print_warning("Malleja ei loytynyt")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
+            return
+
+        self._display_search_results(results, total, preset["name"])
+
+    def _display_search_results(
+        self,
+        results: List[SearchResult],
+        total: int,
+        title: str
+    ):
+        """Display search results with rich metadata."""
         while True:
-            print_branded_header("Hakutulokset", f"{len(results)} mallia")
+            print_branded_header("Hakutulokset", f"{len(results)}/{total} mallia")
 
-            # Create table for search results
+            # Create rich table
             table = Table(
-                title=f"[bold orange1]HuggingFace-mallit[/bold orange1]",
+                title=f"[bold orange1]{title}[/bold orange1]",
                 box=box.ROUNDED,
                 show_header=True,
                 header_style="bold cyan",
                 border_style="orange3",
                 padding=(0, 1),
             )
+
             table.add_column("#", style="bold yellow", width=4, justify="right")
-            table.add_column("Malli", style="white", min_width=40)
+            table.add_column("Malli", style="white", min_width=35)
             table.add_column("Latauksia", style="cyan", width=12, justify="right")
+            table.add_column("Koko", style="yellow", width=8, justify="center")
+            table.add_column("Lisenssi", style="green", width=12)
+            table.add_column("Apps", style="magenta", width=14)
 
             for i, result in enumerate(results, 1):
                 downloads = f"{result.downloads:,}" if result.downloads else "0"
-                model_name = result.model_id[:45] if len(result.model_id) <= 45 else result.model_id[:42] + "..."
-                table.add_row(str(i), f"🤗 {model_name}", downloads)
+
+                # Model name with truncation
+                model_name = result.model_id
+                if len(model_name) > 35:
+                    model_name = model_name[:32] + "..."
+
+                # Model size
+                size = result.model_size or "-"
+
+                # License with gated indicator
+                license_str = result.license[:10] if result.license else "-"
+                if result.gated:
+                    license_str = f"[yellow]{license_str}*[/yellow]"
+
+                # Compatible apps (first 2)
+                if result.compatible_apps:
+                    apps = ", ".join(result.compatible_apps[:2])
+                    if len(result.compatible_apps) > 2:
+                        apps += f" +{len(result.compatible_apps) - 2}"
+                else:
+                    apps = "-"
+
+                # Format indicators
+                format_icons = ""
+                if result.has_gguf:
+                    format_icons += "[cyan]G[/cyan]"
+                if result.has_safetensors:
+                    format_icons += "[green]S[/green]"
+
+                model_display = f"{model_name} {format_icons}"
+
+                table.add_row(str(i), model_display, downloads, size, license_str, apps)
 
             console.print(table)
+            console.print("[dim]* = vaatii kirjautumisen | G = GGUF | S = SafeTensors[/dim]")
             console.print()
 
-            # Get selection by number
+            # Selection
             answer = questionary.text(
                 f"Valitse numero [1-{len(results)}] (0 = palaa)",
                 style=custom_style,
@@ -682,161 +939,413 @@ class ModelHubCommands:
             try:
                 idx = int(answer.strip())
                 if 1 <= idx <= len(results):
-                    self._show_download_details(results[idx - 1].model_id)
+                    selected = results[idx - 1]
+                    self._show_model_card_details(selected.model_id)
                 else:
-                    print_warning(f"Valitse numero väliltä 1-{len(results)}")
+                    print_warning(f"Valitse numero valilta 1-{len(results)}")
             except ValueError:
                 print_warning("Anna kelvollinen numero")
 
-    def _show_download_details(self, model_id: str):
-        """Show model details in preview panel and offer download."""
-        console.print(f"\n[cyan]Haetaan tietoja: {model_id}...[/cyan]\n")
+    def _show_model_card_details(self, model_id: str):
+        """Show detailed model card with rich metadata."""
+        console.print(f"\n[cyan]Haetaan mallikortti: {model_id}...[/cyan]\n")
 
-        details = self.downloader.get_model_details(model_id)
-        if not details:
+        card = self.downloader.get_model_card(model_id)
+        if not card:
+            print_error(f"Mallikortin hakeminen epaonnistui: {model_id}")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        existing = self.downloader.check_exists(model_id)
+        # Build model card display
+        self._display_model_card(card)
 
-        # Calculate file types
-        safetensors_files = [f for f in details.files if f['name'].endswith('.safetensors')]
-        bin_files = [f for f in details.files if f['name'].endswith('.bin') and 'pytorch' in f['name'].lower()]
-        gguf_files = [f for f in details.files if f['name'].endswith('.gguf')]
-        config_files = [f for f in details.files if f['name'].endswith('.json')]
+        # Actions menu
+        self._model_card_actions(card)
 
-        safetensors_size = sum(f['size'] for f in safetensors_files)
-        total_size = details.total_size
+    def _display_model_card(self, card: ModelCardInfo):
+        """Display a rich model card panel."""
+        # Header
+        gated_warning = ""
+        if card.gated:
+            gated_warning = "\n[yellow]Rajoitettu malli - vaatii hyvaksynnan[/yellow]"
 
-        # Determine model type
-        if gguf_files:
-            model_type = "GGUF (valmis kaytettavaksi)"
-        elif safetensors_files:
-            model_type = "SafeTensors (muunnettavissa GGUF:ksi)"
-        elif bin_files:
-            model_type = "PyTorch (muunnettavissa GGUF:ksi)"
-        else:
-            model_type = "Tuntematon"
+        # Technical info table
+        tech_info = []
+        if card.parameter_count:
+            tech_info.append(f"[cyan]Parametreja:[/cyan]     {card.model_size or self._format_params(card.parameter_count)}")
+        elif card.model_size:
+            tech_info.append(f"[cyan]Koko:[/cyan]            {card.model_size}")
 
-        # Preview panel
-        preview = f"""[bold white]{details.model_id}[/bold white]
-{'[yellow]Jo ladattu[/yellow]' if existing else ''}
+        if card.architecture:
+            tech_info.append(f"[cyan]Arkkitehtuuri:[/cyan]   {card.architecture}")
+        if card.context_length:
+            tech_info.append(f"[cyan]Kontekstipituus:[/cyan] {card.context_length:,} tokenia")
+        if card.library_name:
+            tech_info.append(f"[cyan]Kirjasto:[/cyan]        {card.library_name}")
 
-[cyan]Author:[/cyan]       {details.author}
-[cyan]Downloads:[/cyan]    {details.downloads:,}
-[cyan]Likes:[/cyan]        {details.likes:,}
-[cyan]Task:[/cyan]         {details.pipeline_tag or 'N/A'}
+        tech_section = "\n".join(tech_info) if tech_info else "[dim]Ei teknisia tietoja[/dim]"
+
+        # Metadata section
+        meta_info = []
+        if card.license:
+            meta_info.append(f"[cyan]Lisenssi:[/cyan]        {card.license}")
+        if card.languages:
+            langs = ", ".join(card.languages[:5])
+            if len(card.languages) > 5:
+                langs += f" (+{len(card.languages) - 5})"
+            meta_info.append(f"[cyan]Kielet:[/cyan]          {langs}")
+        if card.base_model:
+            meta_info.append(f"[cyan]Pohjamalli:[/cyan]      {card.base_model}")
+
+        meta_info.append(f"[cyan]Latauksia:[/cyan]       {card.downloads:,}")
+        meta_info.append(f"[cyan]Tykkäyksia:[/cyan]      {card.likes:,}")
+        if card.last_modified:
+            meta_info.append(f"[cyan]Paivitetty:[/cyan]      {card.last_modified[:10]}")
+
+        meta_section = "\n".join(meta_info)
+
+        # File info section
+        file_info = []
+        file_info.append(f"[cyan]Kokonaiskoko:[/cyan]    {format_size(card.total_size_bytes)}")
+
+        if card.has_safetensors:
+            file_info.append("[green]SafeTensors[/green]      saatavilla")
+        if card.has_gguf:
+            file_info.append(f"[green]GGUF[/green]             {len(card.gguf_variants)} varianttia")
+
+        file_section = "\n".join(file_info)
+
+        # Compatibility section
+        compat_info = []
+        if card.compatible_apps:
+            apps_str = ", ".join(card.compatible_apps[:4])
+            if len(card.compatible_apps) > 4:
+                apps_str += f" +{len(card.compatible_apps) - 4}"
+            compat_info.append(f"[cyan]Sovellukset:[/cyan]     {apps_str}")
+
+        compat_section = "\n".join(compat_info) if compat_info else ""
+
+        # Build full panel
+        panel_content = f"""[bold white]{card.model_id}[/bold white]{gated_warning}
+
+[bold]--- Tekniset tiedot ---[/bold]
+{tech_section}
+
+[bold]--- Metatiedot ---[/bold]
+{meta_section}
 
 [bold]--- Tiedostot ---[/bold]
-[cyan]Kokonaiskoko:[/cyan]  {format_size(total_size)}
-[cyan]SafeTensors:[/cyan]   {len(safetensors_files)} kpl ({format_size(safetensors_size)})
-[cyan]GGUF:[/cyan]          {len(gguf_files)} kpl
-[cyan]Config:[/cyan]        {len(config_files)} kpl
+{file_section}"""
 
-[bold]--- Tyyppi ---[/bold]
-{model_type}"""
+        if compat_section:
+            panel_content += f"""
 
-        if details.tags:
-            tags_display = ", ".join(details.tags[:6])
-            if len(details.tags) > 6:
-                tags_display += f" (+{len(details.tags) - 6})"
-            preview += f"\n\n[cyan]Tags:[/cyan] [dim]{tags_display}[/dim]"
+[bold]--- Yhteensopivuus ---[/bold]
+{compat_section}"""
+
+        if card.tags:
+            tags_str = ", ".join(card.tags[:8])
+            if len(card.tags) > 8:
+                tags_str += f" (+{len(card.tags) - 8})"
+            panel_content += f"\n\n[dim]Tagit: {tags_str}[/dim]"
 
         console.print(Panel(
-            preview,
-            title="[bold]Model Preview[/bold]",
+            panel_content,
+            title="[bold]Mallikortti[/bold]",
             border_style="cyan",
             padding=(1, 2)
         ))
 
-        # Show largest files
-        if details.files:
-            console.print("\n[bold]Suurimmat tiedostot:[/bold]")
-            sorted_files = sorted(details.files, key=lambda x: x['size'], reverse=True)[:5]
-            for f in sorted_files:
-                size_str = format_size(f['size'])
-                name = f['name']
-                if len(name) > 50:
-                    name = "..." + name[-47:]
-                console.print(f"  [dim]{size_str:>10}[/dim]  {name}")
-
-        # Download options
-        console.print()
-
+    def _model_card_actions(self, card: ModelCardInfo):
+        """Show actions for model card."""
         choices = []
 
-        if gguf_files:
+        # Download options based on available formats
+        if card.has_gguf and card.gguf_variants:
             choices.append(questionary.Choice(
-                title=f"Download GGUF files only ({len(gguf_files)} files)",
+                title=format_menu_item("Lataa GGUF", f"{len(card.gguf_variants)} varianttia"),
                 value="gguf"
             ))
-        if safetensors_files:
-            est_size = format_size(safetensors_size + sum(f['size'] for f in config_files))
+
+        if card.has_safetensors:
             choices.append(questionary.Choice(
-                title=f"Download SafeTensors ({est_size}) - suositeltu",
+                title=format_menu_item("Lataa SafeTensors", "HuggingFace-muoto"),
                 value="safetensors"
             ))
 
         choices.extend([
-            questionary.Choice(title=f"Download All ({format_size(total_size)})", value="full"),
-            questionary.Choice(title="Download Config only", value="config"),
+            questionary.Choice(
+                title=format_menu_item("Lataa kaikki", format_size(card.total_size_bytes)),
+                value="full"
+            ),
+            questionary.Choice(
+                title=format_menu_item("Nayta tiedostot", "Kaikki mallin tiedostot"),
+                value="files"
+            ),
+            questionary.Separator(),
+            questionary.Choice(
+                title=format_menu_item("<- Palaa", ""),
+                value="back"
+            ),
         ])
 
-        if existing:
-            choices.insert(0, questionary.Choice(title="Re-download (overwrite)", value="force"))
-
-        choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="Back", value="back"))
-
         action = questionary.select(
-            "Download options:",
+            "Toiminto:",
             choices=choices,
             style=custom_style,
+            qmark=">>",
+            pointer=">"
         ).ask()
 
         if action == "back" or action is None:
             return
-
-        include_patterns = None
-        exclude_patterns = None
-        force = False
-
-        if action == "force":
-            force = True
         elif action == "gguf":
-            include_patterns = ["*.gguf", "*.json"]
-            exclude_patterns = ["*.safetensors", "*.bin", "*.md"]
+            self._select_gguf_variant(card)
         elif action == "safetensors":
-            include_patterns = ["*.safetensors", "*.json", "*.txt", "*.model", "tokenizer*"]
-            exclude_patterns = ["*.bin", "*.md", "*.gguf"]
-        elif action == "config":
-            include_patterns = ["*.json", "*.txt", "tokenizer*"]
-            exclude_patterns = ["*.safetensors", "*.bin", "*.md", "*.gguf"]
+            self._download_safetensors(card.model_id)
+        elif action == "full":
+            self._download_full_model(card.model_id)
+        elif action == "files":
+            self._show_model_files(card)
 
-        # Download
-        downloaded_path = self.downloader.download_model(
-            model_id,
-            include_patterns=include_patterns,
-            exclude_patterns=exclude_patterns,
-            force=force,
+    def _select_gguf_variant(self, card: ModelCardInfo):
+        """Show GGUF variant selection with quality indicators."""
+        if not card.gguf_variants:
+            print_warning("GGUF-tiedostoja ei loytynyt")
+            return
+
+        print_mini_banner("GGUF-variantit", f"{len(card.gguf_variants)} vaihtoehtoa")
+
+        # Find recommended variant (Q4_K_M or highest quality that fits common VRAM)
+        recommended_idx = None
+        for i, variant in enumerate(card.gguf_variants):
+            quant = variant.get("quantization", "")
+            if quant in ["Q4_K_M", "Q5_K_M"]:
+                recommended_idx = i
+                break
+
+        # Create table
+        table = Table(
+            title="[bold orange1]GGUF-variantit[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
         )
 
-        # Automatic library addition
+        table.add_column("#", width=4, justify="right")
+        table.add_column("Tiedosto", min_width=35)
+        table.add_column("Kvantisointi", width=12, justify="center")
+        table.add_column("Koko", width=10, justify="right")
+        table.add_column("Laatu", width=8, justify="center")
+        table.add_column("VRAM", width=10, justify="right")
+
+        for i, variant in enumerate(card.gguf_variants):
+            quant = variant.get("quantization", "?")
+            quality = variant.get("quality", 3.0)
+            vram = variant.get("vram_estimate", 0)
+
+            # Quality stars
+            quality_stars = get_quality_stars(quant) if quant else "..."
+
+            # Mark recommended
+            mark = "[green]suositeltu[/green]" if i == recommended_idx else ""
+
+            filename = variant["filename"]
+            if len(filename) > 35:
+                filename = "..." + filename[-32:]
+
+            table.add_row(
+                str(i + 1),
+                filename,
+                f"{quant} {mark}",
+                format_size(variant["size"]),
+                quality_stars,
+                f"~{vram:.1f} GB" if vram else "-"
+            )
+
+        console.print(table)
+        console.print("[dim]Laatu: perustuu perplexity-testeihin. Q4_K_M = paras laatu/koko[/dim]")
+        console.print()
+
+        # Selection
+        answer = questionary.text(
+            f"Valitse numero [1-{len(card.gguf_variants)}] (0 = palaa)",
+            style=custom_style,
+        ).ask()
+
+        if answer is None or answer.strip() in ("", "0", "q"):
+            return
+
+        try:
+            idx = int(answer.strip())
+            if 1 <= idx <= len(card.gguf_variants):
+                selected = card.gguf_variants[idx - 1]
+                self._download_gguf_file(card.model_id, selected["filename"])
+            else:
+                print_warning(f"Valitse numero valilta 1-{len(card.gguf_variants)}")
+        except ValueError:
+            print_warning("Anna kelvollinen numero")
+
+    def _download_gguf_file(self, model_id: str, filename: str):
+        """Download a specific GGUF file."""
+        console.print(f"\n[cyan]Ladataan: {filename}[/cyan]\n")
+
+        downloaded_path = self.downloader.download_specific_files(
+            model_id,
+            files=[filename]
+        )
+
         if downloaded_path:
+            # Add to library
             try:
-                existing_in_lib = self.library.search_models(model_id)
-                if not existing_in_lib:
+                existing = self.library.search_models(model_id)
+                if not existing:
                     entry = self.library.add_model(
-                        path=str(downloaded_path),
+                        path=str(downloaded_path / filename),
                         source="huggingface",
                         source_id=model_id,
                     )
-                    print_success(f"Lisatty automaattisesti Model Libraryyn: {entry.name}")
-                else:
-                    print_info("Malli on jo Model Libraryssa")
+                    print_success(f"Lisatty kirjastoon: {entry.name}")
             except Exception as e:
-                print_warning(f"Automaattinen kirjastolisays epäonnistui: {e}")
+                print_warning(f"Kirjastolisays epaonnistui: {e}")
+        else:
+            print_error("Lataus epaonnistui")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _download_safetensors(self, model_id: str):
+        """Download SafeTensors format."""
+        downloaded_path = self.downloader.download_model(
+            model_id,
+            include_patterns=["*.safetensors", "*.json", "*.txt", "tokenizer*"],
+            exclude_patterns=["*.bin", "*.md", "*.gguf"],
+        )
+
+        if downloaded_path:
+            self._auto_add_to_library(downloaded_path, model_id)
+        else:
+            print_error("Lataus epaonnistui")
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _download_full_model(self, model_id: str):
+        """Download full model with all files."""
+        downloaded_path = self.downloader.download_model(model_id)
+
+        if downloaded_path:
+            self._auto_add_to_library(downloaded_path, model_id)
+        else:
+            print_error("Lataus epaonnistui")
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _auto_add_to_library(self, path: Path, model_id: str):
+        """Automatically add downloaded model to library."""
+        try:
+            existing = self.library.search_models(model_id)
+            if not existing:
+                entry = self.library.add_model(
+                    path=str(path),
+                    source="huggingface",
+                    source_id=model_id,
+                )
+                print_success(f"Lisatty automaattisesti kirjastoon: {entry.name}")
+            else:
+                print_info("Malli on jo kirjastossa")
+        except Exception as e:
+            print_warning(f"Kirjastolisays epaonnistui: {e}")
+
+    def _show_model_files(self, card: ModelCardInfo):
+        """Show all files in the model."""
+        print_mini_banner("Mallin tiedostot", f"{len(card.files)} tiedostoa")
+
+        table = Table(
+            box=box.SIMPLE,
+            show_header=True,
+            header_style="bold cyan",
+        )
+
+        table.add_column("Tiedosto", min_width=50)
+        table.add_column("Koko", width=12, justify="right")
+        table.add_column("Tyyppi", width=12)
+
+        # Sort by size
+        sorted_files = sorted(card.files, key=lambda x: x.get("size", 0), reverse=True)
+
+        for f in sorted_files[:30]:
+            filename = f.get("filename", "?")
+            size = format_size(f.get("size", 0))
+
+            # Determine type
+            if filename.endswith(".safetensors"):
+                ftype = "[green]safetensors[/green]"
+            elif filename.endswith(".gguf"):
+                ftype = "[cyan]gguf[/cyan]"
+            elif filename.endswith(".bin"):
+                ftype = "[yellow]pytorch[/yellow]"
+            elif filename.endswith(".json"):
+                ftype = "[dim]config[/dim]"
+            else:
+                ext = filename.split(".")[-1] if "." in filename else "?"
+                ftype = f"[dim]{ext}[/dim]"
+
+            if len(filename) > 50:
+                filename = "..." + filename[-47:]
+
+            table.add_row(filename, size, ftype)
+
+        console.print(table)
+
+        if len(card.files) > 30:
+            console.print(f"[dim]... ja {len(card.files) - 30} muuta tiedostoa[/dim]")
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _format_params(self, count: int) -> str:
+        """Format parameter count."""
+        if count >= 1_000_000_000:
+            return f"{count / 1_000_000_000:.1f}B"
+        elif count >= 1_000_000:
+            return f"{count / 1_000_000:.0f}M"
+        else:
+            return f"{count / 1_000:.0f}K"
+
+    def _browse_popular_models(self):
+        """Browse popular/trending models."""
+        console.print("\n[cyan]Haetaan suosittuja malleja...[/cyan]\n")
+
+        # Use new search engine for popular models
+        filters = SearchFilters()
+        results, total = self.downloader.search_models_advanced(filters, sort="downloads", limit=25)
+
+        if results:
+            self._display_search_results(results, total, "Suosituimmat mallit")
+        else:
+            print_warning("Suosittujen mallien hakeminen epaonnistui")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _select_from_search_results(self, results):
+        """Allow user to select from search results using table (legacy compatibility)."""
+        # Convert legacy ModelSearchResult to new SearchResult format
+        converted = []
+        for r in results:
+            converted.append(SearchResult(
+                model_id=r.model_id,
+                author=r.author,
+                downloads=r.downloads,
+                likes=r.likes,
+                pipeline_tag=r.pipeline_tag,
+                tags=r.tags,
+                last_modified=r.last_modified,
+            ))
+
+        self._display_search_results(converted, len(converted), "Hakutulokset")
+
+    def _show_download_details(self, model_id: str):
+        """Show model details using new model card view."""
+        # Use the new model card view
+        self._show_model_card_details(model_id)
 
     def _download_by_id(self):
         """Download model with direct ID input."""
@@ -864,20 +1373,20 @@ class ModelHubCommands:
 
         choices = [
             questionary.Choice(
-                title="Enter LoRA ID              Syota HuggingFace ID",
+                title=format_menu_item("Enter LoRA ID", "Syota HuggingFace ID"),
                 value="direct"
             ),
             questionary.Choice(
-                title="Search LoRAs               Hae LoRA-adaptereita",
+                title=format_menu_item("Search LoRAs", "Hae LoRA-adaptereita"),
                 value="search"
             ),
             questionary.Choice(
-                title="View Downloaded            Nayta ladatut LoRAt",
+                title=format_menu_item("View Downloaded", "Nayta ladatut LoRAt"),
                 value="view"
             ),
             questionary.Separator(),
             questionary.Choice(
-                title="Back                       Palaa",
+                title="<- Palaa",
                 value="back"
             ),
         ]
@@ -924,6 +1433,8 @@ class ModelHubCommands:
                 result = self.downloader.download_lora(model_id)
                 if result:
                     print_success(f"LoRA ladattu: {result}")
+                else:
+                    print_error("LoRA-lataus epäonnistui")
         else:
             print_error("LoRA-adapteria ei loytynyt")
 
@@ -1004,6 +1515,10 @@ class ModelHubCommands:
                 result = self.downloader.download_lora(selected)
                 if result:
                     print_success(f"LoRA ladattu: {result}")
+                else:
+                    print_error("LoRA-lataus epäonnistui")
+        else:
+            print_error(f"LoRA-tietoja ei saatu: {selected}")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
