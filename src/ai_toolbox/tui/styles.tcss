@@ -139,3 +139,51 @@ DataTable > .datatable--cursor {
     color: #ff0000;
     text-style: bold;
 }
+
+#ollama-buttons {
+    height: auto;
+    margin-top: 1;
+}
+
+#ollama-buttons Button {
+    width: 1fr;
+    margin-right: 1;
+}
+
+/* --- MODAL DIALOGS --- */
+ConfirmScreen, CreateModelScreen {
+    align: center middle;
+}
+
+.modal-dialog {
+    width: 60;
+    height: auto;
+    background: #0a0a0a;
+    border: solid #00ff00;
+    padding: 1 2;
+}
+
+.modal-message {
+    text-align: center;
+    color: #00ff00;
+    margin-bottom: 1;
+}
+
+.modal-warning {
+    color: #ffaa00;
+    margin-bottom: 1;
+}
+
+.modal-buttons {
+    height: auto;
+    margin-top: 1;
+}
+
+.modal-buttons Button {
+    width: 1fr;
+    margin-right: 1;
+}
+
+CreateModelScreen Input, CreateModelScreen Select {
+    margin-bottom: 1;
+}

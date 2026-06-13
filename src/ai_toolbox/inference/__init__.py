@@ -34,6 +34,15 @@ from .assistant import (
     show_claude_setup,
 )
 
+from .beautiful_chat import (
+    BeautifulChat,
+    ChatRenderer,
+    ConversationManager,
+    OllamaStreamClient,
+    extract_system_prompt_from_modelfile,
+    get_model_size_from_ollama,
+)
+
 __all__ = [
     # Chat
     "AIChat",
@@ -58,4 +67,11 @@ __all__ = [
     "quick_prompts_menu",
     "custom_prompt_menu",
     "show_claude_setup",
+    # Beautiful Chat
+    "BeautifulChat",
+    "ChatRenderer",
+    "ConversationManager",
+    "OllamaStreamClient",
+    "extract_system_prompt_from_modelfile",
+    "get_model_size_from_ollama",
 ]

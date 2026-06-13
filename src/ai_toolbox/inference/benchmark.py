@@ -207,6 +207,7 @@ class BenchmarkRunner:
                 n_ctx=config.n_ctx,
                 n_threads=n_threads,
                 n_gpu_layers=config.n_gpu_layers,
+                seed=42,  # Kiinteä siemen - benchmark-ajot toistettavia
                 verbose=False,
             )
 

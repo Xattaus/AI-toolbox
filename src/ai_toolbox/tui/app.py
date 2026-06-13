@@ -1,16 +1,96 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Button, Static, DataTable, Log, Label, Markdown
+from textual.widgets import (
+    Header, Footer, Button, Static, DataTable, Log, Label, Markdown,
+    Input, Select,
+)
 from textual.containers import Container, Horizontal, Vertical
-from textual.screen import Screen
+from textual.screen import ModalScreen
 from textual.reactive import reactive
-from textual.binding import Binding
-from textual import on
+from textual import on, work
 
 import psutil
+from rich.markdown import Markdown as RichMarkdown
 
 # Tuodaan olemassa olevat logiikat (käytetään relatiivisia importteja)
 from ..models.library import ModelLibrary
 from ..integrations.ollama import OllamaManager
+
+
+class ConfirmScreen(ModalScreen[bool]):
+    """Yksinkertainen kyllä/ei-vahvistusdialogi."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="modal-dialog"):
+            yield Label(self.message, classes="modal-message")
+            with Horizontal(classes="modal-buttons"):
+                yield Button("Kyllä", id="confirm-yes", variant="error")
+                yield Button("Peruuta", id="confirm-no")
+
+    @on(Button.Pressed)
+    def handle_button(self, event: Button.Pressed) -> None:
+        event.stop()
+        self.dismiss(event.button.id == "confirm-yes")
+
+
+class CreateModelScreen(ModalScreen):
+    """Lomake Ollama-mallin luontiin kirjaston GGUF-tiedostosta."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        try:
+            library = ModelLibrary()
+            self.gguf_models = [
+                m for m in library.list_models() if m.format == "gguf"
+            ]
+        except Exception:
+            self.gguf_models = []
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="modal-dialog"):
+            yield Label("Luo Ollama-malli GGUF-tiedostosta", classes="modal-message")
+            yield Input(placeholder="Mallin nimi (esim. my-model)", id="create-name")
+            if self.gguf_models:
+                yield Select(
+                    [(m.name, m.id) for m in self.gguf_models],
+                    prompt="Valitse GGUF-malli kirjastosta",
+                    id="create-gguf",
+                )
+            else:
+                yield Label(
+                    "Kirjastossa ei ole GGUF-malleja - lisää ensin CLI:llä (ai-toolbox)",
+                    classes="modal-warning",
+                )
+            with Horizontal(classes="modal-buttons"):
+                yield Button("Luo", id="create-confirm", variant="primary")
+                yield Button("Peruuta", id="create-cancel")
+
+    @on(Button.Pressed, "#create-cancel")
+    def handle_cancel(self, event: Button.Pressed) -> None:
+        event.stop()
+        self.dismiss(None)
+
+    @on(Button.Pressed, "#create-confirm")
+    def handle_confirm(self, event: Button.Pressed) -> None:
+        event.stop()
+        name = self.query_one("#create-name", Input).value.strip()
+        if not name or not self.gguf_models:
+            self.dismiss(None)
+            return
+
+        select = self.query_one("#create-gguf", Select)
+        if select.value is Select.BLANK:
+            return  # Ei valintaa - pidä dialogi auki
+
+        model = next((m for m in self.gguf_models if m.id == select.value), None)
+        if model is None:
+            self.dismiss(None)
+            return
+
+        self.dismiss({"name": name, "gguf_path": str(model.path)})
 
 class Sidebar(Static):
     """Sivupalkki navigaatiolle."""
@@ -32,13 +112,13 @@ class DashboardView(Container):
             yield Static("Models: 0", classes="stat-card", id="stat-models")
         
         welcome_md = """
-# Welcome to AI Toolbox v2.0
+# Welcome to AI Toolbox
 
 Select a tool from the sidebar to get started.
 
 - **Library**: Manage your local GGUF and PyTorch models
 - **Ollama**: Manage your Ollama service and models
-- **Train/Merge**: *Coming in next update*
+- **Training, merging & abliteration**: use the full CLI (`ai-toolbox`)
         """
         yield Markdown(welcome_md, classes="welcome-text")
 
@@ -155,7 +235,9 @@ class LibraryView(Container):
 - Template: {info.get('template', 'none')}
 """
 
-            self.query_one("#details-content", Static).update(Markdown(details))
+            # Rich-Markdown renderöitäväksi - textual.widgets.Markdown on
+            # widget eikä kelpaa Static.update():lle
+            self.query_one("#details-content", Static).update(RichMarkdown(details))
 
         except Exception as e:
             self.query_one("#details-content", Static).update(f"Error: {e}")
@@ -205,6 +287,67 @@ class OllamaView(Container):
                 )
         except Exception as e:
             table.add_row("Error", str(e), "")
+
+    def _selected_model_name(self):
+        """Palauta valitun rivin mallinimi tai None."""
+        table = self.query_one("#ollama-table", DataTable)
+        if table.row_count == 0:
+            return None
+        try:
+            cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
+            return cell_key.row_key.value
+        except Exception:
+            return None
+
+    @on(Button.Pressed, "#refresh-ollama")
+    def handle_refresh(self, event: Button.Pressed) -> None:
+        event.stop()
+        self.check_status()
+        self.app.log_message("Ollama: lista päivitetty")
+
+    @on(Button.Pressed, "#delete-ollama-model")
+    def handle_delete(self, event: Button.Pressed) -> None:
+        event.stop()
+        model_name = self._selected_model_name()
+        if not model_name:
+            self.app.log_message("Ollama: valitse ensin malli taulukosta")
+            return
+
+        def on_confirm(confirmed) -> None:
+            if not confirmed:
+                return
+            success, msg = self.manager.delete_model(model_name)
+            self.app.log_message(f"Ollama: {msg}")
+            if success:
+                self.load_models()
+
+        self.app.push_screen(
+            ConfirmScreen(f"Poistetaanko Ollama-malli '{model_name}'?"),
+            on_confirm,
+        )
+
+    @on(Button.Pressed, "#create-ollama-model")
+    def handle_create(self, event: Button.Pressed) -> None:
+        event.stop()
+
+        def on_result(result) -> None:
+            if not result:
+                return
+            self.app.log_message(f"Ollama: luodaan mallia '{result['name']}'...")
+            self._create_model(result["name"], result["gguf_path"])
+
+        self.app.push_screen(CreateModelScreen(), on_result)
+
+    @work(thread=True, exclusive=True)
+    def _create_model(self, name: str, gguf_path: str) -> None:
+        """Luo malli taustasäikeessä - ollama create voi kestää minuutteja."""
+        success, msg = self.manager.create_model(name, gguf_path)
+        self.app.call_from_thread(self._on_create_done, success, msg)
+
+    def _on_create_done(self, success: bool, msg: str) -> None:
+        self.app.log_message(f"Ollama: {msg.splitlines()[0]}")
+        if success:
+            self.load_models()
 
 class ToolboxApp(App):
     """Pääsovellus."""

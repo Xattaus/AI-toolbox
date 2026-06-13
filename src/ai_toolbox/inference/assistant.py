@@ -298,7 +298,7 @@ def ai_assistant_menu():
                 value="setup"
             ),
             questionary.Choice(
-                title="Back                      Return to main menu",
+                title="<- Palaa",
                 value="back"
             ),
         ]

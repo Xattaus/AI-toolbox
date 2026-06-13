@@ -1544,7 +1544,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             ))
 
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="↩️ Back", value="back"))
+        choices.append(questionary.Choice(title="<- Palaa", value="back"))
 
         selected = questionary.select(
             "Valitse chat-backend:",
@@ -1632,7 +1632,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             ))
 
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="↩️  Takaisin", value=None))
+        choices.append(questionary.Choice(title="<- Palaa", value=None))
 
         selected = questionary.select(
             "Valitse malli:",
@@ -1658,6 +1658,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 
         if not models:
             print_error("Ei malleja saatavilla. Lataa malli: ollama pull llama3.2")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
             return False
 
         choices = []
@@ -1671,7 +1672,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             ))
 
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="↩️ Back", value=None))
+        choices.append(questionary.Choice(title="<- Palaa", value=None))
 
         selected = questionary.select(
             "Valitse Ollama-malli:",
