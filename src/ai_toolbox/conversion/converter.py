@@ -76,6 +76,15 @@ class GGUFConverter:
                 "Please ensure llama.cpp is properly cloned."
             )
 
+    @staticmethod
+    def _is_valid_gguf(path: Path) -> bool:
+        """Check that a file starts with the GGUF magic bytes."""
+        try:
+            with open(path, 'rb') as f:
+                return f.read(4) == b'GGUF'
+        except OSError:
+            return False
+
     def get_system_info(self) -> Dict[str, Any]:
         """Get system information for conversion recommendations."""
         memory = psutil.virtual_memory()
@@ -240,11 +249,26 @@ class GGUFConverter:
             process.wait()
             return_code = process.returncode
 
-        except Exception:
-            pass
+        except Exception as e:
+            run_error = str(e)
+        else:
+            run_error = None
 
-        # Check result - prioritize file existence over return code
+        # A non-zero exit code means the converter aborted - the output file
+        # may exist but be truncated, so never report it as success.
+        if return_code is not None and return_code != 0:
+            error_output = '\n'.join(output_lines[-20:])
+            if out_path.exists():
+                error_output += f"\n\nHuom: keskeneräinen tiedosto voi olla levyllä: {out_path}"
+            return {"success": False, "error": f"Conversion failed (code {return_code}):\n{error_output}"}
+
         if out_path.exists() and out_path.stat().st_size > 0:
+            if not self._is_valid_gguf(out_path):
+                return {
+                    "success": False,
+                    "error": f"Output file is not a valid GGUF (bad magic bytes): {out_path}",
+                }
+
             file_size_gb = out_path.stat().st_size / (1024**3)
             try:
                 console.print("[green]Conversion complete![/green]")
@@ -259,11 +283,10 @@ class GGUFConverter:
                 "file_size_gb": round(file_size_gb, 2),
             }
 
-        if return_code is not None and return_code != 0:
-            error_output = '\n'.join(output_lines[-20:])
-            return {"success": False, "error": f"Conversion failed (code {return_code}):\n{error_output}"}
-
-        return {"success": False, "error": f"Conversion completed but output file not found: {out_path}"}
+        error = f"Conversion completed but output file not found: {out_path}"
+        if run_error:
+            error += f"\nProcess error: {run_error}"
+        return {"success": False, "error": error}
 
     def quantize_gguf(
         self,
@@ -325,10 +348,12 @@ class GGUFConverter:
         ))
 
         # Build quantization command
+        # llama-quantize usage: llama-quantize input.gguf output.gguf TYPE [nthreads]
+        # (nthreads is a positional argument, not a flag)
         cmd = [str(quantize_binary), str(input_path), str(out_path), quantization.upper()]
 
         if threads:
-            cmd.extend(["--threads", str(threads)])
+            cmd.append(str(threads))
 
         # Run quantization
         console.print("[cyan]Running quantization...[/cyan]")
@@ -367,11 +392,25 @@ class GGUFConverter:
             process.wait()
             return_code = process.returncode
 
-        except Exception:
-            pass
+        except Exception as e:
+            run_error = str(e)
+        else:
+            run_error = None
 
-        # Check result
+        # Non-zero exit code = quantizer aborted; the output may be truncated
+        if return_code is not None and return_code != 0:
+            error_output = '\n'.join(output_lines[-20:])
+            if out_path.exists():
+                error_output += f"\n\nHuom: keskeneräinen tiedosto voi olla levyllä: {out_path}"
+            return {"success": False, "error": f"Quantization failed (code {return_code}):\n{error_output}"}
+
         if out_path.exists() and out_path.stat().st_size > 0:
+            if not self._is_valid_gguf(out_path):
+                return {
+                    "success": False,
+                    "error": f"Output file is not a valid GGUF (bad magic bytes): {out_path}",
+                }
+
             file_size_gb = out_path.stat().st_size / (1024**3)
             try:
                 console.print("[green]Quantization complete![/green]")
@@ -387,11 +426,10 @@ class GGUFConverter:
                 "quantization": quantization,
             }
 
-        if return_code is not None and return_code != 0:
-            error_output = '\n'.join(output_lines[-20:])
-            return {"success": False, "error": f"Quantization failed (code {return_code}):\n{error_output}"}
-
-        return {"success": False, "error": f"Quantization completed but output file not found: {out_path}"}
+        error = f"Quantization completed but output file not found: {out_path}"
+        if run_error:
+            error += f"\nProcess error: {run_error}"
+        return {"success": False, "error": error}
 
     def convert_and_quantize(
         self,

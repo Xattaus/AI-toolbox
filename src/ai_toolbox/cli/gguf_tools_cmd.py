@@ -30,11 +30,6 @@ from ..core.ui import (
     format_size,
     format_menu_item,
     create_model_preview_card,
-    format_model_choice_title,
-    build_model_choices,
-    select_model_from_table,
-    create_model_table,
-    CATEGORY_CONFIG,
     MENU_STYLE,
 )
 from ..core.paths import get_paths, get_gguf_dir
@@ -201,7 +196,7 @@ class GGUFToolsCommands:
         self._run_conversion(str(model_path), model_path.name)
 
     def _convert_from_library(self):
-        """Convert model from library to GGUF."""
+        """Convert model from library to GGUF using table-based selection."""
         print_mini_banner("Library -> GGUF Konvertointi")
 
         # Get convertible models
@@ -215,34 +210,69 @@ class GGUFToolsCommands:
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        # Build categorized models dict
-        models_by_category = {}
-        if convertible:
-            models_by_category['safetensors'] = convertible
-        if merged_convertible:
-            models_by_category['merged'] = merged_convertible
-
         # Count total
         total = len(convertible) + len(merged_convertible)
-        console.print(f"\n[bold cyan]Valitse malli muunnettavaksi GGUF-muotoon[/bold cyan]")
-        console.print(f"[dim]Yhteensä {total} muunnettavaa mallia[/dim]\n")
 
-        # Build choices with two-line format - NO duplicate panel display!
-        choices = build_model_choices(models_by_category)
+        # Build unified list for table selection
+        all_models = []
+        idx = 1
 
-        if not choices:
-            print_warning("Ei malleja")
-            return
+        # Create table
+        table = Table(
+            title=f"[bold orange1]Muunnettavat mallit ({total})[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("Malli", style="white", min_width=35)
+        table.add_column("Tyyppi", style="green", width=12, justify="center")
+        table.add_column("Koko", style="cyan", width=10, justify="right")
 
-        selected = questionary.select(
-            "Malli:",
-            choices=choices,
-            style=custom_style,
-            use_indicator=True,
-        ).ask()
+        # Add convertible models (SafeTensors)
+        if convertible:
+            table.add_row("", "[bold green]--- 🏠 SafeTensors ---[/bold green]", "", "")
+            for m in convertible[:12]:
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                name = m.name[:35] if len(m.name) <= 35 else m.name[:32] + "..."
+                table.add_row(str(idx), f"🏠 {name}", "SafeTensors", size)
+                all_models.append(m)
+                idx += 1
 
-        if not selected:
-            return
+        # Add merged models
+        if merged_convertible:
+            table.add_row("", "[bold magenta]--- 🔀 Merged ---[/bold magenta]", "", "")
+            for m in merged_convertible[:8]:
+                size = format_size(m.size_bytes) if m.size_bytes else "-"
+                name = m.name[:35] if len(m.name) <= 35 else m.name[:32] + "..."
+                table.add_row(str(idx), f"🔀 {name}", "Merged", size)
+                all_models.append(m)
+                idx += 1
+
+        console.print(table)
+        console.print()
+
+        # Get selection by number
+        while True:
+            answer = questionary.text(
+                f"Valitse numero [1-{len(all_models)}] (0 = peruuta)",
+                style=custom_style,
+            ).ask()
+
+            if answer is None or answer.strip() in ("", "0", "q"):
+                return
+
+            try:
+                sel_idx = int(answer.strip())
+                if 1 <= sel_idx <= len(all_models):
+                    selected = all_models[sel_idx - 1]
+                    break
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(all_models)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
         # Show preview card before conversion
         console.print()
@@ -419,24 +449,46 @@ class GGUFToolsCommands:
                 print_warning("Ladattuja malleja ei loytynyt")
                 return None
 
-            dl_choices = []
-            for model in downloaded[:15]:
+            # Create table for downloaded models
+            table = Table(
+                title=f"[bold orange1]Ladatut mallit ({len(downloaded)})[/bold orange1]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                border_style="orange3",
+                padding=(0, 1),
+            )
+            table.add_column("#", style="bold yellow", width=4, justify="right")
+            table.add_column("Malli", style="white", min_width=40)
+            table.add_column("Koko", style="cyan", width=10, justify="right")
+
+            display_models = downloaded[:15]
+            for i, model in enumerate(display_models, 1):
                 size = format_size(model['size'])
-                dl_choices.append(questionary.Choice(
-                    title=f"{model['model_id'][:40]:<40} {size:>10}",
-                    value=model['path']
-                ))
+                name = model['model_id'][:40] if len(model['model_id']) <= 40 else model['model_id'][:37] + "..."
+                table.add_row(str(i), f"🤗 {name}", size)
 
-            dl_choices.append(questionary.Separator())
-            dl_choices.append(questionary.Choice(title="Back", value=None))
+            console.print(table)
+            console.print()
 
-            selected = questionary.select(
-                "Valitse malli:",
-                choices=dl_choices,
-                style=custom_style,
-            ).ask()
+            # Get selection by number
+            while True:
+                answer = questionary.text(
+                    f"Valitse numero [1-{len(display_models)}] (0 = peruuta)",
+                    style=custom_style,
+                ).ask()
 
-            return Path(selected) if selected else None
+                if answer is None or answer.strip() in ("", "0", "q"):
+                    return None
+
+                try:
+                    sel_idx = int(answer.strip())
+                    if 1 <= sel_idx <= len(display_models):
+                        return Path(display_models[sel_idx - 1]['path'])
+                    else:
+                        print_warning(f"Valitse numero väliltä 1-{len(display_models)}")
+                except ValueError:
+                    print_warning("Anna kelvollinen numero")
 
         return None
 
