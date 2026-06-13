@@ -159,3 +159,10 @@ mcp-config.json
 # Windows artifacts
 # --------------------------------------------
 nul
+
+# Brain - autonomous context management
+.brain/
+
+# Machine-specific tool configs (local absolute paths)
+.mcp.json
+.codex/
