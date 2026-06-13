@@ -975,7 +975,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             choices.extend([
                 questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa edelliseen valikkoon"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ])
@@ -1511,7 +1511,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
             choices.append(questionary.Separator("---------------------------"))
             choices.append(questionary.Choice(
-                title=format_menu_item("<- Back", "Palaa valikkoon"),
+                title=format_menu_item("<- Palaa", ""),
                 value="back"
             ))
 
@@ -1698,7 +1698,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 ),
                 questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]

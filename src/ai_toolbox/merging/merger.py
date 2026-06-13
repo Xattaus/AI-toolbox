@@ -481,7 +481,7 @@ class ModelMerger:
                         "model1": str(model1_path),
                         "model2": str(model2_path),
                     }
-                    with open(config_dest, 'w') as f:
+                    with open(config_dest, 'w', encoding='utf-8') as f:
                         json.dump(config, f, indent=2)
                     break
 
@@ -576,19 +576,20 @@ class ModelMerger:
                     merged_tensors[key] = base_tensors[key]
                     continue
 
-                # Stack deltat
-                stacked = torch.stack(layer_deltas, dim=0)
+                # TRIM: Sailyta top-k% suurimmat arvot PER MALLI (TIES-paperin
+                # mukaisesti jokainen task-vektori karsitaan erikseen -
+                # globaali kynnys nollaisi pienempien deltojen mallin kokonaan)
+                trimmed_list = []
+                for delta in layer_deltas:
+                    flat = delta.abs().flatten()
+                    k = int(flat.numel() * density)
+                    if 0 < k < flat.numel():
+                        threshold = torch.topk(flat, k).values[-1]
+                        trimmed_list.append(delta * (delta.abs() >= threshold))
+                    else:
+                        trimmed_list.append(delta)
 
-                # TRIM: Sailyta vain top-k% suurimmat arvot
-                flat = stacked.abs().flatten()
-                k = int(len(flat) * density)
-                if k > 0:
-                    threshold = torch.topk(flat, k).values[-1]
-                    mask = stacked.abs() >= threshold
-                else:
-                    mask = torch.ones_like(stacked, dtype=torch.bool)
-
-                trimmed = stacked * mask
+                trimmed = torch.stack(trimmed_list, dim=0)
 
                 # ELECT SIGN: Valitse etumerkki enemmistoaanestykella
                 signs = torch.sign(trimmed)
@@ -639,7 +640,7 @@ class ModelMerger:
                     "base_model": str(base_model),
                     "models": [str(m) for m in models],
                 }
-                with open(config_dest, 'w') as f:
+                with open(config_dest, 'w', encoding='utf-8') as f:
                     json.dump(config, f, indent=2)
 
             # Kopioi tokenizer
@@ -751,7 +752,7 @@ class ModelMerger:
                     "method": "frankenmerge",
                     "layer_sources": {str(k): v for k, v in models.items()},
                 }
-                with open(config_dest, 'w') as f:
+                with open(config_dest, 'w', encoding='utf-8') as f:
                     json.dump(config, f, indent=2)
 
             # Kopioi tokenizer
@@ -976,7 +977,7 @@ class ModelMerger:
                 with open(config_file, 'r') as f:
                     config = json.load(f)
                 config["_merge_info"] = merge_info
-                with open(config_file, 'w') as f:
+                with open(config_file, 'w', encoding='utf-8') as f:
                     json.dump(config, f, indent=2)
 
             # Vapauta muisti
@@ -1381,7 +1382,7 @@ class ModelMerger:
 
             # Tallenna config
             config_file = output_dir / "config.json"
-            with open(config_file, 'w') as f:
+            with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(output_config, f, indent=2)
 
             # Kopioi tokenizer

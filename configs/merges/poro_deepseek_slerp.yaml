@@ -1,0 +1,29 @@
+# Poro + DeepSeek-R1 SLERP Merge
+# ================================
+# Yhdistää suomenkielisen Poron ja päättelykykyisen DeepSeek-R1:n
+#
+# Käyttö:
+#   mergekit-yaml poro_deepseek_slerp.yaml ./output --cuda
+#
+# Parametri t:
+#   0.0 = 100% Poro (vain suomi)
+#   0.3 = 70% Poro, 30% DeepSeek (suositeltu - suomi + päättely)
+#   0.5 = 50% molempia (tasapaino)
+#   0.7 = 30% Poro, 70% DeepSeek (päättely-painotteinen)
+#   1.0 = 100% DeepSeek (ei suomea)
+
+models:
+  - model: D:/AI Toolbox/models/abliterated/Poro-2-8B-abliterated-v2
+    parameters:
+      weight: 1.0
+  - model: huihui-ai/DeepSeek-R1-Distill-Llama-8B-abliterated
+    parameters:
+      weight: 1.0
+
+merge_method: slerp
+base_model: D:/AI Toolbox/models/abliterated/Poro-2-8B-abliterated-v2
+
+parameters:
+  t: 0.3  # Suositusarvo: 70% Poro, 30% DeepSeek
+
+dtype: bfloat16

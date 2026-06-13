@@ -745,12 +745,16 @@ class MergekitWrapper:
                 progress_callback(f"Output: {config.output_path}")
 
             # Suorita
+            # encoding pakotettava: Windowsin cp1252-oletus kaatuisi
+            # mergekitin unicode-tulosteeseen kesken pitkan ajon
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
+                encoding='utf-8',
+                errors='replace',
             )
 
             # Lue output
@@ -837,6 +841,8 @@ class MergekitWrapper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
             )
 
             if process.stdout:

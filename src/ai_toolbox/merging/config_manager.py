@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
 
 from .presets import MergePreset, get_preset, PRESETS
+from ..core.paths import get_paths
 
 
 @dataclass
@@ -73,22 +74,12 @@ class MergeConfigManager:
         if config_dir:
             self.config_dir = Path(config_dir)
         else:
-            # Etsi projektin juuresta
-            self.config_dir = self._find_project_root() / self.DEFAULT_CONFIG_DIR
+            # get_paths() tukee AITOOLBOX_ROOT-ymparistomuuttujaa ja toimii
+            # riippumatta siita mista kansiosta sovellus kaynnistetaan
+            self.config_dir = get_paths().root / self.DEFAULT_CONFIG_DIR
 
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self._history_path = self.config_dir / self.HISTORY_FILE
-
-    def _find_project_root(self) -> Path:
-        """Etsi projektin juurikansio."""
-        # Yrita loytyy pyproject.toml tai .git
-        current = Path.cwd()
-        for parent in [current] + list(current.parents):
-            if (parent / "pyproject.toml").exists():
-                return parent
-            if (parent / ".git").exists():
-                return parent
-        return current
 
     # =========================================================================
     # Konfiguraatioiden hallinta

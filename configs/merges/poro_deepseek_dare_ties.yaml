@@ -1,0 +1,33 @@
+# Poro + DeepSeek-R1 DARE-TIES Merge
+# ===================================
+# Kehittyneempi merge joka säilyttää molempien mallien erikoisominaisuudet
+#
+# DARE: Pudottaa osan parametreista, skaalaa loput
+# TIES: Poistaa konfliktit ja redundantit parametrit
+#
+# Käyttö:
+#   mergekit-yaml poro_deepseek_dare_ties.yaml ./output --cuda
+#
+# Huom: Vaatii base-mallin (Llama-3.1-8B) latauksen
+
+models:
+  - model: D:/AI Toolbox/models/abliterated/Poro-2-8B-abliterated-v2
+    parameters:
+      weight: 0.7      # Painotus mergessä
+      density: 0.7     # DARE: säilytä 70% parametreista
+  - model: huihui-ai/DeepSeek-R1-Distill-Llama-8B-abliterated
+    parameters:
+      weight: 0.3
+      density: 0.7
+
+merge_method: dare_ties
+
+# Base-malli josta delta lasketaan
+# Molempien pitää olla fine-tunettu tästä
+base_model: meta-llama/Meta-Llama-3.1-8B
+
+parameters:
+  int8_mask: true     # Käytä int8-maskia muistin säästämiseksi
+  normalize: true     # Normalisoi painot
+
+dtype: bfloat16
