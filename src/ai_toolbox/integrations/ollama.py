@@ -127,6 +127,7 @@ class ModelfileConfig:
     gguf_path: str
     system_prompt: Optional[str] = None
     template_name: Optional[str] = None  # Key from SYSTEM_PROMPTS
+    chat_template: Optional[str] = None  # Custom TEMPLATE block (Go template syntax)
     temperature: float = 0.7
     top_p: float = 0.9
     top_k: int = 40
@@ -274,6 +275,13 @@ class OllamaManager:
         lines.append(f"FROM {gguf_path_normalized}")
         lines.append("")
 
+        # Custom chat template (Go template syntax). Without this Ollama
+        # uses the chat template embedded in the GGUF metadata, if any.
+        if config.chat_template:
+            template_body = config.chat_template.replace('"""', '\\"\\"\\"')
+            lines.append(f'TEMPLATE """{template_body}"""')
+            lines.append("")
+
         # System prompt
         system_prompt = config.system_prompt
         if not system_prompt and config.template_name:
@@ -282,9 +290,10 @@ class OllamaManager:
                 system_prompt = template["prompt"]
 
         if system_prompt:
-            # Escape quotes in system prompt
-            escaped_prompt = system_prompt.replace('"', '\\"')
-            lines.append(f'SYSTEM "{escaped_prompt}"')
+            # Triple-quoted block: safe for quotes and multiline prompts
+            # (escaping " inside a single-quoted SYSTEM breaks on backslashes)
+            escaped_prompt = system_prompt.replace('"""', '\\"\\"\\"')
+            lines.append(f'SYSTEM """{escaped_prompt}"""')
             lines.append("")
 
         # Parameters
@@ -306,6 +315,7 @@ class OllamaManager:
         gguf_path: str,
         system_prompt: Optional[str] = None,
         template_name: Optional[str] = None,
+        chat_template: Optional[str] = None,
         temperature: float = 0.7,
         top_p: float = 0.9,
         top_k: int = 40,
@@ -322,6 +332,7 @@ class OllamaManager:
             gguf_path: Path to the GGUF file
             system_prompt: Custom system prompt (overrides template)
             template_name: Name of system prompt template to use
+            chat_template: Custom Ollama TEMPLATE block (Go template syntax)
             temperature: Sampling temperature (0.0-2.0)
             top_p: Top-p sampling parameter
             top_k: Top-k sampling parameter
@@ -346,6 +357,7 @@ class OllamaManager:
             gguf_path=str(gguf_file.absolute()),
             system_prompt=system_prompt,
             template_name=template_name,
+            chat_template=chat_template,
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
@@ -481,7 +493,7 @@ class OllamaManager:
         except Exception as e:
             return False, f"Error pulling model: {e}"
 
-    def run_model(self, model_name: str, prompt: str, stream: bool = True) -> str:
+    def run_model(self, model_name: str, prompt: str, stream: bool = True, timeout: int = 300) -> str:
         """
         Run a prompt through an Ollama model.
 
@@ -489,6 +501,7 @@ class OllamaManager:
             model_name: Name of the model to use
             prompt: The prompt to send
             stream: Whether to stream the response
+            timeout: Timeout in seconds (default 300 = 5 minutes for reasoning models)
 
         Returns:
             Model response as string
@@ -505,7 +518,14 @@ class OllamaManager:
                     errors='replace'
                 )
 
-                stdout, stderr = process.communicate(input=prompt, timeout=120)
+                try:
+                    stdout, _ = process.communicate(input=prompt, timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    # Kill the hung process - otherwise it keeps running and
+                    # holds the model in (V)RAM after the timeout
+                    process.kill()
+                    process.communicate()
+                    return "[Error: Response timeout]"
                 return stdout.strip()
             else:
                 result = subprocess.run(
@@ -514,7 +534,7 @@ class OllamaManager:
                     text=True,
                     encoding='utf-8',
                     errors='replace',
-                    timeout=120
+                    timeout=timeout
                 )
                 return result.stdout.strip()
 
@@ -537,6 +557,99 @@ class OllamaManager:
         if modelfile_path.exists():
             return modelfile_path.read_text(encoding='utf-8')
         return None
+
+    def get_modelfile_from_ollama(self, model_name: str) -> Optional[str]:
+        """
+        Get the Modelfile directly from Ollama using 'ollama show --modelfile'.
+
+        Args:
+            model_name: Name of the Ollama model
+
+        Returns:
+            Modelfile content or None if error
+        """
+        try:
+            result = subprocess.run(
+                ["ollama", "show", model_name, "--modelfile"],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                timeout=30
+            )
+
+            if result.returncode != 0:
+                return None
+
+            return result.stdout.strip()
+
+        except Exception:
+            return None
+
+    def save_modelfile(self, model_name: str, content: str) -> Path:
+        """
+        Save a Modelfile to disk.
+
+        Args:
+            model_name: Name for the modelfile
+            content: Modelfile content
+
+        Returns:
+            Path to saved file
+        """
+        ollama_dir = self.paths.ollama_dir
+        ollama_dir.mkdir(parents=True, exist_ok=True)
+        modelfile_path = ollama_dir / f"{model_name}.modelfile"
+        modelfile_path.write_text(content, encoding='utf-8')
+        return modelfile_path
+
+    def recreate_model(self, model_name: str, modelfile_content: str) -> Tuple[bool, str]:
+        """
+        Recreate an Ollama model with a new Modelfile (overwrites existing).
+
+        Args:
+            model_name: Name of the model to recreate
+            modelfile_content: New Modelfile content
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        # Save the new Modelfile
+        modelfile_path = self.save_modelfile(model_name.split(":")[0], modelfile_content)
+
+        # Create temp file for ollama create
+        temp_modelfile = self.paths.ollama_dir / f".temp_{model_name.replace(':', '_')}.modelfile"
+        temp_modelfile.write_text(modelfile_content, encoding='utf-8')
+
+        try:
+            # Run ollama create (overwrites existing model)
+            result = subprocess.run(
+                ["ollama", "create", model_name, "-f", str(temp_modelfile)],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                timeout=300
+            )
+
+            # Clean up temp file
+            if temp_modelfile.exists():
+                temp_modelfile.unlink()
+
+            if result.returncode != 0:
+                return False, f"Failed to recreate model: {result.stderr}"
+
+            return True, f"Model '{model_name}' recreated successfully\nModelfile saved to: {modelfile_path}"
+
+        except subprocess.TimeoutExpired:
+            if temp_modelfile.exists():
+                temp_modelfile.unlink()
+            return False, "Timeout recreating model"
+
+        except Exception as e:
+            if temp_modelfile.exists():
+                temp_modelfile.unlink()
+            return False, f"Error recreating model: {e}"
 
     def get_system_prompts(self) -> Dict[str, Dict[str, str]]:
         """Get all available system prompt templates."""
