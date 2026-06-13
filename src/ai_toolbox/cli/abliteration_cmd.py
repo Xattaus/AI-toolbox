@@ -94,7 +94,15 @@ class AbliterationCommands:
                     title="Test Model             Testaa abliteroitua mallia",
                     value="test"
                 ),
+                questionary.Choice(
+                    title="Tune Strength          Saada voimakkuutta ilman uutta ekstraktiota",
+                    value="tune"
+                ),
                 questionary.Separator(),
+                questionary.Choice(
+                    title="📊 Method Explainer     Vertaile metodeja visuaalisesti",
+                    value="methods"
+                ),
                 questionary.Choice(
                     title="Abliteration Info      Mita abliteration on?",
                     value="info"
@@ -109,7 +117,7 @@ class AbliterationCommands:
 
             choices.extend([
                 questionary.Separator(),
-                questionary.Choice(title="Back                    Palaa", value="back"),
+                questionary.Choice(title="<- Palaa", value="back"),
             ])
 
             choice = questionary.select(
@@ -126,6 +134,8 @@ class AbliterationCommands:
                 self._install_deps()
             elif choice == "info":
                 self._show_info()
+            elif choice == "methods":
+                self._show_method_explainer()
             elif choice == "full":
                 if not status["ready"]:
                     print_warning("Asenna ensin riippuvuudet")
@@ -134,6 +144,104 @@ class AbliterationCommands:
                     self._full_abliteration_wizard()
             elif choice == "test":
                 self._test_model_wizard()
+            elif choice == "tune":
+                if not status["ready"]:
+                    print_warning("Asenna ensin riippuvuudet")
+                    questionary.press_any_key_to_continue(style=custom_style).ask()
+                else:
+                    self._tune_strength_wizard()
+
+    def _tune_strength_wizard(self):
+        """Re-apply abliteration with a new strength using saved directions."""
+        print_mini_banner("Tune Strength", "Saada voimakkuutta ilman uutta ekstraktiota")
+
+        console.print("[dim]Kayttaa aiemman ajon tallentamia refusal-suuntia[/dim]")
+        console.print("[dim](refusal_directions.pt) - vain apply-vaihe ajetaan uudelleen.[/dim]\n")
+
+        # Find abliterated models that have saved directions
+        from ..core.paths import get_paths
+        abliterated_dir = get_paths().abliterated_dir
+
+        candidates = []
+        if abliterated_dir.exists():
+            for model_dir in sorted(abliterated_dir.iterdir()):
+                directions_file = model_dir / "refusal_directions.pt"
+                if directions_file.exists():
+                    candidates.append((model_dir.name, directions_file))
+
+        if not candidates:
+            print_warning("Tallennettuja suuntia ei loytynyt.")
+            console.print("[dim]Suunnat tallentuvat automaattisesti uusissa abliteraatioissa[/dim]")
+            console.print(f"[dim]({abliterated_dir / '<malli>' / 'refusal_directions.pt'})[/dim]")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
+            return
+
+        choices = [
+            questionary.Choice(title=name, value=str(path))
+            for name, path in candidates
+        ]
+        choices.append(questionary.Separator())
+        choices.append(questionary.Choice(title="<- Palaa", value=None))
+
+        directions_file = questionary.select(
+            "Valitse abliteroitu malli (suuntien lahde):",
+            choices=choices,
+            style=custom_style,
+            qmark=">>",
+            pointer=">"
+        ).ask()
+
+        if not directions_file:
+            return
+
+        # New strength
+        strength_str = questionary.text(
+            "Uusi voimakkuus (0.1-2.0, esim. 0.5):",
+            default="0.5",
+            style=custom_style,
+        ).ask()
+        if strength_str is None:
+            return
+        try:
+            strength = max(0.05, min(2.0, float(strength_str)))
+        except ValueError:
+            print_error("Virheellinen voimakkuus")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
+            return
+
+        # Output name
+        source_name = Path(directions_file).parent.name
+        default_name = f"{source_name.rsplit('-s', 1)[0]}-s{strength:.2f}".replace("..", ".")
+        output_name = questionary.text(
+            "Uuden mallin nimi:",
+            default=default_name,
+            style=custom_style,
+        ).ask()
+        if not output_name:
+            return
+
+        console.print(f"\n[cyan]Sovelletaan voimakkuudella {strength:.2f}...[/cyan]")
+        console.print("[dim]Vain painojen muokkaus - ei aktivaatioajoja (~1-2 min)[/dim]\n")
+
+        def progress_cb(msg, prog):
+            console.print(f"  [dim][{prog*100:.0f}%] {msg}[/dim]")
+
+        result = self.abliterator.reapply_abliteration(
+            directions_file=directions_file,
+            output_name=output_name,
+            strength=strength,
+            progress_callback=progress_cb,
+        )
+
+        if result.success:
+            print_success(f"Valmis: {result.output_path}")
+            console.print(f"[dim]Muokattuja painoja: {result.modified_weights}, "
+                          f"kerroksia: {len(result.modified_layers)}[/dim]")
+            console.print("\n[dim]Seuraavaksi: GGUF Tools -> Muunna & Kvantisoi -> Ollama -> Test Model[/dim]")
+        else:
+            print_error(f"Epaonnistui: {result.error}")
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _install_deps(self):
         """Install abliteration dependencies."""
@@ -224,6 +332,319 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
 """
         console.print(info_text)
         questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _show_method_explainer(self):
+        """Show visual explanation of abliteration methods."""
+        print_mini_banner("Method Explainer")
+
+        # Method selection
+        method_choices = [
+            questionary.Choice(title="📊 Vertailutaulukko    Kaikki metodit rinnakkain", value="compare"),
+            questionary.Choice(title="🎯 Gradient           Suositeltu - tarkin tulos", value="gradient"),
+            questionary.Choice(title="📐 Projected          Nopea Gram-Schmidt", value="projected"),
+            questionary.Choice(title="➖ Mean Diff          Yksinkertainen erotus", value="mean_diff"),
+            questionary.Choice(title="📈 PCA                Paakomponenttianalyysi", value="pca"),
+            questionary.Separator(),
+            questionary.Choice(title="<- Palaa", value="back"),
+        ]
+
+        while True:
+            choice = questionary.select(
+                "Valitse tarkasteltava metodi:",
+                choices=method_choices,
+                style=custom_style,
+                qmark=">>",
+                pointer=">"
+            ).ask()
+
+            if choice is None or choice == "back":
+                break
+            elif choice == "compare":
+                self._show_method_comparison()
+            else:
+                self._show_method_detail(choice)
+
+    def _show_method_comparison(self):
+        """Show comparison table of all methods."""
+        console.print()
+
+        # Comparison table
+        table = Table(
+            title="[bold orange1]📊 Abliteration-metodien vertailu[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("Ominaisuus", style="white", width=20)
+        table.add_column("Gradient", style="green", width=15)
+        table.add_column("Projected", style="yellow", width=15)
+        table.add_column("Mean Diff", style="cyan", width=15)
+        table.add_column("PCA", style="magenta", width=15)
+
+        # Data rows
+        table.add_row(
+            "[bold]Tarkkuus[/bold]",
+            "⭐⭐⭐⭐⭐",
+            "⭐⭐⭐⭐",
+            "⭐⭐⭐",
+            "⭐⭐⭐⭐"
+        )
+        table.add_row(
+            "[bold]Nopeus[/bold]",
+            "⭐⭐",
+            "⭐⭐⭐⭐",
+            "⭐⭐⭐⭐⭐",
+            "⭐⭐⭐"
+        )
+        table.add_row(
+            "[bold]VRAM-käyttö[/bold]",
+            "Korkea",
+            "Matala",
+            "Matala",
+            "Keskitaso"
+        )
+        table.add_row(
+            "[bold]Mallin säilyminen[/bold]",
+            "Erinomainen",
+            "Hyvä",
+            "OK",
+            "Hyvä"
+        )
+        table.add_row(
+            "[bold]Kielituki[/bold]",
+            "Automaattinen",
+            "Englantilähtöinen",
+            "Englantilähtöinen",
+            "Englantilähtöinen"
+        )
+        table.add_row(
+            "[bold]Suositeltu käyttö[/bold]",
+            "Tuotanto",
+            "Nopea testaus",
+            "Nopea kokeilu",
+            "Analyysi"
+        )
+
+        console.print(table)
+        console.print()
+
+        # Visual pipeline comparison
+        console.print(Panel(
+            "[bold cyan]Data Flow - Kaikki metodit[/bold cyan]\n\n"
+            "[white]Kaikki metodit alkavat samasta pisteestä:[/white]\n\n"
+            "  ┌─────────────────┐      ┌─────────────────┐\n"
+            "  │ Harmful Prompts │      │ Harmless Prompts│\n"
+            "  │   (77+ kpl)     │      │   (77+ kpl)     │\n"
+            "  └────────┬────────┘      └────────┬────────┘\n"
+            "           │                        │\n"
+            "           ▼                        ▼\n"
+            "  ┌─────────────────────────────────────────┐\n"
+            "  │     Aktivaatioiden keräys (layers)     │\n"
+            "  │   harmful_acts[layer] = activations    │\n"
+            "  │   harmless_acts[layer] = activations   │\n"
+            "  └──────────────────┬──────────────────────┘\n"
+            "                     │\n"
+            "                     ▼\n"
+            "          [bold yellow]< METODI VALINTA >[/bold yellow]\n\n"
+            "[dim]Tästä eteenpäin metodit eroavat...[/dim]",
+            title="[bold]📊 Yhteinen alkupiste[/bold]",
+            border_style="cyan"
+        ))
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _show_method_detail(self, method: str):
+        """Show detailed explanation of a specific method."""
+        console.print()
+
+        if method == "gradient":
+            self._show_gradient_detail()
+        elif method == "projected":
+            self._show_projected_detail()
+        elif method == "mean_diff":
+            self._show_mean_diff_detail()
+        elif method == "pca":
+            self._show_pca_detail()
+
+        questionary.press_any_key_to_continue(style=custom_style).ask()
+
+    def _show_gradient_detail(self):
+        """Show gradient method explanation."""
+        console.print(Panel(
+            "[bold green]🎯 GRADIENT METHOD[/bold green]\n"
+            "[dim]Suositeltu - Tarkin ja älykkäin[/dim]\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "[bold white]Idea:[/bold white]\n"
+            "  Optimoidaan refusal-suunta gradienttien avulla.\n"
+            "  Käänteinen fine-tuning: maksimoidaan P(kieltäytyminen).\n\n"
+            "[bold white]Algoritmi:[/bold white]\n\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  1. Alusta refusal_direction satunnaisesti   │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  2. Forward pass: harmful prompt → malli     │\n"
+            "  │     Laske loss = -log P(\"I cannot\")          │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  3. Backward pass: laske gradientit          │\n"
+            "  │     ∇loss → päivitä direction                │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  4. Toista kunnes konvergoituu               │\n"
+            "  │     (yleensä 50-100 iteraatiota)             │\n"
+            "  └──────────────────────────────────────────────┘\n\n"
+            "[bold cyan]Kieliäly:[/bold cyan]\n"
+            "  Tunnistaa mallin kielen automaattisesti ja käyttää\n"
+            "  oikeita refusal-tokeneja:\n"
+            "  • EN: \"I cannot\", \"I can't\", \"I'm unable\"\n"
+            "  • FI: \"En voi\", \"Valitettavasti\"\n"
+            "  • DE: \"Ich kann nicht\", \"Es tut mir leid\"\n\n"
+            "[bold yellow]Plussat:[/bold yellow] Tarkin tulos, sopeutuu malliin\n"
+            "[bold red]Miinukset:[/bold red] Hidas, vaatii VRAM:ia",
+            title="[bold green]Gradient Ascent[/bold green]",
+            border_style="green"
+        ))
+
+    def _show_projected_detail(self):
+        """Show projected method explanation."""
+        console.print(Panel(
+            "[bold yellow]📐 PROJECTED METHOD[/bold yellow]\n"
+            "[dim]Nopea ja tehokas - Gram-Schmidt ortogonalisointi[/dim]\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "[bold white]Idea:[/bold white]\n"
+            "  Puhdistetaan refusal-suunta poistamalla siitä\n"
+            "  harmittoman käyttäytymisen komponentit.\n\n"
+            "[bold white]Algoritmi:[/bold white]\n\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  1. Laske raaka erotus:                      │\n"
+            "  │     diff = mean(harmful) - mean(harmless)    │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  2. Gram-Schmidt ortogonalisointi:           │\n"
+            "  │                                              │\n"
+            "  │     Harmless-suunta (säilytettävä):          │\n"
+            "  │     h = mean(harmless_acts)                  │\n"
+            "  │                                              │\n"
+            "  │     Projektio:                               │\n"
+            "  │     proj = (diff · h / ||h||²) * h           │\n"
+            "  │                                              │\n"
+            "  │     Puhdistettu suunta:                      │\n"
+            "  │     direction = diff - proj                  │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  3. Normalisoi: direction /= ||direction||   │\n"
+            "  └──────────────────────────────────────────────┘\n\n"
+            "[bold cyan]Geometrinen tulkinta:[/bold cyan]\n\n"
+            "     Harmful ────────●\n"
+            "                    /│\n"
+            "                   / │\n"
+            "     diff        /  │ puhdistettu\n"
+            "                /   │ (kohtisuora)\n"
+            "               /    │\n"
+            "     Harmless ●─────┼───────→\n"
+            "               proj   h-suunta\n\n"
+            "[bold yellow]Plussat:[/bold yellow] Nopea, säilyttää normaalin käytöksen\n"
+            "[bold red]Miinukset:[/bold red] Ei yhtä tarkka kuin gradient",
+            title="[bold yellow]Gram-Schmidt Projection[/bold yellow]",
+            border_style="yellow"
+        ))
+
+    def _show_mean_diff_detail(self):
+        """Show mean_diff method explanation."""
+        console.print(Panel(
+            "[bold cyan]➖ MEAN DIFF METHOD[/bold cyan]\n"
+            "[dim]Yksinkertaisin ja nopein[/dim]\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "[bold white]Idea:[/bold white]\n"
+            "  Laske suora erotus harmful ja harmless\n"
+            "  aktivaatioiden keskiarvojen välillä.\n\n"
+            "[bold white]Algoritmi:[/bold white]\n\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  Harmful aktivaatiot:                        │\n"
+            "  │    H = [h₁, h₂, h₃, ..., hₙ]                 │\n"
+            "  │    mean_H = Σhᵢ / n                          │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         │\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  Harmless aktivaatiot:                       │\n"
+            "  │    L = [l₁, l₂, l₃, ..., lₘ]                 │\n"
+            "  │    mean_L = Σlⱼ / m                          │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         │\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  Refusal direction:                          │\n"
+            "  │                                              │\n"
+            "  │    direction = mean_H - mean_L               │\n"
+            "  │                                              │\n"
+            "  │    (normalisoituna: d / ||d||)               │\n"
+            "  └──────────────────────────────────────────────┘\n\n"
+            "[bold cyan]Visuaalisesti:[/bold cyan]\n\n"
+            "     Aktivaatioavaruus:\n\n"
+            "           Harmful ●────────────────→ direction\n"
+            "                  /\n"
+            "                 /\n"
+            "                /  (erotus)\n"
+            "               /\n"
+            "     Harmless ●\n\n"
+            "[bold yellow]Plussat:[/bold yellow] Erittäin nopea, yksinkertainen\n"
+            "[bold red]Miinukset:[/bold red] Sisältää kohinaa, ei puhdista suuntaa",
+            title="[bold cyan]Mean Difference[/bold cyan]",
+            border_style="cyan"
+        ))
+
+    def _show_pca_detail(self):
+        """Show PCA method explanation."""
+        console.print(Panel(
+            "[bold magenta]📈 PCA METHOD[/bold magenta]\n"
+            "[dim]Tilastollinen pääkomponenttianalyysi[/dim]\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "[bold white]Idea:[/bold white]\n"
+            "  Etsi suurin varianssin suunta yhdistetystä\n"
+            "  harmful + harmless datasta.\n\n"
+            "[bold white]Algoritmi:[/bold white]\n\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  1. Yhdistä aktivaatiot:                     │\n"
+            "  │     X = [harmful_acts; harmless_acts]        │\n"
+            "  │     (label: 1 = harmful, 0 = harmless)       │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  2. Keskitä data:                            │\n"
+            "  │     X_centered = X - mean(X)                 │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  3. Laske kovarianssimatriisi:               │\n"
+            "  │     C = X_centered.T @ X_centered / n        │\n"
+            "  └──────────────────────┬───────────────────────┘\n"
+            "                         ▼\n"
+            "  ┌──────────────────────────────────────────────┐\n"
+            "  │  4. Ominaisarvohajotelmä:                    │\n"
+            "  │     C = V Λ Vᵀ                               │\n"
+            "  │                                              │\n"
+            "  │     direction = V[:, 0]  (1. pääkomponentti) │\n"
+            "  └──────────────────────────────────────────────┘\n\n"
+            "[bold cyan]Visuaalisesti:[/bold cyan]\n\n"
+            "     ●  ●     ● Harmful (punaiset)\n"
+            "      ●  ●  ●\n"
+            "    ─────────────────→ PC1 (suurin varianssi)\n"
+            "      ○  ○\n"
+            "     ○ ○   ○   Harmless (siniset)\n\n"
+            "     PC1 = suunta joka erottaa ryhmät parhaiten\n\n"
+            "[bold yellow]Plussat:[/bold yellow] Tilastollisesti perusteltu, löytää dominantin suunnan\n"
+            "[bold red]Miinukset:[/bold red] Vaatii sklearn, ei välttämättä refusal-suunta",
+            title="[bold magenta]Principal Component Analysis[/bold magenta]",
+            border_style="magenta"
+        ))
 
     def _select_model(self, prompt: str = "Valitse malli:") -> Optional[Path]:
         """Select model from library for abliteration using table."""
@@ -346,25 +767,56 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             console.print("     [yellow]Detected: Llama 3.1 (vahva refusal)[/yellow]")
 
         # =====================================================================
-        # 2. STRENGTH
+        # 2. STRENGTH (Auto-scaling based on model size)
         # =====================================================================
         console.print("\n[bold cyan]2. STRENGTH[/bold cyan]")
-        console.print("[dim]   Abliteroinnin voimakkuus (0.0-2.0)[/dim]")
-        console.print("[dim]   • 0.5 = osittainen[/dim]")
-        console.print("[dim]   • 1.0 = taysi (suositeltu)[/dim]")
-        console.print("[dim]   • 1.5+ = aggressiivinen[/dim]\n")
 
-        strength_str = questionary.text(
-            "Strength (default 1.0):",
-            default="1.0",
+        # Get auto-scaled recommendation
+        params_b = info.get("estimated_params_b", 0)
+        is_moe = info.get("is_moe", False)
+        recommended_strength = self.abliterator.get_recommended_strength(info)
+
+        if params_b > 0:
+            model_type = "[yellow]MoE[/yellow]" if is_moe else "Dense"
+            console.print(f"   [dim]Mallikoko: ~{params_b:.1f}B parametria ({model_type})[/dim]")
+            console.print(f"   [green]Suositeltu strength: {recommended_strength:.2f}[/green]")
+            if is_moe:
+                console.print("   [yellow]⚠️  MoE-mallit vaativat varovaisen abliteroinnin[/yellow]")
+        else:
+            console.print("   [dim]Mallikokoa ei tunnistettu - käytetään oletusta 1.0[/dim]")
+            recommended_strength = 1.0
+
+        console.print()
+
+        # Ask if user wants to override
+        use_auto = questionary.confirm(
+            f"Käytä automaattista strengthiä ({recommended_strength:.2f})?",
+            default=True,
             style=custom_style,
         ).ask()
 
-        try:
-            strength = float(strength_str)
-            strength = max(0.0, min(2.0, strength))
-        except ValueError:
-            strength = 1.0
+        if use_auto:
+            strength = recommended_strength
+            auto_scale_strength = True
+        else:
+            # Manual override
+            console.print("\n[dim]   Manuaalinen säätö (0.0-2.0)[/dim]")
+            console.print("[dim]   • 0.2-0.3 = pienille malleille (<3B)[/dim]")
+            console.print("[dim]   • 0.5-0.7 = keskikokoisille (3B-14B)[/dim]")
+            console.print("[dim]   • 0.8-1.0 = isoille malleille (14B+)[/dim]\n")
+
+            strength_str = questionary.text(
+                "Strength:",
+                default=str(recommended_strength),
+                style=custom_style,
+            ).ask()
+
+            try:
+                strength = float(strength_str)
+                strength = max(0.0, min(2.0, strength))
+            except ValueError:
+                strength = recommended_strength
+            auto_scale_strength = False
 
         # =====================================================================
         # 3. METHOD
@@ -386,6 +838,41 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         ).ask()
 
         if method_choice is None:
+            return
+
+        # =====================================================================
+        # 3b. OFFLOAD MODE (GPU memory management)
+        # =====================================================================
+        console.print("\n[bold cyan]3b. OFFLOAD MODE[/bold cyan]")
+        console.print("[dim]   Mallin lataus GPU/CPU-muistiin[/dim]")
+        console.print("[dim]   • Auto sopii useimmille; sequential-tilat jos VRAM ei riita[/dim]\n")
+
+        offload_mode = questionary.select(
+            "Offload mode:",
+            choices=[
+                questionary.Choice(
+                    title="auto             (Suositeltu - transformers paattaa)",
+                    value="auto"
+                ),
+                questionary.Choice(
+                    title="gpu_only         (Nopein - koko malli GPU:lle, vaatii VRAMia)",
+                    value="gpu_only"
+                ),
+                questionary.Choice(
+                    title="sequential_cpu   (Vahan VRAMia - kerros kerrallaan GPU:lle)",
+                    value="sequential_cpu"
+                ),
+                questionary.Choice(
+                    title="sequential_disk  (Erittain isot mallit - levylta GPU:lle)",
+                    value="sequential_disk"
+                ),
+            ],
+            style=custom_style,
+            qmark=">>",
+            pointer=">"
+        ).ask()
+
+        if offload_mode is None:
             return
 
         # =====================================================================
@@ -465,7 +952,10 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         use_linear_probe = False
         use_auto_tune = False
         use_capability_preservation = False
+        use_direction_selection = False
         probe_accuracy_threshold = 0.85
+        auto_tune_iterations = 5  # Default
+        auto_tune_prompts = 10    # Default
 
         if questionary.confirm("Näytä edistyneet asetukset?", default=False, style=custom_style).ask():
             console.print("\n[bold cyan]5b. ADVANCED OPTIONS[/bold cyan]")
@@ -502,12 +992,45 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
                 style=custom_style,
             ).ask() or False
 
+            # Auto-tune speed settings
+            auto_tune_iterations = 5
+            auto_tune_prompts = 10
+            if use_auto_tune:
+                console.print("\n[white]Auto-tune nopeus:[/white]")
+                console.print("[dim]   Fast = 3 promptia × 3 iteraatiota (nopea, vähemmän tarkka)[/dim]")
+                console.print("[dim]   Normal = 10 promptia × 5 iteraatiota (tarkempi, hitaampi)[/dim]")
+                console.print("[dim]   [yellow]Jos malli käyttää CPU offloadia, valitse Fast![/yellow][/dim]")
+                auto_tune_speed = questionary.select(
+                    "Auto-tune speed:",
+                    choices=[
+                        questionary.Choice(title="Fast (suositeltu jos rajallinen VRAM)", value="fast"),
+                        questionary.Choice(title="Normal", value="normal"),
+                    ],
+                    default="fast",
+                    style=custom_style,
+                ).ask() or "fast"
+
+                if auto_tune_speed == "fast":
+                    auto_tune_iterations = 3
+                    auto_tune_prompts = 3
+
             # Capability Preservation
             console.print("\n[white]Capability Preservation:[/white]")
             console.print("[dim]   Varmistaa ettei mallin älykkyys heikkene[/dim]")
             console.print("[dim]   Tekee refusal-suunnan kohtisuoraksi yleiseen kapasiteettiin[/dim]")
             use_capability_preservation = questionary.confirm(
                 "Enable Capability Preservation?",
+                default=False,
+                style=custom_style,
+            ).ask() or False
+
+            # Direction Selection
+            console.print("\n[white]Direction Selection:[/white]")
+            console.print("[dim]   Validoi kandidaattisuunnat dry-run-testillä ja käyttää[/dim]")
+            console.print("[dim]   PARASTA suuntaa kaikissa kerroksissa (Arditi et al.)[/dim]")
+            console.print("[dim]   [yellow]Lisää ~16 generointia ekstraktioon[/yellow][/dim]")
+            use_direction_selection = questionary.confirm(
+                "Enable Direction Selection?",
                 default=False,
                 style=custom_style,
             ).ask() or False
@@ -565,6 +1088,25 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
 
         harmful_file = None
         harmless_file = None
+        prompt_language = "auto"
+
+        # Language choice only matters for built-in prompts (custom files
+        # already are whatever language the user wrote them in)
+        if prompt_source == "builtin":
+            console.print("\n[white]Prompt-kieli:[/white]")
+            console.print("[dim]   Refusal-suunta ekstraktoidaan tällä kielellä.[/dim]")
+            console.print("[dim]   Suomenkielisille malleille (esim. Poro) valitse Suomi/Auto![/dim]")
+            prompt_language = questionary.select(
+                "Kieli:",
+                choices=[
+                    questionary.Choice(title="Auto (tunnista mallista)", value="auto"),
+                    questionary.Choice(title="English", value="en"),
+                    questionary.Choice(title="Suomi", value="fi"),
+                    questionary.Choice(title="Molemmat (EN + FI)", value="multi"),
+                ],
+                default="auto",
+                style=custom_style,
+            ).ask() or "auto"
 
         if prompt_source == "saved":
             # Use saved dataset files
@@ -688,7 +1230,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         if use_linear_probe:
             advanced_opts.append(f"Linear Probe ({probe_accuracy_threshold:.0%})")
         if use_auto_tune:
-            advanced_opts.append("Auto-tune")
+            advanced_opts.append(f"Auto-tune + Reasoning Validation")
         if use_capability_preservation:
             advanced_opts.append("Capability Preservation")
         advanced_str = ", ".join(advanced_opts) if advanced_opts else "None"
@@ -702,6 +1244,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             f"[bold]Method:[/bold]         {method_choice}\n"
             f"[bold]Smart Mode:[/bold]     {smart_mode_str}\n"
             f"[bold]Advanced:[/bold]       {advanced_str}\n"
+            f"[bold]Offload Mode:[/bold]   {offload_mode}\n"
             f"[bold]Batch Size:[/bold]     {batch_size}\n"
             f"[bold]Prompts:[/bold]        {prompt_info}\n"
             f"[bold]Extra Targets:[/bold]  {extra_targets_str}\n"
@@ -724,20 +1267,33 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             include_llama31_prompts=info.get("is_llama31", False),
             harmful_prompts_file=harmful_file,
             harmless_prompts_file=harmless_file,
+            prompt_language=prompt_language,
             num_harmful=0,  # 0 = use all prompts from file
             num_harmless=0,
             batch_size=batch_size,
+            offload_mode=offload_mode,
             abliterate_embeddings=abliterate_embeddings or False,
             abliterate_lm_head=abliterate_lm_head or False,
             # Smart abliteration options
             use_smart_layers=use_smart_layers,
             layer_signal_threshold=layer_signal_threshold,
             use_dynamic_strength=use_dynamic_strength,
+            # Auto-scaling (based on model size)
+            auto_scale_strength=auto_scale_strength,
             # Advanced options
             use_linear_probe=use_linear_probe,
             probe_accuracy_threshold=probe_accuracy_threshold,
             use_auto_tune=use_auto_tune,
+            auto_tune_max_iterations=auto_tune_iterations,
+            auto_tune_test_prompts=auto_tune_prompts,
             use_capability_preservation=use_capability_preservation,
+            use_direction_selection=use_direction_selection,
+            # Reasoning validation - enabled by default when auto-tune is used
+            use_reasoning_validation=use_auto_tune,  # Auto-enable with auto-tune
+            reasoning_min_score=0.6,  # 60% of reasoning tests must pass
+            reasoning_strength_reduction=0.12,  # Reduce by 12% if reasoning fails
+            reasoning_min_strength=0.15,  # Don't go below this
+            reasoning_max_retries=6,  # Max attempts to find working strength
         )
 
         # Run abliteration
@@ -797,12 +1353,33 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             if result.auto_tuned_strength is not None:
                 smart_info += f"\n[white]Auto-tuned strength:[/white] {result.auto_tuned_strength:.2f}"
 
+            # Show reasoning validation result
+            if hasattr(result, 'reasoning_score') and result.reasoning_score is not None:
+                score_pct = result.reasoning_score * 100
+                status = "[green]OK[/green]" if result.reasoning_validated else "[yellow]Limited[/yellow]"
+                smart_info += f"\n[white]Reasoning validation:[/white] {score_pct:.0f}% {status}"
+                if hasattr(result, 'detected_language') and result.detected_language:
+                    lang_name = {"fi": "Finnish", "en": "English"}.get(result.detected_language, result.detected_language)
+                    smart_info += f" ({lang_name})"
+
+            # Show auto-scaling info if used
+            if result.was_auto_scaled:
+                model_type = "MoE" if result.is_moe_model else "Dense"
+                size_info = f"~{result.model_size_b:.1f}B" if result.model_size_b else "?"
+                smart_info += f"\n[white]Auto-scaled:[/white] strength={result.strength_applied:.2f} (model: {size_info} {model_type})"
+
+            # Format elapsed time
+            if result.elapsed_seconds >= 60:
+                time_str = f"{int(result.elapsed_seconds // 60)}m {result.elapsed_seconds % 60:.1f}s"
+            else:
+                time_str = f"{result.elapsed_seconds:.1f}s"
+
             console.print(Panel(
                 f"[green]Abliteration valmis![/green]\n\n"
                 f"[white]Tiedosto:[/white] {result.output_path}\n"
                 f"[white]Muokatut kerrokset:[/white] {len(result.modified_layers)}\n"
                 f"[white]Muokatut painot:[/white] {result.modified_weights}\n"
-                f"[white]Aika:[/white] {result.elapsed_seconds:.1f}s"
+                f"[white]Aika:[/white] {time_str}"
                 f"{smart_info}",
                 title="[bold green]Success[/bold green]",
                 border_style="green"
@@ -832,6 +1409,10 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
                     abliteration_details["probe_accuracies"] = {str(k): v for k, v in result.probe_accuracies.items()}
                 if result.auto_tuned_strength is not None:
                     abliteration_details["auto_tuned_strength"] = result.auto_tuned_strength
+                if result.was_auto_scaled:
+                    abliteration_details["auto_scaled"] = True
+                    abliteration_details["model_size_b"] = result.model_size_b
+                    abliteration_details["is_moe_model"] = result.is_moe_model
 
                 entry = self.library.add_model(
                     path=result.output_path,
