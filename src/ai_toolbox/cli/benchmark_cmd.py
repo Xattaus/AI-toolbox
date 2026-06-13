@@ -515,7 +515,7 @@ class BenchmarkCommands:
             choices=[
                 questionary.Choice(title="Vie tulokset", value="export"),
                 questionary.Choice(title="Tyhjenna kaikki", value="clear"),
-                questionary.Choice(title="<-  Back", value="back"),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ],
             style=custom_style,
         ).ask()

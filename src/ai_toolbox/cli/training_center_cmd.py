@@ -145,7 +145,7 @@ class TrainingCenterCommands:
                 ),
                 questionary.Separator("-----------------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa pavalikkoon"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]
@@ -228,7 +228,7 @@ class TrainingCenterCommands:
                 ),
                 questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]
@@ -276,7 +276,7 @@ class TrainingCenterCommands:
                 ),
                 questionary.Separator("---------------------------"),
                 questionary.Choice(
-                    title=format_menu_item("<- Back", "Palaa valikkoon"),
+                    title=format_menu_item("<- Palaa", ""),
                     value="back"
                 ),
             ]

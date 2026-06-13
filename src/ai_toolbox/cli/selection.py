@@ -254,7 +254,7 @@ def select_gguf_model(
         choices.append(create_choice(title, model.path))
 
     choices.append(create_separator())
-    choices.append(create_choice("<-  Back", "back"))
+    choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
         prompt,
@@ -303,7 +303,7 @@ def select_dataset(
         choices.append(create_choice(title, ds["path"]))
 
     choices.append(create_separator())
-    choices.append(create_choice("<-  Back", "back"))
+    choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
         prompt,
@@ -432,7 +432,7 @@ def select_lora_adapter(
         return None
 
     choices.append(create_separator())
-    choices.append(create_choice("<-  Back", "back"))
+    choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
         prompt,

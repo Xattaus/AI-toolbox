@@ -90,11 +90,11 @@ class AIToolbox:
         choices = [
             questionary.Separator("--- Keskustelu ----------------------------------"),
             questionary.Choice(
-                title=format_menu_item("Tool Master", "Keskustele AI Masterin kanssa"),
+                title=format_menu_item("Tool Master", "AI-chat: kysy malleista ja työkaluista"),
                 value="chat"
             ),
             questionary.Choice(
-                title=format_menu_item("Claude Assistant", "Claude CLI kehitykseen"),
+                title=format_menu_item("Claude Assistant", "Käynnistä Claude CLI kehitykseen"),
                 value="assistant"
             ),
             questionary.Separator("--- Mallien hallinta -------------------------"),

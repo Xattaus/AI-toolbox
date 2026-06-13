@@ -147,30 +147,98 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
     def _hf_token_settings(self):
         """HuggingFace token settings."""
-        print_mini_banner("HuggingFace Token")
+        import os
+        from ..core.config import update_config
 
-        if self.downloader and self.downloader.token:
-            console.print("[green]HF-token on asetettu[/green]")
-            token_preview = self.downloader.token[:8] + "..." if len(self.downloader.token) > 8 else "***"
-            console.print(f"[dim]Token: {token_preview}[/dim]\n")
-        else:
-            console.print("[yellow]HF-tokenia ei ole asetettu[/yellow]")
-            console.print("[dim]Aseta HF_TOKEN-ymparistomuuttuja yksityisille malleille[/dim]\n")
+        while True:
+            print_mini_banner("HuggingFace Token")
 
-        console.print("[bold white]Kuinka asettaa HuggingFace token:[/bold white]")
-        console.print("")
-        console.print("[cyan]Windows (PowerShell):[/cyan]")
-        console.print('  $env:HF_TOKEN = "hf_xxxxxxxxxxxx"')
-        console.print("")
-        console.print("[cyan]Windows (CMD):[/cyan]")
-        console.print('  set HF_TOKEN=hf_xxxxxxxxxxxx')
-        console.print("")
-        console.print("[cyan]Linux/Mac:[/cyan]")
-        console.print('  export HF_TOKEN="hf_xxxxxxxxxxxx"')
-        console.print("")
-        console.print("[dim]Tokenin saat osoitteesta: https://huggingface.co/settings/tokens[/dim]")
+            has_token = bool(self.downloader and self.downloader.token)
+            if has_token:
+                console.print("[green]HF-token on asetettu[/green]")
+                token_preview = self.downloader.token[:8] + "..." if len(self.downloader.token) > 8 else "***"
+                console.print(f"[dim]Token: {token_preview}[/dim]\n")
+            else:
+                console.print("[yellow]HF-tokenia ei ole asetettu[/yellow]")
+                console.print("[dim]Token tarvitaan gated-malleihin (Llama, Gemma...)[/dim]\n")
 
-        questionary.press_any_key_to_continue(style=custom_style).ask()
+            choices = [
+                questionary.Choice(
+                    title=format_menu_item("Set Token", "Syota ja tallenna token"),
+                    value="set"
+                ),
+            ]
+            if has_token:
+                choices.append(questionary.Choice(
+                    title=format_menu_item("Remove Token", "Poista tallennettu token"),
+                    value="remove"
+                ))
+            choices.extend([
+                questionary.Choice(
+                    title=format_menu_item("Instructions", "Ymparistomuuttuja-ohjeet"),
+                    value="help"
+                ),
+                questionary.Separator(),
+                questionary.Choice(
+                    title=format_menu_item("<- Palaa", ""),
+                    value="back"
+                ),
+            ])
+
+            choice = questionary.select(
+                "Valitse toiminto:",
+                choices=choices,
+                style=custom_style,
+                qmark="#",
+                pointer=">"
+            ).ask()
+
+            if choice is None or choice == "back":
+                return
+
+            elif choice == "set":
+                console.print("[dim]Tokenin saat osoitteesta: https://huggingface.co/settings/tokens[/dim]")
+                token = questionary.password(
+                    "HF-token (hf_...):",
+                    style=custom_style,
+                ).ask()
+
+                if not token or not token.strip():
+                    continue
+
+                token = token.strip()
+                if not token.startswith("hf_"):
+                    print_warning("Token ei ala 'hf_' - tarkista etta kopioit oikean arvon")
+                    if not questionary.confirm("Tallenna silti?", default=False, style=custom_style).ask():
+                        continue
+
+                # Persist to config + activate for this session
+                update_config(hf_token=token)
+                os.environ["HF_TOKEN"] = token
+                if self.downloader:
+                    self.downloader.set_token(token)
+                print_success("Token tallennettu (config.json) ja otettu kayttoon")
+                questionary.press_any_key_to_continue(style=custom_style).ask()
+
+            elif choice == "remove":
+                if questionary.confirm("Poista tallennettu token?", default=False, style=custom_style).ask():
+                    update_config(hf_token=None)
+                    os.environ.pop("HF_TOKEN", None)
+                    if self.downloader:
+                        self.downloader.set_token(None)
+                    print_success("Token poistettu")
+                    questionary.press_any_key_to_continue(style=custom_style).ask()
+
+            elif choice == "help":
+                console.print("\n[bold white]Vaihtoehtoisesti ymparistomuuttujalla:[/bold white]\n")
+                console.print("[cyan]Windows (PowerShell):[/cyan]")
+                console.print('  $env:HF_TOKEN = "hf_xxxxxxxxxxxx"')
+                console.print("\n[cyan]Windows (CMD):[/cyan]")
+                console.print('  set HF_TOKEN=hf_xxxxxxxxxxxx')
+                console.print("\n[cyan]Linux/Mac:[/cyan]")
+                console.print('  export HF_TOKEN="hf_xxxxxxxxxxxx"')
+                console.print("\n[dim]Ymparistomuuttuja ohittaa config-tiedostoon tallennetun tokenin.[/dim]")
+                questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _clear_cache(self):
         """Clear cache files."""
