@@ -147,7 +147,7 @@ class TrainingCommands:
 
             choices.extend([
                 questionary.Separator(),
-                questionary.Choice(title="Back                    Palaa", value="back"),
+                questionary.Choice(title="<- Palaa", value="back"),
             ])
 
             choice = questionary.select(
@@ -318,7 +318,7 @@ ennen isompaa ajoa.[/dim]
                     value="sample"
                 ),
                 questionary.Separator(),
-                questionary.Choice(title="Back                    Palaa", value="back"),
+                questionary.Choice(title="<- Palaa", value="back"),
             ]
 
             choice = questionary.select(
@@ -909,10 +909,28 @@ ennen isompaa ajoa.[/dim]
         # Tarkista Unsloth-yhteensopivuus ja kysy käyttäjältä
         use_unsloth = self._check_and_ask_unsloth(config)
 
+        # Tarjoa jatkamista jos run-kansiossa on aiempia checkpointteja
+        # (keskeytynyt training voidaan jatkaa save_steps-checkpointista)
+        resume = False
+        run_dir = Path(config.output_dir) if config.output_dir else self.trainer.output_dir / config.run_name
+        checkpoints = sorted(run_dir.glob("checkpoint-*")) if run_dir.exists() else []
+        if checkpoints:
+            console.print(f"\n[yellow]Loytyi {len(checkpoints)} aiempaa checkpointtia:[/yellow] {checkpoints[-1].name}")
+            resume = questionary.confirm(
+                "Jatketaanko viimeisimmasta checkpointista?",
+                default=True,
+                style=custom_style,
+            ).ask() or False
+
         def progress_cb(msg):
             console.print(f"  [dim]{msg}[/dim]")
 
-        result = self.trainer.train(config, progress_callback=progress_cb, use_unsloth=use_unsloth)
+        result = self.trainer.train(
+            config,
+            progress_callback=progress_cb,
+            use_unsloth=use_unsloth,
+            resume_from_checkpoint=resume,
+        )
 
         if result["success"]:
             # Näytä käytetty backend
@@ -983,7 +1001,7 @@ ennen isompaa ajoa.[/dim]
             return
 
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Back", value=("back", None)))
+        choices.append(questionary.Choice(title="<- Palaa", value=("back", None)))
 
         result = questionary.select(
             "Valitse adapter:",
@@ -1085,7 +1103,7 @@ ennen isompaa ajoa.[/dim]
             return
 
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(title="<-  Back", value=("back", None)))
+        choices.append(questionary.Choice(title="<- Palaa", value=("back", None)))
 
         result = questionary.select(
             "Valitse adapter:",

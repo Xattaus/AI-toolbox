@@ -1366,6 +1366,7 @@ class LoRATrainer:
         config: FullConfig,
         progress_callback: Optional[Callable] = None,
         use_unsloth: Optional[bool] = None,
+        resume_from_checkpoint: bool = False,
     ) -> Dict[str, Any]:
         """
         Suorita training.
@@ -1377,6 +1378,8 @@ class LoRATrainer:
                 - None: Auto-detect (käytä jos yhteensopiva)
                 - True: Pakota Unsloth (fallback PEFT:iin jos epäonnistuu)
                 - False: Käytä aina tavallista PEFT
+            resume_from_checkpoint: Jatka viimeisimmästä checkpoint-* -kansiosta
+                output-kansiossa (jos sellainen on)
 
         Returns:
             Dict[str, Any]: Tulokset sisältäen success, adapter_path, jne.
@@ -1419,7 +1422,10 @@ class LoRATrainer:
                 progress_callback(f"Käytetään Unsloth-kiihdytystä ({savings} VRAM-säästö)")
 
             try:
-                result = self._train_with_unsloth(config, progress_callback)
+                result = self._train_with_unsloth(
+                    config, progress_callback,
+                    resume_from_checkpoint=resume_from_checkpoint,
+                )
                 if result["success"]:
                     result["backend"] = "unsloth"
                     return result
@@ -1433,20 +1439,46 @@ class LoRATrainer:
                     progress_callback(f"Unsloth-virhe: {e}")
                     progress_callback("Fallback: kokeillaan tavallista PEFT...")
 
+            # Vapauta epäonnistuneen Unsloth-yrityksen GPU-muisti ennen kuin
+            # PEFT lataa mallin uudelleen - muuten fallback voi kaatua OOM:iin
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass
+
         # Tavallinen PEFT-koulutus
         if progress_callback and should_use_unsloth:
             progress_callback("Käytetään tavallista PEFT/transformers-koulutusta")
         elif progress_callback:
             progress_callback("Käytetään PEFT/transformers-koulutusta")
 
-        result = self._train_with_peft(config, progress_callback)
+        result = self._train_with_peft(
+            config, progress_callback,
+            resume_from_checkpoint=resume_from_checkpoint,
+        )
         result["backend"] = "peft"
         return result
+
+    @staticmethod
+    def _resolve_resume_checkpoint(output_dir: Path, resume: bool) -> bool:
+        """Palauta True vain jos jatkamista pyydettiin JA checkpoint loytyy.
+
+        HF Trainer kaatuu resume_from_checkpoint=True jos checkpointtia ei ole,
+        joten tarkistetaan olemassaolo etukateen.
+        """
+        if not resume:
+            return False
+        return any(output_dir.glob("checkpoint-*"))
 
     def _train_with_unsloth(
         self,
         config: FullConfig,
         progress_callback: Optional[Callable] = None,
+        resume_from_checkpoint: bool = False,
     ) -> Dict[str, Any]:
         """
         Suorita training Unslothilla.
@@ -1576,10 +1608,14 @@ class LoRATrainer:
             )
 
             # Train!
+            resume = self._resolve_resume_checkpoint(output_dir, resume_from_checkpoint)
             if progress_callback:
-                progress_callback("[Unsloth] Aloitetaan training...")
+                if resume:
+                    progress_callback("[Unsloth] Jatketaan viimeisimmasta checkpointista...")
+                else:
+                    progress_callback("[Unsloth] Aloitetaan training...")
 
-            trainer.train()
+            trainer.train(resume_from_checkpoint=resume or None)
 
             # Tallenna
             if progress_callback:
@@ -1593,7 +1629,7 @@ class LoRATrainer:
             config_path = output_dir / "training_config.json"
             training_info = config.to_dict()
             training_info["backend"] = "unsloth"
-            with open(config_path, 'w') as f:
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(training_info, f, indent=2, ensure_ascii=False)
 
             elapsed = time.time() - start_time
@@ -1616,6 +1652,7 @@ class LoRATrainer:
         self,
         config: FullConfig,
         progress_callback: Optional[Callable] = None,
+        resume_from_checkpoint: bool = False,
     ) -> Dict[str, Any]:
         """Suorita training tavallisella PEFT:llä."""
         try:
@@ -1667,7 +1704,13 @@ class LoRATrainer:
             )
 
             if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
+                tokenizer.pad_token = tokenizer.eos_token or tokenizer.unk_token
+                if tokenizer.pad_token is None:
+                    return {
+                        "success": False,
+                        "error": "Tokenizerilta puuttuu pad/eos/unk token - "
+                                 "batchaus ei toimi ilman pad-tokenia",
+                    }
 
             # 2. Lataa malli
             if progress_callback:
@@ -1799,10 +1842,14 @@ class LoRATrainer:
             )
 
             # 7. Train!
+            resume = self._resolve_resume_checkpoint(output_dir, resume_from_checkpoint)
             if progress_callback:
-                progress_callback("Aloitetaan training...")
+                if resume:
+                    progress_callback("Jatketaan viimeisimmasta checkpointista...")
+                else:
+                    progress_callback("Aloitetaan training...")
 
-            trainer.train()
+            trainer.train(resume_from_checkpoint=resume or None)
 
             # 8. Tallenna
             if progress_callback:
@@ -1815,7 +1862,7 @@ class LoRATrainer:
 
             # Tallenna config
             config_path = output_dir / "training_config.json"
-            with open(config_path, 'w') as f:
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
 
             elapsed = time.time() - start_time
@@ -2168,7 +2215,7 @@ class LoRATrainer:
     def save_config(self, config: FullConfig, name: str) -> Path:
         """Tallenna konfiguraatio."""
         config_path = self.configs_dir / f"{name}.json"
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
         return config_path
 

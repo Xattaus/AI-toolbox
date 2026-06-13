@@ -110,7 +110,7 @@ class DatasetCommands:
                     value="browse"
                 ),
                 questionary.Separator(),
-                questionary.Choice(title="Back                  Palaa", value="back"),
+                questionary.Choice(title="<- Palaa", value="back"),
             ]
 
             choice = questionary.select(
@@ -185,7 +185,14 @@ class DatasetCommands:
         try:
             idx = int(answer.strip()) - 1
             if 0 <= idx < len(datasets):
-                return datasets[idx]["path"]
+                selected_path = Path(datasets[idx]["path"])
+                # File may have been deleted/moved after listing - fail loudly
+                # here instead of silently returning empty stats downstream
+                if not selected_path.exists():
+                    print_error(f"Dataset-tiedostoa ei loydy enaa: {selected_path}")
+                    questionary.press_any_key_to_continue(style=custom_style).ask()
+                    return None
+                return selected_path
             else:
                 print_warning("Virheellinen valinta")
                 return None
