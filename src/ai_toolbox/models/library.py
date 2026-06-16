@@ -39,6 +39,89 @@ CATEGORY_ICONS = {
 # NAME FORMATTING UTILITIES
 # ============================================================================
 
+# Tokens dropped from descriptive display names - architecture / format noise
+# that does not help tell two local models apart.
+_DISPLAY_DROP_TOKENS = {"llama", "meta", "hf"}
+_DISPLAY_ARCH_TOKENS = {"llama", "meta"}
+
+# Descriptor tokens normalized to short, consistent labels. These are the parts
+# that actually distinguish two variants of the same base model (Instruct vs
+# SFT, chat vs base, etc.).
+_DISPLAY_DESCRIPTORS = {
+    "instruct": "Instr", "instr": "Instr", "it": "Instr",
+    "sft": "SFT", "dpo": "DPO", "rlhf": "RLHF",
+    "base": "Base", "chat": "Chat",
+}
+
+_DISPLAY_ORG_PREFIXES = (
+    "LumiOpen_", "aifeifei798_", "meta-llama_", "mistralai_",
+    "Qwen_", "deepseek-ai_", "NousResearch_", "teknium_",
+    "Open-Orca_", "WizardLM_", "lmsys_", "THUDM_",
+    "tiiuae_", "bigscience_", "EleutherAI_", "microsoft_",
+    "google_", "facebook_", "stabilityai_", "databricks_",
+)
+
+
+def _descriptive_identity(name: str) -> str:
+    """Build a display identity that keeps the parts which distinguish
+    variants of the same base model.
+
+    Unlike extract_model_identity (which collapses to the shortest unique
+    token and is used for terse merge names), this preserves family version,
+    training type and modifier tags so that e.g. "Poro-2-Instr-Ablit" and
+    "Poro-2-Ablit-v2" stay distinct in selection menus.
+    """
+    # Strip a leading organization prefix (case-insensitive).
+    for prefix in _DISPLAY_ORG_PREFIXES:
+        if name.lower().startswith(prefix.lower()):
+            name = name[len(prefix):]
+            break
+
+    out: List[str] = []
+    prev_low = ""
+    for token in re.split(r'[-_]', name):
+        if not token:
+            continue
+        low = token.lower()
+
+        # Size tags like "8B" / "1.5B" carry no distinguishing value.
+        if re.fullmatch(r'\d+(\.\d+)?b', low):
+            prev_low = low
+            continue
+        # Architecture / format noise.
+        if low in _DISPLAY_DROP_TOKENS:
+            prev_low = low
+            continue
+        # A bare number right after an architecture word is an arch version
+        # (e.g. Llama-3.1) -> drop. After a family word (Poro-2) -> keep.
+        if re.fullmatch(r'\d+(\.\d+)?', low) and prev_low in _DISPLAY_ARCH_TOKENS:
+            prev_low = low
+            continue
+
+        # Normalize known descriptor / modifier tokens to short labels.
+        if low.startswith("abliter"):
+            value = "Ablit"
+        elif low.startswith("uncens"):
+            value = "Uncens"
+        elif low in _DISPLAY_DESCRIPTORS:
+            value = _DISPLAY_DESCRIPTORS[low]
+        else:
+            value = token
+
+        if value.lower() not in [o.lower() for o in out]:
+            out.append(value)
+        prev_low = low
+
+    if not out:
+        # Nothing meaningful survived - fall back to the terse identity.
+        return extract_model_identity(name)
+
+    result = "-".join(out)
+    if result[0].islower():
+        result = result[0].upper() + result[1:]
+    return result
+
+
 def format_display_name(
     full_name: str,
     max_length: int = 40,
@@ -97,8 +180,9 @@ def format_display_name(
     if detected_quant and include_quant:
         quant_suffix = f" [{detected_quant}]"
 
-    # Use extract_model_identity for cleaner names
-    clean_name = extract_model_identity(name)
+    # Build a descriptive identity that keeps variant-distinguishing parts
+    # (training type, family version, abliterated/uncensored tags).
+    clean_name = _descriptive_identity(name)
 
     # Check if it's a merge (has method prefix)
     merge_prefixes = {
