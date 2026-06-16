@@ -14,6 +14,7 @@ from ..core.ui import (
     print_error,
     MENU_STYLE,
     format_menu_item,
+    menu_separator,
     print_branded_footer,
 )
 from ..models.library import ModelLibrary
@@ -72,15 +73,27 @@ class AIToolbox:
         """Run the main application loop."""
         print_toolbox_banner()
 
+        consecutive_errors = 0
         while self.running:
             try:
                 self.main_menu()
+                consecutive_errors = 0
             except KeyboardInterrupt:
                 console.print("\n")
                 if self._confirm_exit():
                     break
+            except EOFError:
+                # Ctrl+D tai suljettu stdin - poistu siististi ettei jaa
+                # ikuiseen virheluuppiin (Exception nappaisi taman muuten)
+                console.print("\n")
+                break
             except Exception as e:
                 print_error(f"Error occurred: {e}")
+                # Suojaa ikuiselta virheluupilta jos sama virhe toistuu
+                consecutive_errors += 1
+                if consecutive_errors >= 5:
+                    print_error("Liian monta perakkaista virhetta - poistutaan.")
+                    break
 
         print_branded_footer("Kiitos kun käytit AI Toolboxia!")
 
@@ -88,7 +101,7 @@ class AIToolbox:
         """Display and handle the main menu."""
         # Build menu with consistent formatting
         choices = [
-            questionary.Separator("--- Keskustelu ----------------------------------"),
+            menu_separator("Keskustelu"),
             questionary.Choice(
                 title=format_menu_item("Tool Master", "AI-chat: kysy malleista ja työkaluista"),
                 value="chat"
@@ -97,7 +110,7 @@ class AIToolbox:
                 title=format_menu_item("Claude Assistant", "Käynnistä Claude CLI kehitykseen"),
                 value="assistant"
             ),
-            questionary.Separator("--- Mallien hallinta -------------------------"),
+            menu_separator("Mallien hallinta"),
             questionary.Choice(
                 title=format_menu_item("Model Hub", "Lataa, selaa ja hallitse malleja"),
                 value="model_hub"
@@ -110,7 +123,7 @@ class AIToolbox:
                 title=format_menu_item("Ollama Manager", "Luo ja hallitse Ollama-malleja"),
                 value="ollama"
             ),
-            questionary.Separator("--- Kehittyneet työkalut ---------------------"),
+            menu_separator("Kehittyneet työkalut"),
             questionary.Choice(
                 title=format_menu_item("Training Center", "LoRA, datasetit, yhdistäminen"),
                 value="training_center"
@@ -119,7 +132,7 @@ class AIToolbox:
                 title=format_menu_item("Benchmark Suite", "Suorituskykytestaus"),
                 value="benchmark"
             ),
-            questionary.Separator("----------------------------------------------"),
+            menu_separator(),
             questionary.Choice(
                 title=format_menu_item("Asetukset", "Polut ja konfiguraatio"),
                 value="settings"

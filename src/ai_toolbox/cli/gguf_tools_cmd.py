@@ -29,6 +29,7 @@ from ..core.ui import (
     print_info,
     format_size,
     format_menu_item,
+    menu_separator,
     create_model_preview_card,
     MENU_STYLE,
 )
@@ -68,7 +69,7 @@ class GGUFToolsCommands:
             console.print(f"[dim]GGUF-malleja: {len(gguf_files)} ({format_size(total_size)})[/dim]\n")
 
             choices = [
-                questionary.Separator("--- Konvertointi -----------------------------"),
+                menu_separator("Konvertointi"),
                 questionary.Choice(
                     title=format_menu_item("HuggingFace -> GGUF", "Lataa ja muunna"),
                     value="hf"
@@ -81,7 +82,7 @@ class GGUFToolsCommands:
                     title=format_menu_item("Kirjastosta -> GGUF", "Muunna kirjastosta"),
                     value="library"
                 ),
-                questionary.Separator("--- Kvantisointi -----------------------------"),
+                menu_separator("Kvantisointi"),
                 questionary.Choice(
                     title=format_menu_item("Kvantisoi GGUF", "Pienennä GGUF-mallia"),
                     value="quantize"
@@ -90,7 +91,7 @@ class GGUFToolsCommands:
                     title=format_menu_item("Konvertoi & Kvantisoi", "Yhdistetty prosessi"),
                     value="convert_quantize"
                 ),
-                questionary.Separator("--- Työkalut ---------------------------------"),
+                menu_separator("Työkalut"),
                 questionary.Choice(
                     title=format_menu_item("VRAM-laskuri", "Laske muistivaatimukset"),
                     value="vram"
@@ -99,7 +100,7 @@ class GGUFToolsCommands:
                     title=format_menu_item("Kvantisointityypit", "Vertaile Q-tasoja"),
                     value="quants"
                 ),
-                questionary.Separator("----------------------------------------------"),
+                menu_separator(),
                 questionary.Choice(
                     title=format_menu_item("<- Palaa", ""),
                     value="back"

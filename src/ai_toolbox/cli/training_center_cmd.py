@@ -15,6 +15,7 @@ from ..core.ui import (
     print_branded_header,
     print_warning,
     format_menu_item,
+    menu_separator,
     MENU_STYLE,
 )
 from ..training.lora import LoRATrainer
@@ -95,7 +96,7 @@ class TrainingCenterCommands:
             console.print("  " + "  |  ".join(status_parts) + "\n")
 
             choices = [
-                questionary.Separator("--- LoRA Training ---"),
+                menu_separator("LoRA Training"),
                 questionary.Choice(
                     title=format_menu_item("Quick Train", "Pikakoulutus oletusasetuksilla"),
                     value="lora_quick"
@@ -112,7 +113,7 @@ class TrainingCenterCommands:
                     title=format_menu_item("Merge Adapter", "Yhdista adapteri base-malliin"),
                     value="lora_merge"
                 ),
-                questionary.Separator("--- Dataset Tools ---"),
+                menu_separator("Dataset Tools"),
                 questionary.Choice(
                     title=format_menu_item("Inspect", "Tarkasta datasetin rakenne"),
                     value="dataset_inspect"
@@ -129,12 +130,12 @@ class TrainingCenterCommands:
                     title=format_menu_item("More Tools...", "Lisaa dataset-tyokaluja"),
                     value="dataset_more"
                 ),
-                questionary.Separator("--- Model Merging ---"),
+                menu_separator("Model Merging"),
                 questionary.Choice(
                     title=format_menu_item("Mergekit Wizard", "Kaikki merge-tyokalut"),
                     value="mergekit_wizard"
                 ),
-                questionary.Separator("--- Abliteration ---"),
+                menu_separator("Abliteration"),
                 questionary.Choice(
                     title=format_menu_item("Remove Censorship", "Poista kieltaytymiskaytos"),
                     value="abliterate"
@@ -143,7 +144,7 @@ class TrainingCenterCommands:
                     title=format_menu_item("Test Model", "Testaa abliteroitu malli"),
                     value="abliter_test"
                 ),
-                questionary.Separator("-----------------------------------"),
+                menu_separator(),
                 questionary.Choice(
                     title=format_menu_item("<- Palaa", ""),
                     value="back"

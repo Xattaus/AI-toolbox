@@ -25,6 +25,7 @@ from ..core.ui import (
     print_info,
     format_size,
     format_menu_item,
+    menu_separator,
     create_model_preview_card,
     create_model_table,
     select_model_from_table,
@@ -84,7 +85,7 @@ class ModelHubCommands:
                     title=format_menu_item("Selaa kirjastoa", "Kaikki mallit"),
                     value="browse"
                 ),
-                questionary.Separator("--- Lataa ------------------------------------"),
+                menu_separator("Lataa"),
                 questionary.Choice(
                     title=format_menu_item("Hae HuggingFacesta", "Etsi ja lataa malleja"),
                     value="search"
@@ -101,7 +102,7 @@ class ModelHubCommands:
                     title=format_menu_item("Lataa LoRA", "LoRA-adapterit"),
                     value="lora"
                 ),
-                questionary.Separator("--- Hallinta ---------------------------------"),
+                menu_separator("Hallinta"),
                 questionary.Choice(
                     title=format_menu_item("Lisää malli", "Lisää paikallinen malli"),
                     value="add"
@@ -118,7 +119,7 @@ class ModelHubCommands:
                     title=format_menu_item("Kirjaston terveys", "Tarkista ja siivoa"),
                     value="health"
                 ),
-                questionary.Separator("----------------------------------------------"),
+                menu_separator(),
                 questionary.Choice(
                     title=format_menu_item("<- Palaa", ""),
                     value="back"

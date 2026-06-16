@@ -24,6 +24,7 @@ from ..core.ui import (
     print_info,
     format_size,
     format_menu_item,
+    menu_separator,
     MENU_STYLE,
 )
 from ..core.paths import get_paths
@@ -58,7 +59,7 @@ class SettingsCommands:
             print_branded_header("Asetukset", "Polut, tokenit ja järjestelmä")
 
             choices = [
-                questionary.Separator("--- Konfiguraatio ----------------------------"),
+                menu_separator("Konfiguraatio"),
                 questionary.Choice(
                     title=format_menu_item("Show All Paths", "Näytä kaikki polut"),
                     value="show_paths"
@@ -71,7 +72,7 @@ class SettingsCommands:
                     title=format_menu_item("Clear Cache", "Tyhjennä välimuisti"),
                     value="clear_cache"
                 ),
-                questionary.Separator("--- Kirjasto ---------------------------------"),
+                menu_separator("Kirjasto"),
                 questionary.Choice(
                     title=format_menu_item("Library Cleanup", "Siivoa duplikaatit"),
                     value="library_cleanup"
@@ -84,12 +85,12 @@ class SettingsCommands:
                     title=format_menu_item("Disk Analysis", "Levytilan analyysi"),
                     value="disk_analysis"
                 ),
-                questionary.Separator("--- Järjestelmä ------------------------------"),
+                menu_separator("Järjestelmä"),
                 questionary.Choice(
                     title=format_menu_item("System Info", "Järjestelmätiedot"),
                     value="sysinfo"
                 ),
-                questionary.Separator("----------------------------------------------"),
+                menu_separator(),
                 questionary.Choice(
                     title=format_menu_item("<- Palaa", ""),
                     value="back"
