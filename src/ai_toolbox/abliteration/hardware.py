@@ -116,3 +116,47 @@ def estimate_cost(model_info: Dict[str, Any], config: Any) -> MemoryEstimate:
         peak_vram_gb=round(peak_vram, 1),
         breakdown=breakdown,
     )
+
+
+@dataclass
+class RecommendedSettings:
+    offload_mode: str
+    batch_size: int
+    enable_auto_tune: bool
+    notes: List[str] = field(default_factory=list)
+
+
+def recommend_config(
+    profile: HardwareProfile,
+    model_info: Dict[str, Any],
+    conservative: bool = False,
+) -> RecommendedSettings:
+    """Pick offload mode, batch size and auto-tune based on hardware."""
+    params_b = float(model_info.get("estimated_params_b", 0.0) or 0.0)
+    weights_gb = params_b * 2.0
+    vram_free = profile.vram_free_gb or 0.0
+    notes: List[str] = []
+
+    if not profile.cuda_available:
+        offload, batch = "sequential_cpu", 1
+        notes.append("Ei CUDA-GPU:ta — CPU-offload, batch 1.")
+    elif vram_free >= weights_gb * 1.2:
+        offload = "auto"
+        batch = 2 if conservative else 4
+        notes.append(f"VRAM riittää malliin (~{weights_gb:.1f} GB) — auto-offload.")
+    else:
+        offload = "sequential_cpu"
+        batch = 1 if conservative else 2
+        notes.append(
+            f"VRAM ({vram_free:.1f} GB) ei riitä malliin (~{weights_gb:.1f} GB) "
+            f"— sequential_cpu."
+        )
+
+    budget = profile.commit_budget_gb
+    enable_auto_tune = (not conservative) and budget >= weights_gb * 3.0
+    if conservative:
+        notes.append("Turvallinen profiili: auto-tune pois, batch minimoitu.")
+    elif not enable_auto_tune:
+        notes.append("Vähän commit-muistia — auto-tune oletuksena pois.")
+
+    return RecommendedSettings(offload, batch, enable_auto_tune, notes)
