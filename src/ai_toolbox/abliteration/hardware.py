@@ -63,3 +63,56 @@ def detect_hardware() -> HardwareProfile:
     except Exception:
         pass
     return profile
+
+
+@dataclass
+class MemoryEstimate:
+    peak_commit_gb: float           # RAM + pagefile need (the 1455 metric)
+    peak_vram_gb: float
+    breakdown: Dict[str, float] = field(default_factory=dict)
+
+
+def estimate_cost(model_info: Dict[str, Any], config: Any) -> MemoryEstimate:
+    """Estimate peak commit (RAM+pagefile) and VRAM for an abliteration run."""
+    params_b = float(model_info.get("estimated_params_b", 0.0) or 0.0)
+    hidden = int(model_info.get("hidden_size", 4096) or 4096)
+    layers = int(model_info.get("num_layers", 32) or 32)
+    batch = int(getattr(config, "batch_size", 8) or 8)
+
+    weights_gb = params_b * 2.0                       # fp16: 2 bytes/param
+    activations_gb = (2 * hidden * layers * batch * 512) / _GB
+    overhead_gb = 2.0                                 # framework + CUDA context
+
+    breakdown: Dict[str, float] = {
+        "weights_fp16": round(weights_gb, 1),
+        "activations": round(activations_gb, 2),
+        "overhead": overhead_gb,
+    }
+    if getattr(config, "use_capability_preservation", False):
+        breakdown["capability_preservation"] = round(weights_gb * 0.10, 2)
+    if getattr(config, "use_direction_selection", False):
+        breakdown["direction_selection"] = round(weights_gb * 0.10, 2)
+
+    base = (
+        weights_gb + activations_gb + overhead_gb
+        + breakdown.get("capability_preservation", 0.0)
+        + breakdown.get("direction_selection", 0.0)
+    )
+
+    # Auto-tune reloads the model -> a second full copy must be committed.
+    auto_tune_mult = 2.0 if getattr(config, "use_auto_tune", False) else 1.0
+    breakdown["auto_tune_multiplier"] = auto_tune_mult
+    peak_commit = base * auto_tune_mult
+
+    offload = getattr(config, "offload_mode", "auto")
+    if offload in ("sequential_cpu", "sequential_disk"):
+        # Roughly one layer resident on the GPU at a time.
+        peak_vram = (weights_gb / max(layers, 1)) + activations_gb + overhead_gb
+    else:
+        peak_vram = weights_gb + activations_gb + overhead_gb
+
+    return MemoryEstimate(
+        peak_commit_gb=round(peak_commit, 1),
+        peak_vram_gb=round(peak_vram, 1),
+        breakdown=breakdown,
+    )
