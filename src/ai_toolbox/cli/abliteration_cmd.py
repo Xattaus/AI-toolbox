@@ -29,6 +29,15 @@ from ..core.ui import (
 )
 from ..core.paths import get_paths
 from ..abliteration.abliterator import Abliterator, AbliterationConfig
+from ..abliteration.hardware import (
+    detect_hardware,
+    estimate_cost,
+    recommend_config,
+    check_preflight,
+    recommend_pagefile_gb,
+    build_set_pagefile_command,
+    apply_pagefile_setting,
+)
 from ..models.library import ModelLibrary
 from ..models.downloader import ModelDownloader
 
@@ -767,6 +776,31 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             console.print("     [yellow]Detected: Llama 3.1 (vahva refusal)[/yellow]")
 
         # =====================================================================
+        # 1b. HARDWARE DETECTION
+        # =====================================================================
+        hw = detect_hardware()
+        rec = recommend_config(hw, info)
+
+        vram_txt = (
+            f"{hw.vram_free_gb:.1f} / {hw.vram_total_gb:.1f} GB ({hw.gpu_name})"
+            if hw.cuda_available and hw.vram_total_gb is not None
+            else "Ei CUDA-GPU:ta"
+        )
+        console.print("\n")
+        console.print(Panel(
+            f"[bold]GPU / VRAM:[/bold]    {vram_txt}\n"
+            f"[bold]RAM:[/bold]          {hw.available_ram_gb:.1f} / "
+            f"{hw.total_ram_gb:.1f} GB vapaana\n"
+            f"[bold]Pagefile:[/bold]     {hw.pagefile_free_gb:.1f} / "
+            f"{hw.pagefile_total_gb:.1f} GB vapaana\n"
+            f"[bold]Commit-budjetti:[/bold] {hw.commit_budget_gb:.1f} GB\n\n"
+            f"[dim]Suositus: offload={rec.offload_mode}, batch={rec.batch_size}, "
+            f"auto-tune={'on' if rec.enable_auto_tune else 'off'}[/dim]",
+            title="[bold cyan]🖥️  Laitteisto havaittu[/bold cyan]",
+            border_style="cyan",
+        ))
+
+        # =====================================================================
         # 2. STRENGTH (Auto-scaling based on model size)
         # =====================================================================
         console.print("\n[bold cyan]2. STRENGTH[/bold cyan]")
@@ -867,6 +901,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
                     value="sequential_disk"
                 ),
             ],
+            default=rec.offload_mode,
             style=custom_style,
             qmark=">>",
             pointer=">"
@@ -885,7 +920,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
 
         batch_size_str = questionary.text(
             "Batch size (default 8):",
-            default="8",
+            default=str(rec.batch_size),
             style=custom_style,
         ).ask()
 
@@ -988,7 +1023,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             console.print("[dim]   [yellow]HUOM: Lataa mallin uudelleen, vie aikaa![/yellow][/dim]")
             use_auto_tune = questionary.confirm(
                 "Enable Auto-tuning?",
-                default=False,
+                default=rec.enable_auto_tune,
                 style=custom_style,
             ).ask() or False
 
