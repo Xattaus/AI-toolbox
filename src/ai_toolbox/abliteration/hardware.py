@@ -160,3 +160,139 @@ def recommend_config(
         notes.append("Vähän commit-muistia — auto-tune oletuksena pois.")
 
     return RecommendedSettings(offload, batch, enable_auto_tune, notes)
+
+
+@dataclass
+class PreflightResult:
+    status: str                                  # "ok" | "warn" | "fail"
+    bottleneck: Optional[str]                    # "ram" | "pagefile" | "vram" | None
+    shortfall_gb: float
+    safe_profile: Optional[RecommendedSettings]
+    recommended_pagefile_gb: Optional[int]
+    message: str
+
+
+def check_preflight(
+    profile: HardwareProfile,
+    estimate: MemoryEstimate,
+    model_info: Dict[str, Any],
+    margin: float = 0.10,
+    is_windows: Optional[bool] = None,
+) -> PreflightResult:
+    """Compare the estimate against available memory before loading the model."""
+    if is_windows is None:
+        is_windows = platform.system() == "Windows"
+
+    commit_budget = profile.commit_budget_gb
+    # Hard failure only when the budget cannot cover the raw need. The margin
+    # is applied to the warn threshold below (and to VRAM) so that a config
+    # which fits but with thin headroom warns rather than fails.
+    commit_short = estimate.peak_commit_gb - commit_budget
+
+    vram_short = 0.0
+    if profile.vram_free_gb is not None:
+        vram_short = estimate.peak_vram_gb * (1 + margin) - profile.vram_free_gb
+
+    bottleneck: Optional[str] = None
+    shortfall = 0.0
+    status = "ok"
+
+    if commit_short > 0 and commit_short >= vram_short:
+        # Growing the pagefile is the realistic software fix on Windows;
+        # elsewhere the lever is physical RAM.
+        bottleneck = "pagefile" if is_windows else "ram"
+        shortfall = round(commit_short, 1)
+        status = "fail"
+    elif vram_short > 0:
+        bottleneck = "vram"
+        shortfall = round(vram_short, 1)
+        status = "fail"
+    elif commit_budget - estimate.peak_commit_gb < estimate.peak_commit_gb * margin:
+        status = "warn"
+
+    safe_profile: Optional[RecommendedSettings] = None
+    recommended_pf: Optional[int] = None
+    if status in ("warn", "fail"):
+        safe_profile = recommend_config(profile, model_info, conservative=True)
+        if bottleneck == "pagefile":
+            recommended_pf = recommend_pagefile_gb(estimate)[1]
+
+    message = _preflight_message(status, bottleneck, shortfall)
+    return PreflightResult(status, bottleneck, shortfall, safe_profile,
+                           recommended_pf, message)
+
+
+def _preflight_message(status: str, bottleneck: Optional[str], shortfall: float) -> str:
+    if status == "ok":
+        return "Muisti riittää valitulle konfiguraatiolle."
+    labels = {
+        "pagefile": "sivutustiedosto (pagefile) liian pieni",
+        "ram": "RAM-muisti ei riitä",
+        "vram": "GPU-muisti (VRAM) ei riitä",
+    }
+    label = labels.get(bottleneck or "", "muisti ei riitä")
+    verb = "varoitus" if status == "warn" else "ei riitä"
+    return f"Pre-flight {verb}: {label} (vajaus ~{shortfall:.1f} GB)."
+
+
+def recommend_pagefile_gb(
+    estimate: MemoryEstimate,
+    cap_gb: int = 64,
+) -> Tuple[int, int]:
+    """Recommend (initial, maximum) pagefile size in GB for the estimate.
+
+    Floors at 16/32 GB, caps both at cap_gb so it never proposes something
+    absurd on a huge model.
+    """
+    need = estimate.peak_commit_gb
+    initial = int(min(max(round(need * 1.5), 16), cap_gb))
+    maximum = int(min(max(round(need * 2.0), 32), cap_gb))
+    maximum = max(maximum, initial)
+    return initial, maximum
+
+
+def build_set_pagefile_command(initial_gb: int, max_gb: int, drive: str = "C:") -> str:
+    """Build the elevated PowerShell/WMI command that sets the pagefile.
+
+    Returns the inner PowerShell command string (not executed here).
+    """
+    init_mb = initial_gb * 1024
+    max_mb = max_gb * 1024
+    name = f"{drive}\\\\pagefile.sys"
+    return (
+        "$cs = Get-CimInstance Win32_ComputerSystem; "
+        "if ($cs.AutomaticManagedPagefile) { "
+        "Set-CimInstance -InputObject $cs "
+        "-Property @{AutomaticManagedPagefile=$false} }; "
+        f"$pf = Get-CimInstance Win32_PageFileSetting "
+        f"-Filter \"Name='{name}'\"; "
+        f"if ($pf) {{ Set-CimInstance -InputObject $pf "
+        f"-Property @{{InitialSize={init_mb};MaximumSize={max_mb}}} }} "
+        f"else {{ New-CimInstance -ClassName Win32_PageFileSetting "
+        f"-Property @{{Name='{drive}\\pagefile.sys';"
+        f"InitialSize={init_mb};MaximumSize={max_mb}}} }}"
+    )
+
+
+def apply_pagefile_setting(initial_gb: int, max_gb: int, drive: str = "C:") -> bool:
+    """Apply the pagefile setting via an elevated (UAC) PowerShell process.
+
+    Windows-only. Returns True on success. Does NOT reboot — the caller must
+    tell the user a restart is required. Returns False if not Windows, if the
+    user declines the UAC prompt, or on any error (caller shows manual steps).
+    """
+    if platform.system() != "Windows":
+        return False
+    inner = build_set_pagefile_command(initial_gb, max_gb, drive)
+    try:
+        completed = subprocess.run(
+            [
+                "powershell", "-NoProfile", "-Command",
+                "Start-Process powershell -Verb RunAs -Wait "
+                f"-ArgumentList '-NoProfile','-Command',\"{inner}\"",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        return completed.returncode == 0
+    except Exception:
+        return False

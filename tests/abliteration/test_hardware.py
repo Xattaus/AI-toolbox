@@ -3,6 +3,10 @@ from types import SimpleNamespace
 from ai_toolbox.abliteration.hardware import HardwareProfile, detect_hardware
 from ai_toolbox.abliteration.hardware import estimate_cost
 from ai_toolbox.abliteration.hardware import recommend_config
+from ai_toolbox.abliteration.hardware import check_preflight, MemoryEstimate
+from ai_toolbox.abliteration.hardware import (
+    recommend_pagefile_gb, build_set_pagefile_command,
+)
 
 _INFO = {"estimated_params_b": 8.0, "hidden_size": 4096, "num_layers": 32}
 
@@ -85,3 +89,61 @@ def test_low_commit_budget_disables_auto_tune():
                         cuda_available=True, vram_free_gb=24.0)
     rec = recommend_config(p, _INFO)  # budget 16 < 3*16 weights
     assert rec.enable_auto_tune is False
+
+
+def _est(commit, vram):
+    return MemoryEstimate(peak_commit_gb=commit, peak_vram_gb=vram, breakdown={})
+
+
+def test_preflight_ok_when_budget_far_exceeds_need():
+    p = HardwareProfile(available_ram_gb=64, pagefile_free_gb=64,
+                        cuda_available=True, vram_free_gb=24.0)
+    r = check_preflight(p, _est(20.0, 18.0), _INFO)
+    assert r.status == "ok"
+    assert r.bottleneck is None
+
+
+def test_preflight_fail_on_commit_marks_pagefile_on_windows():
+    p = HardwareProfile(available_ram_gb=8, pagefile_free_gb=8,
+                        pagefile_total_gb=16, cuda_available=True, vram_free_gb=24.0)
+    r = check_preflight(p, _est(40.0, 18.0), _INFO, is_windows=True)
+    assert r.status == "fail"
+    assert r.bottleneck == "pagefile"
+    assert r.shortfall_gb > 0
+    assert r.safe_profile is not None
+    assert r.recommended_pagefile_gb is not None
+
+
+def test_preflight_fail_on_vram():
+    p = HardwareProfile(available_ram_gb=128, pagefile_free_gb=128,
+                        cuda_available=True, vram_free_gb=4.0)
+    r = check_preflight(p, _est(20.0, 18.0), _INFO, is_windows=True)
+    assert r.status == "fail"
+    assert r.bottleneck == "vram"
+
+
+def test_preflight_warn_when_within_margin():
+    p = HardwareProfile(available_ram_gb=10, pagefile_free_gb=11,
+                        cuda_available=True, vram_free_gb=24.0)
+    # budget 21, need 20 -> headroom 1 < 10% of 20 -> warn
+    r = check_preflight(p, _est(20.0, 18.0), _INFO, is_windows=True)
+    assert r.status == "warn"
+
+
+def test_recommend_pagefile_covers_need_and_caps_at_64():
+    init, mx = recommend_pagefile_gb(_est(40.0, 18.0))
+    assert init >= 40 and mx >= init
+    assert mx <= 64  # capped
+
+
+def test_recommend_pagefile_has_floor():
+    init, mx = recommend_pagefile_gb(_est(2.0, 2.0))
+    assert init >= 16 and mx >= 32
+
+
+def test_build_pagefile_command_contains_sizes_and_class():
+    cmd = build_set_pagefile_command(32, 48, drive="C:")
+    assert "Win32_PageFileSetting" in cmd
+    assert "32768" in cmd          # 32 GB in MB
+    assert "49152" in cmd          # 48 GB in MB
+    assert "AutomaticManagedPagefile" in cmd
