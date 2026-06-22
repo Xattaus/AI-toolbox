@@ -35,6 +35,7 @@ from ..core.ui import (
 from ..core.paths import get_paths, get_gguf_dir
 from ..models.library import ModelLibrary
 from ..conversion.converter import GGUFConverter
+from .selection import build_conversion_choices
 
 # Use unified menu style
 custom_style = MENU_STYLE
@@ -414,83 +415,82 @@ class GGUFToolsCommands:
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _select_model_for_conversion(self, prompt: str) -> Optional[Path]:
-        """Select a model directory for conversion."""
-        choices = [
-            questionary.Choice(title="Syota polku manuaalisesti", value="manual"),
-            questionary.Choice(title="Valitse latauksista", value="downloads"),
-            questionary.Separator(),
-            questionary.Choice(title="Back", value=None),
-        ]
+        """Select a convertible model from library + downloads (table, numbered).
 
-        choice = questionary.select(
-            prompt,
-            choices=choices,
-            style=custom_style,
-        ).ask()
+        Shows the library's convertible (SafeTensors/PyTorch) models and any
+        downloaded HF models. No manual path entry - add models to the library
+        or downloads first.
+        """
+        # Convertible library models (SafeTensors/PyTorch), incl. merged models
+        convertible = list(self.library.get_convertible_models())
+        merged = self.library.get_all_merged()
+        seen = {str(m.path) for m in convertible}
+        for m in merged:
+            if m.format in ('safetensors', 'pytorch') and str(m.path) not in seen:
+                convertible.append(m)
+                seen.add(str(m.path))
 
-        if not choice:
+        downloaded = self.downloader.list_downloaded() if self.downloader else []
+
+        items = build_conversion_choices(convertible, downloaded)
+
+        if not items:
+            print_warning("Kirjastossa ei ole muunnettavia malleja (SafeTensors/PyTorch) eika latauksia")
+            console.print("[dim]Lataa ensin malli Model Hub -valikosta[/dim]")
+            questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
 
-        if choice == "manual":
-            path = questionary.path(
-                "Syota polku mallikansioon:",
+        print_branded_header("GGUF Konvertointi", prompt)
+        table = Table(
+            title="[bold orange1]Muunnettavat mallit[/bold orange1]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            border_style="orange3",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold yellow", width=4, justify="right")
+        table.add_column("Malli", style="white", min_width=35)
+        table.add_column("Koko", style="cyan", width=10, justify="right")
+        table.add_column("Lahde", style="dim", width=10)
+
+        last_source = None
+        for i, it in enumerate(items, 1):
+            if it["source"] != last_source:
+                header = (
+                    "[bold green]--- Kirjasto ---[/bold green]"
+                    if it["source"] == "library"
+                    else "[bold cyan]--- HuggingFace ---[/bold cyan]"
+                )
+                table.add_row("", header, "", "")
+                last_source = it["source"]
+            size = format_size(it["size_bytes"]) if it["size_bytes"] else "-"
+            name = it["name"][:35] if len(it["name"]) <= 35 else it["name"][:32] + "..."
+            icon = "🏠" if it["source"] == "library" else "🤗"
+            tag = "Local" if it["source"] == "library" else "HF"
+            table.add_row(str(i), f"{icon} {name}", size, tag)
+
+        console.print(table)
+        console.print()
+
+        # Get selection by number
+        while True:
+            answer = questionary.text(
+                f"Valitse numero [1-{len(items)}] (0 = peruuta)",
                 style=custom_style,
-                only_directories=True,
             ).ask()
-            return Path(path) if path else None
 
-        elif choice == "downloads":
-            if not self.downloader:
-                print_error("Downloader ei ole kaytettavissa")
+            if answer is None or answer.strip() in ("", "0", "q"):
                 return None
 
-            downloaded = self.downloader.list_downloaded()
-            if not downloaded:
-                print_warning("Ladattuja malleja ei loytynyt")
-                return None
-
-            # Create table for downloaded models
-            table = Table(
-                title=f"[bold orange1]Ladatut mallit ({len(downloaded)})[/bold orange1]",
-                box=box.ROUNDED,
-                show_header=True,
-                header_style="bold cyan",
-                border_style="orange3",
-                padding=(0, 1),
-            )
-            table.add_column("#", style="bold yellow", width=4, justify="right")
-            table.add_column("Malli", style="white", min_width=40)
-            table.add_column("Koko", style="cyan", width=10, justify="right")
-
-            display_models = downloaded[:15]
-            for i, model in enumerate(display_models, 1):
-                size = format_size(model['size'])
-                name = model['model_id'][:40] if len(model['model_id']) <= 40 else model['model_id'][:37] + "..."
-                table.add_row(str(i), f"🤗 {name}", size)
-
-            console.print(table)
-            console.print()
-
-            # Get selection by number
-            while True:
-                answer = questionary.text(
-                    f"Valitse numero [1-{len(display_models)}] (0 = peruuta)",
-                    style=custom_style,
-                ).ask()
-
-                if answer is None or answer.strip() in ("", "0", "q"):
-                    return None
-
-                try:
-                    sel_idx = int(answer.strip())
-                    if 1 <= sel_idx <= len(display_models):
-                        return Path(display_models[sel_idx - 1]['path'])
-                    else:
-                        print_warning(f"Valitse numero väliltä 1-{len(display_models)}")
-                except ValueError:
-                    print_warning("Anna kelvollinen numero")
-
-        return None
+            try:
+                sel_idx = int(answer.strip())
+                if 1 <= sel_idx <= len(items):
+                    return items[sel_idx - 1]["path"]
+                else:
+                    print_warning(f"Valitse numero väliltä 1-{len(items)}")
+            except ValueError:
+                print_warning("Anna kelvollinen numero")
 
     # ==================== QUANTIZATION ====================
 

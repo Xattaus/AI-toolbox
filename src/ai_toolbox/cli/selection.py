@@ -22,6 +22,37 @@ SelectionResult = Optional[Path]
 TaggedSelectionResult = Optional[Tuple[str, Path]]
 
 
+def build_conversion_choices(convertible_models, downloaded) -> List[dict]:
+    """Build a numbered selection list for GGUF conversion (pure / testable).
+
+    Library convertible models come first, then downloaded HF models. Each item
+    is a dict: {path: Path, name: str, size_bytes: int, source: "library"|"download"}.
+
+    Args:
+        convertible_models: ModelEntry-like objects (name/path/size_bytes).
+        downloaded: list of dicts from ModelDownloader.list_downloaded()
+                    (model_id/path/size).
+    """
+    items: List[dict] = []
+    for m in convertible_models:
+        items.append({
+            "path": Path(m.path),
+            "name": m.name,
+            "size_bytes": m.size_bytes,
+            "source": "library",
+        })
+    for d in downloaded:
+        model_id = d.get("model_id", "")
+        name = model_id.split("/")[-1] if "/" in model_id else model_id
+        items.append({
+            "path": Path(d["path"]),
+            "name": name,
+            "size_bytes": d.get("size", 0),
+            "source": "download",
+        })
+    return items
+
+
 def select_model(
     library,
     prompt: str = "Select model:",
