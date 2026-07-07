@@ -23,6 +23,19 @@ from .testing import (
     CategoryStats,
     ComparisonReport,
 )
+from .hardware import (
+    HardwareProfile,
+    MemoryEstimate,
+    RecommendedSettings,
+    PreflightResult,
+    detect_hardware,
+    estimate_cost,
+    recommend_config,
+    check_preflight,
+    recommend_pagefile_gb,
+    build_set_pagefile_command,
+    apply_pagefile_setting,
+)
 
 __all__ = [
     # Core abliteration
@@ -44,4 +57,16 @@ __all__ = [
     'AbliterationTestReport',
     'CategoryStats',
     'ComparisonReport',
+    # Hardware / pre-flight
+    'HardwareProfile',
+    'MemoryEstimate',
+    'RecommendedSettings',
+    'PreflightResult',
+    'detect_hardware',
+    'estimate_cost',
+    'recommend_config',
+    'check_preflight',
+    'recommend_pagefile_gb',
+    'build_set_pagefile_command',
+    'apply_pagefile_setting',
 ]

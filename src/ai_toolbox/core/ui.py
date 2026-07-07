@@ -168,6 +168,16 @@ def format_menu_separator(label: str = "", char: str = "─", width: int = 50) -
     return char * width
 
 
+def menu_separator(label: str = "", width: int = 46):
+    """Return a questionary.Separator with a consistent width and style.
+
+    Use this instead of hand-built questionary.Separator("--- X ---...")
+    so every menu uses the same separator width across the whole app.
+    """
+    from questionary import Separator
+    return Separator(format_menu_separator(label, char="-", width=width))
+
+
 def create_status_line(items: dict, separator: str = " │ ") -> str:
     """
     Create a status line showing multiple status items.

@@ -29,6 +29,15 @@ from ..core.ui import (
 )
 from ..core.paths import get_paths
 from ..abliteration.abliterator import Abliterator, AbliterationConfig
+from ..abliteration.hardware import (
+    detect_hardware,
+    estimate_cost,
+    recommend_config,
+    check_preflight,
+    recommend_pagefile_gb,
+    build_set_pagefile_command,
+    apply_pagefile_setting,
+)
 from ..models.library import ModelLibrary
 from ..models.downloader import ModelDownloader
 
@@ -767,6 +776,31 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             console.print("     [yellow]Detected: Llama 3.1 (vahva refusal)[/yellow]")
 
         # =====================================================================
+        # 1b. HARDWARE DETECTION
+        # =====================================================================
+        hw = detect_hardware()
+        rec = recommend_config(hw, info)
+
+        vram_txt = (
+            f"{hw.vram_free_gb:.1f} / {hw.vram_total_gb:.1f} GB ({hw.gpu_name})"
+            if hw.cuda_available and hw.vram_total_gb is not None
+            else "Ei CUDA-GPU:ta"
+        )
+        console.print("\n")
+        console.print(Panel(
+            f"[bold]GPU / VRAM:[/bold]    {vram_txt}\n"
+            f"[bold]RAM:[/bold]          {hw.available_ram_gb:.1f} / "
+            f"{hw.total_ram_gb:.1f} GB vapaana\n"
+            f"[bold]Pagefile:[/bold]     {hw.pagefile_free_gb:.1f} / "
+            f"{hw.pagefile_total_gb:.1f} GB vapaana\n"
+            f"[bold]Commit-budjetti:[/bold] {hw.commit_budget_gb:.1f} GB\n\n"
+            f"[dim]Suositus: offload={rec.offload_mode}, batch={rec.batch_size}, "
+            f"auto-tune={'on' if rec.enable_auto_tune else 'off'}[/dim]",
+            title="[bold cyan]🖥️  Laitteisto havaittu[/bold cyan]",
+            border_style="cyan",
+        ))
+
+        # =====================================================================
         # 2. STRENGTH (Auto-scaling based on model size)
         # =====================================================================
         console.print("\n[bold cyan]2. STRENGTH[/bold cyan]")
@@ -867,6 +901,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
                     value="sequential_disk"
                 ),
             ],
+            default=rec.offload_mode,
             style=custom_style,
             qmark=">>",
             pointer=">"
@@ -885,7 +920,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
 
         batch_size_str = questionary.text(
             "Batch size (default 8):",
-            default="8",
+            default=str(rec.batch_size),
             style=custom_style,
         ).ask()
 
@@ -988,7 +1023,7 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             console.print("[dim]   [yellow]HUOM: Lataa mallin uudelleen, vie aikaa![/yellow][/dim]")
             use_auto_tune = questionary.confirm(
                 "Enable Auto-tuning?",
-                default=False,
+                default=rec.enable_auto_tune,
                 style=custom_style,
             ).ask() or False
 
@@ -1202,9 +1237,6 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
         if not output_name:
             return
 
-        # Estimate requirements
-        reqs = self.abliterator.estimate_requirements(str(model_path))
-
         # Determine prompt source text for summary
         if harmful_file:
             prompt_info = f"Custom: {Path(harmful_file).name} + {Path(harmless_file).name}"
@@ -1235,28 +1267,119 @@ Kayta vastuullisesti vain tutkimus- ja testaustarkoituksiin.[/yellow]
             advanced_opts.append("Capability Preservation")
         advanced_str = ", ".join(advanced_opts) if advanced_opts else "None"
 
-        # Show summary
-        console.print("\n")
-        console.print(Panel(
-            f"[bold]Source Model:[/bold]   {model_path.name}\n"
-            f"[bold]Architecture:[/bold]   {info.get('architecture', 'Unknown')}\n"
-            f"[bold]Strength:[/bold]       {strength:.1f}\n"
-            f"[bold]Method:[/bold]         {method_choice}\n"
-            f"[bold]Smart Mode:[/bold]     {smart_mode_str}\n"
-            f"[bold]Advanced:[/bold]       {advanced_str}\n"
-            f"[bold]Offload Mode:[/bold]   {offload_mode}\n"
-            f"[bold]Batch Size:[/bold]     {batch_size}\n"
-            f"[bold]Prompts:[/bold]        {prompt_info}\n"
-            f"[bold]Extra Targets:[/bold]  {extra_targets_str}\n"
-            f"[bold]Output:[/bold]         {output_name}\n\n"
-            f"[dim]Arvioitu RAM:[/dim]    {reqs.get('estimated_ram_gb', '?')} GB\n"
-            f"[dim]Arvioitu VRAM:[/dim]   {reqs.get('estimated_vram_gb', '?')} GB",
-            title="[bold cyan]Configuration Summary[/bold cyan]",
-            border_style="cyan"
-        ))
+        # =====================================================================
+        # PRE-FLIGHT: estimate memory and gate before loading the model
+        # =====================================================================
+        from types import SimpleNamespace
 
-        if not questionary.confirm("Aloitetaanko abliteration?", default=True, style=custom_style).ask():
-            return
+        while True:
+            est_cfg = SimpleNamespace(
+                batch_size=batch_size,
+                offload_mode=offload_mode,
+                use_auto_tune=use_auto_tune,
+                use_capability_preservation=use_capability_preservation,
+                use_direction_selection=use_direction_selection,
+            )
+            estimate = estimate_cost(info, est_cfg)
+            preflight = check_preflight(hw, estimate, info)
+
+            status_color = {"ok": "green", "warn": "yellow", "fail": "red"}[preflight.status]
+            console.print("\n")
+            console.print(Panel(
+                f"[bold]Source Model:[/bold]   {model_path.name}\n"
+                f"[bold]Architecture:[/bold]   {info.get('architecture', 'Unknown')}\n"
+                f"[bold]Strength:[/bold]       {strength:.1f}\n"
+                f"[bold]Method:[/bold]         {method_choice}\n"
+                f"[bold]Smart Mode:[/bold]     {smart_mode_str}\n"
+                f"[bold]Advanced:[/bold]       {advanced_str}\n"
+                f"[bold]Offload Mode:[/bold]   {offload_mode}\n"
+                f"[bold]Batch Size:[/bold]     {batch_size}\n"
+                f"[bold]Auto-tune:[/bold]      {'on' if use_auto_tune else 'off'}\n"
+                f"[bold]Prompts:[/bold]        {prompt_info}\n"
+                f"[bold]Extra Targets:[/bold]  {extra_targets_str}\n"
+                f"[bold]Output:[/bold]         {output_name}\n\n"
+                f"[dim]Arvioitu commit (RAM+pagefile):[/dim] "
+                f"{estimate.peak_commit_gb:.1f} GB / budjetti {hw.commit_budget_gb:.1f} GB\n"
+                f"[dim]Arvioitu VRAM:[/dim]   {estimate.peak_vram_gb:.1f} GB\n"
+                f"[{status_color}]Pre-flight: {preflight.message}[/{status_color}]",
+                title="[bold cyan]Configuration Summary[/bold cyan]",
+                border_style=status_color,
+            ))
+
+            if preflight.status == "ok":
+                if not questionary.confirm(
+                    "Aloitetaanko abliteration?", default=True, style=custom_style
+                ).ask():
+                    return
+                break
+
+            # warn/fail -> offer remediation
+            choices = []
+            if preflight.safe_profile is not None:
+                sp = preflight.safe_profile
+                choices.append(questionary.Choice(
+                    title=(
+                        f"Käytä turvallista profiilia "
+                        f"(offload={sp.offload_mode}, batch={sp.batch_size}, "
+                        f"auto-tune={'on' if sp.enable_auto_tune else 'off'})"
+                    ),
+                    value="safe",
+                ))
+            if preflight.bottleneck == "pagefile" and preflight.recommended_pagefile_gb:
+                choices.append(questionary.Choice(
+                    title=(
+                        f"Säädä pagefile automaattisesti "
+                        f"(~{preflight.recommended_pagefile_gb} GB, vaatii admin + reboot)"
+                    ),
+                    value="pagefile",
+                ))
+            choices.append(questionary.Choice(title="Jatka silti (oma vastuu)", value="continue"))
+            choices.append(questionary.Choice(title="Peruuta", value="cancel"))
+
+            console.print(f"\n[{status_color}]⚠️  {preflight.message}[/{status_color}]")
+            action = questionary.select(
+                "Miten jatketaan?",
+                choices=choices,
+                style=custom_style,
+                qmark=">>",
+                pointer=">",
+            ).ask()
+
+            if action == "safe":
+                sp = preflight.safe_profile
+                batch_size = sp.batch_size
+                offload_mode = sp.offload_mode
+                use_auto_tune = sp.enable_auto_tune
+                console.print("[green]Turvallinen profiili otettu käyttöön.[/green]")
+                continue  # re-estimate and re-show summary
+            elif action == "pagefile":
+                init_gb, max_gb = recommend_pagefile_gb(estimate)
+                if questionary.confirm(
+                    f"Asetetaanko pagefile {init_gb}–{max_gb} GB? "
+                    f"(UAC-kehote avautuu, käynnistä kone uudelleen jälkeenpäin)",
+                    default=True, style=custom_style,
+                ).ask():
+                    if apply_pagefile_setting(init_gb, max_gb):
+                        console.print(
+                            "[green]Pagefile asetettu.[/green] "
+                            "[yellow]Käynnistä kone uudelleen ja aja abliterointi "
+                            "uudelleen.[/yellow]"
+                        )
+                        return
+                    else:
+                        console.print(
+                            "[yellow]Automaattinen säätö ei onnistunut "
+                            "(ei admin-oikeuksia / peruutettu).[/yellow]\n"
+                            f"[dim]Aseta käsin: Win+R → SystemPropertiesAdvanced → "
+                            f"Suorituskyky → Asetukset → Lisäasetukset → Näennäismuisti → "
+                            f"alkukoko {init_gb*1024} MB, maksimi {max_gb*1024} MB → reboot.[/dim]"
+                        )
+                continue
+            elif action == "continue":
+                console.print("[yellow]Jatketaan varoituksesta huolimatta.[/yellow]")
+                break
+            else:  # cancel / None
+                return
 
         # Create config
         config = AbliterationConfig(

@@ -25,6 +25,7 @@ from ..core.ui import (
     print_info,
     format_size,
     format_menu_item,
+    menu_separator,
     select_model_from_table,
     MENU_STYLE,
 )
@@ -77,7 +78,7 @@ class BenchmarkCommands:
             console.print(f"[dim]Output: {status['benchmarks_dir']}[/dim]\n")
 
             choices = [
-                questionary.Separator("--- Testit -----------------------------------"),
+                menu_separator("Testit"),
                 questionary.Choice(
                     title=format_menu_item("Quick Benchmark", "Nopea yhden mallin testi"),
                     value="quick"
@@ -94,7 +95,7 @@ class BenchmarkCommands:
                     title=format_menu_item("Memory Profile", "Mittaa muistinkäyttö"),
                     value="memory"
                 ),
-                questionary.Separator("--- Tulokset ---------------------------------"),
+                menu_separator("Tulokset"),
                 questionary.Choice(
                     title=format_menu_item("View Results", "Näytä aiemmat tulokset"),
                     value="view"
@@ -107,7 +108,7 @@ class BenchmarkCommands:
                     title=format_menu_item("System Info", "Näytä järjestelmätiedot"),
                     value="sysinfo"
                 ),
-                questionary.Separator("----------------------------------------------"),
+                menu_separator(),
                 questionary.Choice(
                     title=format_menu_item("<- Palaa", ""),
                     value="back"
