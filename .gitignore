@@ -141,6 +141,7 @@ htmlcov/
 # Benchmarks & Results (user-specific)
 # --------------------------------------------
 benchmarks/results/
+benchmarks/results.json
 
 # --------------------------------------------
 # MCP config (user-specific paths)
@@ -159,6 +160,9 @@ mcp-config.json
 # Windows artifacts
 # --------------------------------------------
 nul
+
+# Working/temp merge config (generated at runtime)
+configs/merges/_current_merge.yaml
 
 # Brain - autonomous context management
 .brain/

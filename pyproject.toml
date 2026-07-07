@@ -7,7 +7,7 @@ name = "ai-toolbox"
 version = "3.0.0"
 description = "Local AI Toolkit - Download, convert, train, merge, and chat with local LLM models"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.9"
 authors = [
     {name = "AI Toolbox"}
@@ -32,7 +32,7 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",

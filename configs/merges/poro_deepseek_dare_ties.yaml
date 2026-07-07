@@ -11,7 +11,7 @@
 # Huom: Vaatii base-mallin (Llama-3.1-8B) latauksen
 
 models:
-  - model: D:/AI Toolbox/models/abliterated/Poro-2-8B-abliterated-v2
+  - model: models/abliterated/Poro-2-8B-abliterated-v2
     parameters:
       weight: 0.7      # Painotus mergessä
       density: 0.7     # DARE: säilytä 70% parametreista

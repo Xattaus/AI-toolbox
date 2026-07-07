@@ -404,7 +404,9 @@ Contributions welcome! Feel free to:
 
 ## License
 
-MIT License - use freely, modify, and distribute.
+GPL-3.0 - see [LICENSE](LICENSE). You may use, modify, and distribute this
+software, but any distributed modifications must also be released under the
+GPL-3.0.
 
 ---
 
