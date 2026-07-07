@@ -420,7 +420,7 @@ external tools (installed/downloaded separately, not bundled here):
 - [Hugging Face](https://huggingface.co) `transformers`, `huggingface-hub`, `safetensors`, `tokenizers` (Apache-2.0) - model download & handling
 - [Ollama](https://ollama.com) - local model serving
 - [Unsloth](https://github.com/unslothai/unsloth) / [PEFT](https://github.com/huggingface/peft) (Apache-2.0) - LoRA training
-- [Rich](https://github.com/Textualize/rich), [Textual](https://github.com/Textualize/textual), [Questionary](https://github.com/tmbo/questionary) (MIT) - terminal UI
+- [Rich](https://github.com/Textualize/rich), [Questionary](https://github.com/tmbo/questionary) (MIT) - terminal UI
 
 ---
 

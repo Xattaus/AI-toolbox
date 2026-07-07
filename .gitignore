@@ -164,6 +164,11 @@ nul
 # Working/temp merge config (generated at runtime)
 configs/merges/_current_merge.yaml
 
+# Work-in-progress TUI (not release-ready; preserved on feature/tui branch)
+src/ai_toolbox/tui/
+start-tui.bat
+dashboard.bat
+
 # Brain - autonomous context management
 .brain/
 
