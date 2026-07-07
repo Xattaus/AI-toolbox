@@ -16,7 +16,7 @@ This guide explains how to configure Claude Code to use AI Toolbox as an MCP (Mo
 ### 1. Install dependencies
 
 ```bash
-cd "D:/AI Toolbox"
+cd /path/to/AI-Toolbox
 pip install -e .
 pip install mcp
 ```
@@ -35,9 +35,9 @@ Add the following to your Claude Code MCP configuration file.
     "ai-toolbox": {
       "command": "python",
       "args": ["-m", "ai_toolbox.mcp_server"],
-      "cwd": "D:/AI Toolbox",
+      "cwd": "/path/to/AI-Toolbox",
       "env": {
-        "PYTHONPATH": "D:/AI Toolbox/src"
+        "PYTHONPATH": "/path/to/AI-Toolbox/src"
       }
     }
   }
@@ -261,7 +261,7 @@ Once configured, you can ask Claude things like:
 ### Import errors
 Make sure AI Toolbox is installed:
 ```bash
-cd "D:/AI Toolbox"
+cd /path/to/AI-Toolbox
 pip install -e .
 pip install mcp psutil
 ```
@@ -282,8 +282,8 @@ pip install mcp psutil
 
 ### Windows path issues
 Use forward slashes in paths:
-- `D:/AI Toolbox` (recommended)
-- `D:\\AI Toolbox` (escaped backslashes)
+- `C:/path/to/AI-Toolbox` (recommended)
+- `C:\\path\\to\\AI-Toolbox` (escaped backslashes)
 
 ## File Locations
 

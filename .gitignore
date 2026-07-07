@@ -175,3 +175,10 @@ dashboard.bat
 # Machine-specific tool configs (local absolute paths)
 .mcp.json
 .codex/
+
+# Personal model-specific experiment scripts (not part of the tool)
+run_poro_abliteration.py
+run_poro_deepseek_merge.py
+
+# Internal AI planning artifacts (plans/specs), not user documentation
+docs/superpowers/
