@@ -84,12 +84,15 @@ def launch_claude_dev_mode():
     dev_prompt = """You are helping develop AI TOOLBOX - a local AI model management tool.
 
 Project structure:
-- src/ai_toolbox/main.py - Main application with menus
-- src/ai_toolbox/ui.py - UI components (Rich library)
-- src/ai_toolbox/model_library.py - Model library management
-- src/ai_toolbox/model_downloader.py - HuggingFace downloader
-- src/ai_toolbox/gguf_converter.py - GGUF conversion and quantization
-- src/ai_toolbox/mcp_server.py - MCP server for Claude Code
+- src/ai_toolbox/main.py - Entry point
+- src/ai_toolbox/cli/app.py - Main application, menus and service injection
+- src/ai_toolbox/core/ - Foundation: ui.py (Rich theming), paths.py, config.py
+- src/ai_toolbox/models/ - library.py (model library), downloader.py (HuggingFace)
+- src/ai_toolbox/conversion/ - converter.py (GGUF conversion and quantization)
+- src/ai_toolbox/training/ - lora.py (LoRA training, dataset prep)
+- src/ai_toolbox/merging/ - merger.py (SLERP/TIES model merging)
+- src/ai_toolbox/abliteration/ - abliterator.py (refusal removal)
+- src/ai_toolbox/integrations/ - ollama.py, mcp_server.py (MCP for Claude Code)
 
 Tech stack: Python, Rich, Questionary, HuggingFace Hub
 
