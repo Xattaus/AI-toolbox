@@ -184,6 +184,14 @@ class GGUFConverter:
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Remove any stale output up front so a leftover file from a previous
+        # run can never be mistaken for a successful conversion.
+        if out_path.exists():
+            try:
+                out_path.unlink()
+            except OSError as e:
+                return {"success": False, "error": f"Could not remove stale output {out_path}: {e}"}
+
         console.print(Panel(
             f"[bold cyan]Converting model to GGUF[/bold cyan]\n\n"
             f"[white]Source:[/white] {model_path}\n"
@@ -254,10 +262,13 @@ class GGUFConverter:
         else:
             run_error = None
 
-        # A non-zero exit code means the converter aborted - the output file
-        # may exist but be truncated, so never report it as success.
-        if return_code is not None and return_code != 0:
+        # Any non-zero exit code - OR a failure to even launch the subprocess,
+        # which leaves return_code as None - is a failure. The output file may
+        # be missing or truncated, so never report it as success.
+        if return_code != 0:
             error_output = '\n'.join(output_lines[-20:])
+            if run_error:
+                error_output += f"\nProcess error: {run_error}"
             if out_path.exists():
                 error_output += f"\n\nHuom: keskeneräinen tiedosto voi olla levyllä: {out_path}"
             return {"success": False, "error": f"Conversion failed (code {return_code}):\n{error_output}"}
