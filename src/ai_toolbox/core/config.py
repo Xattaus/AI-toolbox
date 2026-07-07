@@ -95,6 +95,12 @@ def save_config(config: Optional[ToolboxConfig] = None):
         with open(temp_file, 'w', encoding='utf-8') as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
         temp_file.replace(config_file)
+        # The config may hold an HF token; restrict to owner-only on POSIX.
+        # (chmod is a no-op for permission bits on Windows, and harmless.)
+        try:
+            config_file.chmod(0o600)
+        except OSError:
+            pass
     except (OSError, IOError, PermissionError) as e:
         # Siivoa temp-tiedosto ja ilmoita virheestä
         if temp_file.exists():
