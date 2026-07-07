@@ -59,11 +59,37 @@ dependencies = [
     "requests>=2.31.0",
 ]
 
+# Feature packs. The base install covers the CLI, model download, library
+# management, and GGUF conversion; the heavy stacks below are opt-in.
 [project.optional-dependencies]
+# GGUF inference / chat via llama-cpp-python
 chat = [
     "llama-cpp-python>=0.2.0",
-    "requests>=2.31.0",
 ]
+# LoRA / fine-tuning stack
+training = [
+    "torch>=2.0.0",
+    "peft>=0.7.0",
+    "datasets>=2.14.0",
+    "accelerate>=0.25.0",
+]
+# Optional Unsloth acceleration (faster, lower-VRAM training)
+unsloth = [
+    "unsloth",
+]
+# Model merging (pinned to match the in-app installer)
+merge = [
+    "mergekit==0.1.4",
+]
+# MCP server for Claude Code integration
+mcp = [
+    "mcp>=0.1.0",
+]
+# Everything above (excludes dev tooling)
+all = [
+    "ai-toolbox[chat,training,unsloth,merge,mcp]",
+]
+# Development tooling
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",

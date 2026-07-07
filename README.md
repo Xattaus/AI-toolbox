@@ -231,17 +231,19 @@ source venv/bin/activate
 pip install -e .
 ```
 
-### Optional Dependencies
+### Optional feature packs
+
+The base install (`pip install -e .`) covers the CLI, model download, library
+management, and GGUF conversion. Heavier features are opt-in extras — install
+only what you need:
 
 ```bash
-# For LoRA training
-pip install peft transformers datasets accelerate
-
-# For Mergekit
-pip install mergekit
-
-# For Abliteration
-pip install transformers torch
+pip install -e ".[training]"   # LoRA / fine-tuning (torch, peft, datasets, accelerate)
+pip install -e ".[unsloth]"    # optional Unsloth training acceleration
+pip install -e ".[merge]"      # model merging (mergekit)
+pip install -e ".[chat]"       # GGUF chat via llama-cpp-python
+pip install -e ".[mcp]"        # MCP server for Claude Code
+pip install -e ".[all]"        # everything above
 ```
 
 ---

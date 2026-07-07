@@ -216,17 +216,19 @@ source venv/bin/activate
 pip install -e .
 ```
 
-### Valinnaiset riippuvuudet
+### Valinnaiset feature-paketit
+
+Perusasennus (`pip install -e .`) kattaa CLI:n, mallien latauksen, kirjaston
+hallinnan ja GGUF-muunnoksen. Raskaammat ominaisuudet ovat valinnaisia
+extroja — asenna vain tarvitsemasi:
 
 ```bash
-# LoRA-koulutukseen
-pip install peft transformers datasets accelerate
-
-# Mergekit-työkaluihin
-pip install mergekit
-
-# Abliteraatioon
-pip install transformers torch
+pip install -e ".[training]"   # LoRA / fine-tuning (torch, peft, datasets, accelerate)
+pip install -e ".[unsloth]"    # valinnainen Unsloth-kiihdytys koulutukseen
+pip install -e ".[merge]"      # mallien yhdistäminen (mergekit)
+pip install -e ".[chat]"       # GGUF-chat llama-cpp-pythonilla
+pip install -e ".[mcp]"        # MCP-palvelin Claude Codelle
+pip install -e ".[all]"        # kaikki yllä olevat
 ```
 
 ---
