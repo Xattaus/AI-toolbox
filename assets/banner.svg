@@ -1,0 +1,39 @@
+<svg width="840" height="240" viewBox="0 0 840 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI TOOLBOX - Local AI Toolkit">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffc061"/>
+      <stop offset="0.55" stop-color="#ff9d00"/>
+      <stop offset="1" stop-color="#ff7a00"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff9d00"/>
+      <stop offset="1" stop-color="#ff9d00" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- card -->
+  <rect x="2" y="2" width="836" height="236" rx="18" fill="#0d1117" stroke="#ff9d00" stroke-opacity="0.28" stroke-width="1.5"/>
+  <!-- left brand bar -->
+  <rect x="2" y="2" width="7" height="236" rx="3.5" fill="url(#brand)"/>
+
+  <!-- terminal dots -->
+  <circle cx="44" cy="42" r="6" fill="#ff5f56"/>
+  <circle cx="66" cy="42" r="6" fill="#ffbd2e"/>
+  <circle cx="88" cy="42" r="6" fill="#27c93f"/>
+  <text x="112" y="47" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="13" fill="#8b949e">ai-toolbox</text>
+
+  <!-- version chip -->
+  <rect x="720" y="28" width="94" height="30" rx="15" fill="none" stroke="#ff9d00" stroke-opacity="0.6" stroke-width="1.5"/>
+  <text x="767" y="48" text-anchor="middle" font-family="'SFMono-Regular',Consolas,monospace" font-size="13" font-weight="700" fill="#ff9d00">v3.0.0</text>
+
+  <!-- title -->
+  <text x="40" y="140" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="68" font-weight="800" letter-spacing="2" fill="url(#brand)">AI TOOLBOX</text>
+  <!-- accent underline -->
+  <rect x="43" y="156" width="360" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- subtitle -->
+  <text x="44" y="190" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="600" fill="#e6edf3">Local AI Toolkit <tspan fill="#00d7ff">·</tspan> Your Local AI Swiss Army Knife</text>
+
+  <!-- feature line -->
+  <text x="44" y="216" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="14" fill="#ff9d00" fill-opacity="0.9">download · convert · quantize · lora · merge · abliterate · ollama</text>
+</svg>

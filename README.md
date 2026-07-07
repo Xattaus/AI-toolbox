@@ -1,14 +1,13 @@
-# AI TOOLBOX
+<div align="center">
 
-```
-   ____  ____  _   _ _____          _    ___   _____ ___   ___  _     ___   ___  __  __
-  / ___|/ ___|| | | |  ___|        / \  |_ _| |_   _/ _ \ / _ \| |   | _ ) / _ \ \ \/ /
- | |  _| |  _ | | | | |_          / _ \  | |    | || (_) | (_) | |__ | _ \| (_) | >  <
- | |_| | |_| || |_| |  _|        /_/ \_\|___|   |_| \___/ \___/|____||___/ \___/ /_/\_\
-  \____|\____| \___/|_|
-```
+<img src="assets/banner.svg" alt="AI TOOLBOX — Local AI Toolkit" width="820">
 
-**Your Local AI Swiss Army Knife** | Version 3.0.0
+![Python](https://img.shields.io/badge/Python-3.9%2B-ff9d00?style=flat-square&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-GPL--3.0-ff9d00?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.0-ff9d00?style=flat-square)
+![Platform](https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-ff9d00?style=flat-square)
+
+</div>
 
 A powerful collection of tools for working with local AI models. Download, convert, train, merge, abliterate, and chat with your LLM models.
 
