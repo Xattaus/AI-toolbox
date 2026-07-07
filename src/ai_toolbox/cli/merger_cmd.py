@@ -1028,7 +1028,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         else:
             print_error("Asennus epaonnistui")
             console.print("\n[dim]Kokeile manuaalisesti:[/dim]")
-            console.print("[cyan]pip install mergekit[/cyan]")
+            console.print("[cyan]pip install mergekit==0.1.4[/cyan]")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 

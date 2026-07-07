@@ -20,6 +20,10 @@ from ..core.paths import get_llama_cpp_dir
 
 console = Console()
 
+# Pinned llama.cpp release for reproducible builds. Both the source clone and
+# the prebuilt Windows binaries are fetched at this tag. Bump to upgrade.
+LLAMA_CPP_TAG = "b9902"
+
 
 class LlamaCppManager:
     """Manages llama.cpp installation and binaries."""
@@ -78,13 +82,13 @@ class LlamaCppManager:
             console.print("[dim]Removing old llama.cpp directory...[/dim]")
             shutil.rmtree(self.llama_cpp_path)
 
-        console.print("[cyan]Cloning llama.cpp repository...[/cyan]")
+        console.print(f"[cyan]Cloning llama.cpp repository (pinned {LLAMA_CPP_TAG})...[/cyan]")
         console.print("[dim]This may take a moment (~100 MB)...[/dim]")
         self.llama_cpp_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             result = subprocess.run(
-                ["git", "clone", "--depth", "1",
+                ["git", "clone", "--depth", "1", "--branch", LLAMA_CPP_TAG,
                  "https://github.com/ggerganov/llama.cpp.git",
                  str(self.llama_cpp_path)],
                 capture_output=True,
@@ -138,15 +142,15 @@ class LlamaCppManager:
         console.print("[cyan]Fetching llama.cpp binaries...[/cyan]")
 
         try:
-            # Get latest release info from GitHub API
-            api_url = "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest"
+            # Get pinned release info from GitHub API (reproducible builds)
+            api_url = f"https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/{LLAMA_CPP_TAG}"
             req = urllib.request.Request(api_url, headers={"User-Agent": "AI-Toolbox"})
 
             with urllib.request.urlopen(req, timeout=30) as response:
                 release_data = json.loads(response.read().decode())
 
-            tag_name = release_data.get("tag_name", "")
-            console.print(f"[dim]Latest version: {tag_name}[/dim]")
+            tag_name = release_data.get("tag_name", LLAMA_CPP_TAG)
+            console.print(f"[dim]Pinned version: {tag_name}[/dim]")
 
             # Find the right asset for Windows
             assets = release_data.get("assets", [])

@@ -239,7 +239,7 @@ class MergekitWrapper:
                 progress_callback("Asennetaan mergekit...")
 
             subprocess.run(
-                [sys.executable, "-m", "pip", "install", "mergekit", "-q"],
+                [sys.executable, "-m", "pip", "install", "mergekit==0.1.4", "-q"],
                 check=True,
                 capture_output=True,
             )
