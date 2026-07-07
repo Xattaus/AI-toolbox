@@ -1,36 +1,34 @@
-# AI TOOLBOX - Suomenkielinen Opas
+<div align="center">
 
-```
-   ____  ____  _   _ _____          _    ___   _____ ___   ___  _     ___   ___  __  __
-  / ___|/ ___|| | | |  ___|        / \  |_ _| |_   _/ _ \ / _ \| |   | _ ) / _ \ \ \/ /
- | |  _| |  _ | | | | |_          / _ \  | |    | || (_) | (_) | |__ | _ \| (_) | >  <
- | |_| | |_| || |_| |  _|        /_/ \_\|___|   |_| \___/ \___/|____||___/ \___/ /_/\_\
-  \____|\____| \___/|_|
-```
+<img src="assets/banner.svg" alt="AI TOOLBOX — Paikallinen LLM-verstas" width="820">
 
-**Paikallinen tekoalytyokalupakki** | Versio 3.0.0
+**Paikallinen LLM-verstas** — lataa, muunna, kouluta, yhdistä ja abliteroi paikallisia LLM-malleja.
+
+*Suomenkielinen opas · [English README](README.md)*
+
+</div>
 
 ---
 
 ## Uutta versiossa 3.0
 
-- **Mergekit Wizard** - Ammattimainen mallien yhdistaminen (SLERP, DARE-TIES, DARE-LINEAR, TIES, DELLA)
-- **Abliteration** - Poista kieltaytymiskaytos malleista
+- **Mergekit Wizard** - Ammattimainen mallien yhdistäminen (SLERP, DARE-TIES, DARE-LINEAR, TIES, DELLA)
+- **Abliteration** - Poista kieltäytymiskäytös malleista
 - **Model Hub** - Parannettu kirjasto lajittelulla ja siivouksella
 - **Ollama Manager** - Luo ja hallitse Ollama-malleja
-- **Training Center** - Kaikki koulutus, datasetit, merget ja abliterointi yhdessa
-- **Kaunis CLI** - Yhtenaiset tyylit, tekniset termit englanniksi, kuvaukset suomeksi
+- **Training Center** - Kaikki koulutus, datasetit, merget ja abliterointi yhdessä
+- **Kaunis CLI** - Yhtenäiset tyylit, tekniset termit englanniksi, kuvaukset suomeksi
 
 ---
 
-## Paaominaisuudet
+## Pääominaisuudet
 
-### Paavalikko (7 vaihtoehtoa)
+### Päävalikko (7 vaihtoehtoa)
 
-| Kategoria | Tyokalu | Kuvaus |
+| Kategoria | Työkalu | Kuvaus |
 |-----------|---------|--------|
 | **Chat** | Tool Master | Keskustele paikallisten mallien kanssa |
-| | Claude Assistant | Claude CLI kehitystyohon |
+| | Claude Assistant | Claude CLI kehitystyöhön |
 | **Mallit** | Model Hub | Lataa, selaa ja hallitse malleja |
 | | GGUF Tools | Muunna, kvantisoi ja VRAM-laskuri |
 | | Ollama Manager | Luo ja hallitse Ollama-malleja |
@@ -44,16 +42,16 @@
 ### Asennus
 
 ```batch
-# Ensimmaisella kerralla
+# Ensimmäisellä kerralla
 setup.bat
 
-# Kaynnista
+# Käynnistä
 toolbox.bat
 ```
 
 ### Navigointi
 
-Kayta nuolinappaimia (ylös/alas) ja Enteria valikoissa.
+Käytä nuolinäppäimiä (ylös/alas) ja Enteriä valikoissa.
 
 ---
 
@@ -64,14 +62,14 @@ Keskitetty mallien hallinta:
 | Ominaisuus | Kuvaus |
 |------------|--------|
 | **Download** | Etsi ja lataa HuggingFacesta |
-| **Library** | Selaa malleja alykkäällä lajittelulla |
+| **Library** | Selaa malleja älykkäällä lajittelulla |
 | **Cleanup** | Poista duplikaatit ja puuttuvat |
 | **Import** | Lisää paikallisia malleja kirjastoon |
 | **Search** | Suodata nimellä, formaatilla tai tageilla |
 
 ### Lajitteluvaihtoehdot
 
-- Paivamaaran mukaan (uusimmat ensin)
+- Päivämäärän mukaan (uusimmat ensin)
 - Nimen mukaan (aakkosjärjestys)
 - Koon mukaan (suurimmat ensin)
 - Kvantisoinnin mukaan (Q8 → Q2)
@@ -86,7 +84,7 @@ Muunna ja optimoi malleja paikallista inferenssiä varten:
 | Työkalu | Kuvaus |
 |---------|--------|
 | **Convert** | HuggingFace → GGUF-muoto |
-| **Quantize** | Pienenna mallin kokoa (Q8, Q4, Q2...) |
+| **Quantize** | Pienennä mallin kokoa (Q8, Q4, Q2...) |
 | **VRAM Calculator** | Arvioi muistivaatimukset |
 | **iMatrix** | Importance matrix parempaan Q2-Q4 laatuun |
 
@@ -94,7 +92,7 @@ Muunna ja optimoi malleja paikallista inferenssiä varten:
 
 ## Training Center
 
-Kaikki koulutus- ja muokkaustyokalut yhdessa:
+Kaikki koulutus- ja muokkaustyökalut yhdessä:
 
 ### LoRA Training
 
@@ -103,11 +101,11 @@ Kaikki koulutus- ja muokkaustyokalut yhdessa:
 | **Quick Train** | Pikakoulutus oletusasetuksilla |
 | **Advanced Train** | Täysi parametrikontrolli |
 | **Test Adapter** | Testaa koulutettu adapteri |
-| **Merge Adapter** | Yhdista adapteri base-malliin |
+| **Merge Adapter** | Yhdistä adapteri base-malliin |
 
-- Automaattinen Unsloth-kiihdytys (2-5x nopeampi, 50-70% vahemman VRAM)
+- Automaattinen Unsloth-kiihdytys (2-5x nopeampi, 50-70% vähemmän VRAM)
 - QLoRA-tuki (4-bit/8-bit koulutus)
-- Tukee Alpaca, Chat ja ShareGPT formaatteja
+- Tukee Alpaca-, Chat- ja ShareGPT-formaatteja
 
 ### Dataset Tools
 
@@ -116,7 +114,7 @@ Kaikki koulutus- ja muokkaustyokalut yhdessa:
 | **Inspect** | Tarkasta datasetin rakenne |
 | **Convert** | Muunna formaattien välillä |
 | **Clean** | Poista duplikaatit, suodata pituudella |
-| **Split** | Jaa train/test/val osiin |
+| **Split** | Jaa train/test/val-osiin |
 | **Merge** | Yhdistä useita datasetteja |
 | **Token Count** | Laske tokenien määrä |
 
@@ -137,7 +135,7 @@ Ammattimainen mallien yhdistäminen optimoidulla VRAM-käytöllä:
 - Automaattinen arkkitehtuuritarkistus
 - YAML-konfiguraatioiden tallennus/lataus
 - Valmiit presetit
-- Automaattinen vocab_size käsittely
+- Automaattinen vocab_size-käsittely
 
 **Presetit:**
 
@@ -198,8 +196,9 @@ Vertaile mallien suorituskykyä:
 ### Automaattinen asennus
 
 1. Lataa tai kloonaa tämä repositorio
-2. Aja `setup.bat` (Windows) tai `./setup.sh` (Linux/macOS)
-3. Käynnistä `toolbox.bat` tai `./toolbox.sh`
+2. **Windows:** aja `toolbox.bat` (tai `setup.bat`) — luo venv:n ja asentaa riippuvuudet ensimmäisellä ajolla
+   **Linux/macOS:** aja `./toolbox.sh` — sama, asentuu automaattisesti ensimmäisellä ajolla
+3. Siinä kaikki: riippuvuudet asentuvat automaattisesti, ei manuaalisia vaiheita
 
 ### Manuaalinen asennus
 
@@ -275,7 +274,7 @@ pip install transformers torch
 
 ---
 
-## USB-tikku käyttö
+## USB-tikkukäyttö
 
 AI Toolbox on suunniteltu kannettavaksi:
 
@@ -283,7 +282,7 @@ AI Toolbox on suunniteltu kannettavaksi:
 2. Kohde-PC:llä aja `toolbox.bat`
 3. Riippuvuudet asentuvat automaattisesti
 
-**Vaatimus:** Python 3.9+ asennettuna kohde-PC:lla
+**Vaatimus:** Python 3.9+ asennettuna kohde-PC:llä
 
 ---
 
@@ -300,7 +299,7 @@ Asenna Python: https://python.org (muista "Add to PATH")
 
 ### "Out of memory"
 
-- Käytä pienempaä kvantisointia (Q4/Q3)
+- Käytä pienempää kvantisointia (Q4/Q3)
 - VRAM-optimoinnit aktivoituvat automaattisesti (<12GB)
 - Käytä QLoRA:a (4-bit) koulutuksessa
 - Sulje muut ohjelmat
@@ -310,7 +309,7 @@ Asenna Python: https://python.org (muista "Add to PATH")
 Mergekit aktivoi automaattisesti optimoinnit 10GB VRAM:lla:
 - `--lazy-unpickle` - Viivästetty lataus
 - `--low-cpu-memory` - Välitensorit GPU:lle
-- `--out-shard-size 4B` - Pienemmat output-shardit
+- `--out-shard-size 4B` - Pienemmät output-shardit
 
 ### Arkkitehtuuri ei täsmää mergessä
 
@@ -341,7 +340,7 @@ AI Toolbox/
 ├── tools/                       # Ulkoiset työkalut (llama.cpp)
 ├── models/                      # Ladatut/muunnetut mallit
 ├── datasets/                    # Koulutusdatasetit
-├── config/                      # Konfiguraatiotiedostot
+├── configs/                     # Konfiguraatiotiedostot
 ├── toolbox.bat                  # Windows-käynnistys
 ├── README.md                    # Englanninkielinen dokumentaatio
 ├── LESMINU.md                   # Tämä tiedosto
