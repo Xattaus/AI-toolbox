@@ -56,9 +56,8 @@ toolbox.bat
 ### Linux/macOS
 
 ```bash
-chmod +x setup.sh toolbox.sh
-./setup.sh
-./toolbox.sh
+chmod +x toolbox.sh
+./toolbox.sh   # creates venv and installs dependencies on first run
 ```
 
 ---
@@ -204,8 +203,9 @@ Compare model performance:
 ### Automatic Setup
 
 1. Download or clone this repository
-2. Run `setup.bat` (Windows) or `./setup.sh` (Linux/macOS)
-3. Launch with `toolbox.bat` or `./toolbox.sh`
+2. **Windows:** run `toolbox.bat` (or `setup.bat`) — creates the venv and installs on first run
+   **Linux/macOS:** run `./toolbox.sh` — same, sets up automatically on first run
+3. That's it: dependencies install automatically, no manual steps
 
 ### Manual Setup
 
@@ -421,16 +421,6 @@ external tools (installed/downloaded separately, not bundled here):
 - [Ollama](https://ollama.com) - local model serving
 - [Unsloth](https://github.com/unslothai/unsloth) / [PEFT](https://github.com/huggingface/peft) (Apache-2.0) - LoRA training
 - [Rich](https://github.com/Textualize/rich), [Textual](https://github.com/Textualize/textual), [Questionary](https://github.com/tmbo/questionary) (MIT) - terminal UI
-
----
-
-## Acknowledgments
-
-- [llama.cpp](https://github.com/ggerganov/llama.cpp) - GGUF format and tools
-- [mergekit](https://github.com/arcee-ai/mergekit) - Model merging library
-- [HuggingFace](https://huggingface.co) - Model hosting
-- [Rich](https://github.com/Textualize/rich) - Beautiful terminal output
-- [Questionary](https://github.com/tmbo/questionary) - Interactive prompts
 
 ---
 
