@@ -110,3 +110,20 @@ where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"
+
+[tool.pytest.ini_options]
+# Only collect the project's own tests, never the vendored tools/ tree.
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.mypy]
+python_version = "3.9"
+# Lenient baseline: many runtime deps ship without type stubs. Tighten over time.
+ignore_missing_imports = true
+warn_return_any = false
+warn_unused_ignores = false
+exclude = "tools/"
