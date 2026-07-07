@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="AI TOOLBOX — Local AI Toolkit" width="820">
+<img src="assets/banner.svg" alt="AI TOOLBOX — The local LLM workshop" width="820">
+
+**The local LLM workshop** — download, convert, train, merge, and uncensor local LLMs.
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-ff9d00?style=flat-square&logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPL--3.0-ff9d00?style=flat-square)

@@ -1,6 +1,6 @@
 """
-AI TOOLBOX - Your Local AI Swiss Army Knife
-============================================
+AI TOOLBOX - The local LLM workshop
+===================================
 
 A collection of powerful tools for working with local AI models.
 
