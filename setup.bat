@@ -57,13 +57,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-pip install -e gguf-converter --quiet
-if errorlevel 1 (
-    echo [WARNING] Could not install GGUF Converter as editable
-    echo [INFO] Installing dependencies...
-    pip install rich click questionary huggingface-hub transformers safetensors tokenizers sentencepiece tqdm psutil gguf --quiet
-)
-
 echo.
 echo  ========================================
 echo     SETUP COMPLETE!
@@ -72,10 +65,6 @@ echo.
 echo  To start AI Toolbox, run:
 echo.
 echo     toolbox.bat
-echo.
-echo  Or for GGUF Converter directly:
-echo.
-echo     gguf-converter\run.bat
 echo.
 echo  ========================================
 echo.

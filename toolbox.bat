@@ -26,7 +26,6 @@ if not exist "venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
     pip install --upgrade pip --quiet
     pip install -e . --quiet
-    pip install -e gguf-converter --quiet
     if errorlevel 1 (
         echo [ERROR] Failed to install dependencies
         pause

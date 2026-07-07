@@ -41,7 +41,6 @@ setup_venv() {
         source venv/bin/activate
         pip install --upgrade pip --quiet
         pip install -e . --quiet
-        pip install -e gguf-converter --quiet 2>/dev/null || true
 
         echo -e "${GREEN}[SUCCESS] Setup complete!${NC}"
     else
