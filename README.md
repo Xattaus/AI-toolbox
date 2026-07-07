@@ -201,6 +201,13 @@ Compare model performance:
 - NVIDIA GPU recommended (for training/merging)
 - Internet connection (for downloading models)
 
+> **Platform support:** The app runs on Windows, Linux, and macOS, and the
+> Python dependencies install automatically everywhere. However, **prebuilt
+> `llama.cpp` binaries are downloaded for Windows x64 only.** On Linux/macOS
+> the `llama.cpp` source is cloned but the `llama-quantize` binary needed for
+> quantization must be built manually (`cd ~/.ai-toolbox/llama.cpp && make`).
+> GGUF conversion itself works on all platforms.
+
 ### Automatic Setup
 
 1. Download or clone this repository
