@@ -23,11 +23,10 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
 
-from rich.console import Console
+from ..core.ui import console
 
 from ..core.paths import get_paths
 
-console = Console()
 
 
 # =============================================================================

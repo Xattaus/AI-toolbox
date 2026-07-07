@@ -17,14 +17,13 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
 import psutil
-from rich.console import Console
+from ..core.ui import console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
 from ..core.paths import get_paths
 
-console = Console()
 
 
 # =============================================================================

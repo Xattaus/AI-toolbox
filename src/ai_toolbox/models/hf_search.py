@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 
 from huggingface_hub import HfApi, ModelInfo
-from rich.console import Console
+from ..core.ui import console
 
 # Import errors - try new location first, fall back to old
 try:
@@ -28,7 +28,6 @@ from .hf_filters import (
     get_app_compatibility,
 )
 
-console = Console()
 
 
 # =============================================================================

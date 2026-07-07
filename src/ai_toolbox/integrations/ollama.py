@@ -13,11 +13,10 @@ from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from rich.console import Console
+from ..core.ui import console
 
 from ..core.paths import get_paths
 
-console = Console()
 
 
 # System prompt templates for different use cases

@@ -9,9 +9,8 @@ from typing import Any, Callable, List, Optional
 
 import questionary
 from questionary import Style
-from rich.console import Console
+from ..core.ui import console
 
-console = Console()
 
 # Questionary style used throughout the app
 MENU_STYLE = Style([

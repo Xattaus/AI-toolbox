@@ -12,14 +12,13 @@ from pathlib import Path
 from typing import Optional, Dict, Any, Callable
 
 import psutil
-from rich.console import Console
+from ..core.ui import console
 from rich.panel import Panel
 
 from ..core.paths import get_gguf_dir, get_llama_cpp_dir
 from .quantization import QuantizationType, QUANTIZATION_INFO
 from .llama_cpp import LlamaCppManager
 
-console = Console()
 
 
 class GGUFConverter:

@@ -17,13 +17,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import Counter
 
-from rich.console import Console
+from ..core.ui import console
 from rich.table import Table
 from rich import box
 
 from ..core.paths import get_paths
 
-console = Console()
 
 
 class DatasetFormat(Enum):

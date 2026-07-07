@@ -19,11 +19,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 import yaml
-from rich.console import Console
+from ..core.ui import console
 
 from ..core.paths import get_paths
 
-console = Console()
 
 
 class MergekitMethod(str, Enum):

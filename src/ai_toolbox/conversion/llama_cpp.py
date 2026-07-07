@@ -14,11 +14,10 @@ import zipfile
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from rich.console import Console
+from ..core.ui import console
 
 from ..core.paths import get_llama_cpp_dir
 
-console = Console()
 
 # Pinned llama.cpp release for reproducible builds. Both the source clone and
 # the prebuilt Windows binaries are fetched at this tag. Bump to upgrade.

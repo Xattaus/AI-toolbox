@@ -11,10 +11,9 @@ from pathlib import Path
 
 import questionary
 from questionary import Style
-from rich.console import Console
+from ..core.ui import console
 from rich.panel import Panel
 
-console = Console()
 
 # AI Toolbox root directory
 TOOLBOX_ROOT = Path(__file__).parent.parent.parent.parent

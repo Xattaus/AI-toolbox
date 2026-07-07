@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
 
-from rich.console import Console
+from ..core.ui import console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
@@ -23,7 +23,6 @@ from ..core.paths import get_paths, get_models_dir, get_library_file
 from ..core.ui import format_size
 from .types import ModelEntry, ModelTreeNode, ModelCategory
 
-console = Console()
 
 
 # Category icons for display

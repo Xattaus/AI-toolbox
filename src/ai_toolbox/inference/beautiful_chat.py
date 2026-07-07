@@ -19,14 +19,13 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Generator
 
 import requests
-from rich.console import Console
+from ..core.ui import console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.text import Text
 from rich.live import Live
 from rich import box
 
-console = Console()
 
 # Thinking animation frames
 THINKING_FRAMES = ["", "", "", "", "", "", "", "", "", ""]

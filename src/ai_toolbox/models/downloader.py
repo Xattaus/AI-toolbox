@@ -16,7 +16,7 @@ from huggingface_hub import (
     model_info as get_model_info,
 )
 from huggingface_hub.utils import RepositoryNotFoundError, GatedRepoError
-from rich.console import Console
+from ..core.ui import console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import (
@@ -35,7 +35,6 @@ from ..core.ui import format_size
 from .types import ModelSearchResult, ModelDetails, ExtendedModelInfo, HFSearchResult
 from .hf_search import HFSearchEngine, SearchFilters, SearchResult, ModelCardInfo
 
-console = Console()
 
 
 class ModelDownloader:
