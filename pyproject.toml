@@ -74,7 +74,9 @@ ai-toolbox = "ai_toolbox.main:main"
 aitb = "ai_toolbox.main:main"
 
 [project.urls]
-Homepage = "https://github.com/your-username/ai-toolbox"
+Homepage = "https://github.com/Xattaus/AI-toolbox"
+Repository = "https://github.com/Xattaus/AI-toolbox"
+Issues = "https://github.com/Xattaus/AI-toolbox/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
