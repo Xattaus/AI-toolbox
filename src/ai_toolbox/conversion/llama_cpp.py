@@ -108,6 +108,23 @@ class LlamaCppManager:
             console.print(f"[red]Clone error: {e}[/red]")
             return False
 
+    @staticmethod
+    def _safe_extractall(zip_ref: "zipfile.ZipFile", dest: Path) -> None:
+        """
+        Extract a zip archive, rejecting members that would write outside
+        `dest` (Zip Slip protection). Raises RuntimeError on a hostile path.
+        """
+        dest_resolved = Path(dest).resolve()
+        for member in zip_ref.namelist():
+            target = (dest_resolved / member).resolve()
+            try:
+                target.relative_to(dest_resolved)
+            except ValueError:
+                raise RuntimeError(
+                    f"Unsafe path in archive blocked (Zip Slip): {member}"
+                )
+        zip_ref.extractall(dest_resolved)
+
     def download_binaries(self, cuda: bool = True) -> bool:
         """
         Download pre-built llama.cpp binaries from GitHub releases.
@@ -195,10 +212,10 @@ class LlamaCppManager:
 
             console.print()  # New line after progress
 
-            # Extract zip
+            # Extract zip (with Zip Slip protection)
             console.print("[dim]Extracting...[/dim]")
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(self.llama_cpp_path)
+                self._safe_extractall(zip_ref, self.llama_cpp_path)
 
             # Remove zip file
             zip_path.unlink()
