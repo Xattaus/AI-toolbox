@@ -9,6 +9,8 @@
 ![Version](https://img.shields.io/badge/Version-3.0.0-ff9d00?style=flat-square)
 ![Platform](https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-ff9d00?style=flat-square)
 
+[Changelog](CHANGELOG.md) · [Report an issue](https://github.com/Xattaus/AI-toolbox/issues)
+
 </div>
 
 A powerful collection of tools for working with local AI models. Download, convert, train, merge, abliterate, and chat with your LLM models.
