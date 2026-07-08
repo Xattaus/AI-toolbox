@@ -1,6 +1,8 @@
 """Tests for core.config: defaults, (de)serialization, persistence, permissions."""
 
+import os
 import stat
+import subprocess
 import sys
 
 import pytest
@@ -71,3 +73,20 @@ def test_saved_config_is_owner_only_readable():
     save_config(ToolboxConfig(hf_token="secret"))
     mode = stat.S_IMODE(get_paths().config_file.stat().st_mode)
     assert mode == 0o600
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows ACL only")
+def test_saved_config_windows_acl_restricted():
+    # Regression: on Windows chmod can't restrict, so icacls drops inheritance
+    # and grants only the current user — no broad principals remain.
+    save_config(ToolboxConfig(hf_token="secret"))
+    out = subprocess.run(
+        ["icacls", str(get_paths().config_file)],
+        capture_output=True,
+        text=True,
+    ).stdout
+    # No broad principals should remain among the ACL grants. (The file path
+    # itself contains "\Users\...", so match the principal names specifically.)
+    assert "Everyone" not in out
+    assert "BUILTIN\\Users" not in out
+    assert "Authenticated Users" not in out

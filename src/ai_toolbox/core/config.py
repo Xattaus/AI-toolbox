@@ -6,6 +6,7 @@ Centralized configuration handling for the toolbox.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Optional
 from dataclasses import dataclass, field, asdict
@@ -81,6 +82,35 @@ def load_config() -> ToolboxConfig:
     return ToolboxConfig()
 
 
+def _restrict_to_owner(path: Path) -> None:
+    """Best-effort: make a file readable only by the current user.
+
+    The config can hold an HF token. On POSIX we chmod to 0600. On Windows
+    chmod does not set ACLs, so we use icacls to drop inherited permissions
+    and grant only the current user Full control.
+    """
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
+
+    if os.name == "nt":
+        import subprocess
+
+        user = os.environ.get("USERNAME")
+        if not user:
+            return
+        try:
+            subprocess.run(
+                ["icacls", str(path), "/inheritance:r", "/grant:r", f"{user}:F"],
+                capture_output=True,
+                timeout=15,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
 def save_config(config: Optional[ToolboxConfig] = None):
     """Save configuration to file."""
     if config is None:
@@ -95,12 +125,8 @@ def save_config(config: Optional[ToolboxConfig] = None):
         with open(temp_file, "w", encoding="utf-8") as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
         temp_file.replace(config_file)
-        # The config may hold an HF token; restrict to owner-only on POSIX.
-        # (chmod is a no-op for permission bits on Windows, and harmless.)
-        try:
-            config_file.chmod(0o600)
-        except OSError:
-            pass
+        # The config may hold an HF token; restrict it to the current user.
+        _restrict_to_owner(config_file)
     except (OSError, IOError, PermissionError) as e:
         # Siivoa temp-tiedosto ja ilmoita virheestä
         if temp_file.exists():
