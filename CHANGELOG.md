@@ -23,7 +23,7 @@ First public release.
 - The config file (which may hold an HF token) is restricted to owner-only (`0600`) on POSIX.
 
 ### Reliability
-- Pinned external tools for reproducible builds: llama.cpp tag `b9902`, mergekit `0.1.4`.
+- Pinned external model tools: llama.cpp tag `b9902`, mergekit `0.1.4`. A `constraints.txt` pins the core Python dependencies for repeatable installs (Python deps are otherwise version ranges; there is no full lockfile yet, and the llama.cpp download is not checksum-verified).
 - GGUF conversion no longer reports a stale/leftover output file as a success.
 - Atomic writes with `.bak` recovery for both the library index and the config file.
 

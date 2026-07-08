@@ -215,7 +215,10 @@ Compare model performance:
 1. Download or clone this repository
 2. **Windows:** run `toolbox.bat` (or `setup.bat`) — creates the venv and installs on first run
    **Linux/macOS:** run `./toolbox.sh` — same, sets up automatically on first run
-3. That's it: dependencies install automatically, no manual steps
+3. Python dependencies install automatically on first run. (On Linux/macOS, see the platform note above: `llama-quantize` for quantization is built from source.)
+
+For a repeatable install of the exact tested dependency versions:
+`pip install -e . -c constraints.txt`
 
 ### Manual Setup
 

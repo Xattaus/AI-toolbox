@@ -198,7 +198,10 @@ Vertaile mallien suorituskykyä:
 1. Lataa tai kloonaa tämä repositorio
 2. **Windows:** aja `toolbox.bat` (tai `setup.bat`) — luo venv:n ja asentaa riippuvuudet ensimmäisellä ajolla
    **Linux/macOS:** aja `./toolbox.sh` — sama, asentuu automaattisesti ensimmäisellä ajolla
-3. Siinä kaikki: riippuvuudet asentuvat automaattisesti, ei manuaalisia vaiheita
+3. Python-riippuvuudet asentuvat automaattisesti ensimmäisellä ajolla. (Linux/macOS: kvantisoinnin `llama-quantize` rakennetaan lähdekoodista — ks. yllä.)
+
+Toistettavaan asennukseen täsmälleen testatuilla versioilla:
+`pip install -e . -c constraints.txt`
 
 ### Manuaalinen asennus
 
