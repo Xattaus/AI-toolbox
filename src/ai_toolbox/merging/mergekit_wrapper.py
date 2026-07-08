@@ -158,7 +158,7 @@ class MergekitConfig:
             # LINEAR: N mallia, weight
             models_list = []
             for i, model in enumerate(self.models):
-                model_def: Dict[str, Any] = {"model": str(model)}
+                model_def = {"model": str(model)}
                 if self.model_weights and i < len(self.model_weights):
                     model_def["parameters"] = {"weight": self.model_weights[i]}
                 else:
@@ -175,8 +175,8 @@ class MergekitConfig:
 
             models_list = []
             for i, model in enumerate(self.models):
-                model_def: Dict[str, Any] = {"model": str(model)}
-                params: Dict[str, Any] = {}
+                model_def = {"model": str(model)}
+                params = {}
                 if self.model_weights and i < len(self.model_weights):
                     params["weight"] = self.model_weights[i]
                 if self.model_densities and i < len(self.model_densities):

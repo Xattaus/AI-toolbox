@@ -114,7 +114,7 @@ class MergePreset:
             weights = params.get("weights", [1.0 / len(models)] * len(models))
 
             for i, model in enumerate(models):
-                model_def: Dict[str, Any] = {"model": model}
+                model_def = {"model": model}
                 if i < len(weights):
                     model_def["parameters"] = {"weight": weights[i]}
                 models_list.append(model_def)
@@ -127,7 +127,7 @@ class MergePreset:
             weights = params.get("weights", [1.0 / len(models)] * len(models))
 
             for i, model in enumerate(models):
-                model_def: Dict[str, Any] = {"model": model}
+                model_def = {"model": model}
                 if i < len(weights):
                     model_def["parameters"] = {"weight": weights[i]}
                 models_list.append(model_def)
@@ -141,8 +141,8 @@ class MergePreset:
             weights = params.get("weights", [1.0 / len(models)] * len(models))
 
             for i, model in enumerate(models):
-                model_def: Dict[str, Any] = {"model": model}
-                model_params: Dict[str, Any] = {}
+                model_def = {"model": model}
+                model_params = {}
                 if i < len(weights):
                     model_params["weight"] = weights[i]
                 model_params["density"] = density
