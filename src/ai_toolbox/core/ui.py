@@ -26,20 +26,22 @@ from rich import box
 # Consistent color palette across the entire application
 # Orange/Amber = branding, Cyan = info, Green = success, Yellow = warning, Red = error
 
-TOOLBOX_THEME = Theme({
-    "brand": "bold orange1",
-    "brand.dim": "dim orange3",
-    "accent": "cyan",
-    "accent.bright": "bold cyan",
-    "success": "bold green",
-    "warning": "bold yellow",
-    "error": "bold red",
-    "muted": "dim white",
-    "highlight": "bold white",
-    "key": "bold yellow",
-    "value": "white",
-    "separator": "dim cyan",
-})
+TOOLBOX_THEME = Theme(
+    {
+        "brand": "bold orange1",
+        "brand.dim": "dim orange3",
+        "accent": "cyan",
+        "accent.bright": "bold cyan",
+        "success": "bold green",
+        "warning": "bold yellow",
+        "error": "bold red",
+        "muted": "dim white",
+        "highlight": "bold white",
+        "key": "bold yellow",
+        "value": "white",
+        "separator": "dim cyan",
+    }
+)
 
 # Global console instance with theme
 console = Console(theme=TOOLBOX_THEME)
@@ -49,18 +51,20 @@ console = Console(theme=TOOLBOX_THEME)
 # ============================================================================
 from questionary import Style as QStyle
 
-MENU_STYLE = QStyle([
-    ('qmark', 'fg:#ff9d00 bold'),       # Question mark
-    ('question', 'fg:#ffffff bold'),     # Question text
-    ('answer', 'fg:#00d7ff bold'),       # Selected answer
-    ('pointer', 'fg:#ff9d00 bold'),      # Selection pointer >
-    ('highlighted', 'fg:#ff9d00 bold'),  # Highlighted option
-    ('selected', 'fg:#00ff00 bold'),     # Multi-select selected
-    ('separator', 'fg:#666666'),         # Separator lines
-    ('instruction', 'fg:#888888'),       # Instructions
-    ('text', 'fg:#ffffff'),              # Regular text
-    ('disabled', 'fg:#666666 italic'),   # Disabled options
-])
+MENU_STYLE = QStyle(
+    [
+        ("qmark", "fg:#ff9d00 bold"),  # Question mark
+        ("question", "fg:#ffffff bold"),  # Question text
+        ("answer", "fg:#00d7ff bold"),  # Selected answer
+        ("pointer", "fg:#ff9d00 bold"),  # Selection pointer >
+        ("highlighted", "fg:#ff9d00 bold"),  # Highlighted option
+        ("selected", "fg:#00ff00 bold"),  # Multi-select selected
+        ("separator", "fg:#666666"),  # Separator lines
+        ("instruction", "fg:#888888"),  # Instructions
+        ("text", "fg:#ffffff"),  # Regular text
+        ("disabled", "fg:#666666 italic"),  # Disabled options
+    ]
+)
 
 
 def print_toolbox_banner(subtitle: str = ""):
@@ -92,7 +96,9 @@ def print_mini_banner(tool_name: str, subtitle: str = ""):
     console.print(f"\n[dim]{'─' * width}[/dim]")
 
     # Title line
-    console.print(f"[bold orange1]  AI TOOLBOX[/bold orange1] [dim]»[/dim] [bold white]{tool_name}[/bold white]")
+    console.print(
+        f"[bold orange1]  AI TOOLBOX[/bold orange1] [dim]»[/dim] [bold white]{tool_name}[/bold white]"
+    )
 
     # Subtitle if provided
     if subtitle:
@@ -120,9 +126,9 @@ def create_menu_table(title: str, items: list, show_index: bool = True) -> Table
 
     for i, item in enumerate(items, 1):
         if show_index:
-            table.add_row(str(i), item.get('name', ''), item.get('description', ''))
+            table.add_row(str(i), item.get("name", ""), item.get("description", ""))
         else:
-            table.add_row(item.get('name', ''), item.get('description', ''))
+            table.add_row(item.get("name", ""), item.get("description", ""))
 
     return table
 
@@ -132,6 +138,7 @@ def create_menu_table(title: str, items: list, show_index: bool = True) -> Table
 # ============================================================================
 # Standard format: "Technical Term          Finnish description"
 # Width: 24 chars for term, rest for description
+
 
 def format_menu_item(term: str, description: str, width: int = 24) -> str:
     """
@@ -175,6 +182,7 @@ def menu_separator(label: str = "", width: int = 46):
     so every menu uses the same separator width across the whole app.
     """
     from questionary import Separator
+
     return Separator(format_menu_separator(label, char="-", width=width))
 
 
@@ -229,11 +237,9 @@ def print_divider(style: str = "light"):
 # MENU CHOICE BUILDERS (for questionary)
 # ============================================================================
 
+
 def build_menu_choices(
-    items: list,
-    back_label: str = "Palaa",
-    back_value: str = "back",
-    include_back: bool = True
+    items: list, back_label: str = "Palaa", back_value: str = "back", include_back: bool = True
 ) -> list:
     """
     Build questionary choices from a list of menu items.
@@ -274,29 +280,27 @@ def build_menu_choices(
             title = format_menu_item(term, desc)
 
             if disabled:
-                choices.append(questionary.Choice(
-                    title=title,
-                    value=value,
-                    disabled=item.get("disabled_reason", "Ei saatavilla")
-                ))
+                choices.append(
+                    questionary.Choice(
+                        title=title,
+                        value=value,
+                        disabled=item.get("disabled_reason", "Ei saatavilla"),
+                    )
+                )
             else:
                 choices.append(questionary.Choice(title=title, value=value))
 
     if include_back:
         choices.append(questionary.Separator())
-        choices.append(questionary.Choice(
-            title=format_menu_item(f"← {back_label}", ""),
-            value=back_value
-        ))
+        choices.append(
+            questionary.Choice(title=format_menu_item(f"← {back_label}", ""), value=back_value)
+        )
 
     return choices
 
 
 def create_summary_panel(
-    title: str,
-    items: dict,
-    footer: str = "",
-    border_style: str = "yellow"
+    title: str, items: dict, footer: str = "", border_style: str = "yellow"
 ) -> Panel:
     """
     Create a summary panel for confirmations.
@@ -323,7 +327,7 @@ def create_summary_panel(
         title=f"[bold]{title}[/bold]",
         border_style=border_style,
         padding=(1, 2),
-        box=box.ROUNDED
+        box=box.ROUNDED,
     )
 
 
@@ -361,7 +365,7 @@ def create_result_panel(
         title=f"[bold]{title}[/bold]",
         border_style=border,
         padding=(1, 2),
-        box=box.ROUNDED
+        box=box.ROUNDED,
     )
 
 
@@ -372,19 +376,19 @@ def create_model_card(model_info: dict) -> Panel:
     content.append("Model: ", style="cyan")
     content.append(f"{model_info.get('name', 'Unknown')}\n", style="bold white")
 
-    if model_info.get('size'):
+    if model_info.get("size"):
         content.append("Size: ", style="cyan")
         content.append(f"{model_info['size']}\n", style="white")
 
-    if model_info.get('quantization'):
+    if model_info.get("quantization"):
         content.append("Quantization: ", style="cyan")
         content.append(f"{model_info['quantization']}\n", style="yellow")
 
-    if model_info.get('format'):
+    if model_info.get("format"):
         content.append("Format: ", style="cyan")
         content.append(f"{model_info['format']}\n", style="green")
 
-    if model_info.get('path'):
+    if model_info.get("path"):
         content.append("Path: ", style="cyan")
         content.append(f"{model_info['path']}", style="dim")
 
@@ -435,7 +439,7 @@ def format_size(size_bytes: int) -> str:
     """Format bytes to human-readable size."""
     if size_bytes < 0:
         return "Unknown"
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size_bytes < 1024:
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024
@@ -469,15 +473,16 @@ def create_spinner(description: str = "Working...") -> Progress:
 
 def clear_screen():
     """Clear the terminal screen."""
-    if sys.platform == 'win32':
-        os.system('cls')
+    if sys.platform == "win32":
+        os.system("cls")
     else:
-        os.system('clear')
+        os.system("clear")
 
 
 # ============================================================================
 # BRANDED COMPONENTS
 # ============================================================================
+
 
 def print_branded_header(title: str, subtitle: str = ""):
     """
@@ -491,7 +496,9 @@ def print_branded_header(title: str, subtitle: str = ""):
     console.print(f"\n[orange1]{'=' * width}[/orange1]")
 
     # Logo line
-    console.print(f"[bold orange1]  # AI TOOLBOX[/bold orange1] [dim]|[/dim] [bold white]{title}[/bold white]")
+    console.print(
+        f"[bold orange1]  # AI TOOLBOX[/bold orange1] [dim]|[/dim] [bold white]{title}[/bold white]"
+    )
 
     # Subtitle if provided
     if subtitle:
@@ -515,6 +522,7 @@ def print_branded_footer(message: str = ""):
 # TABLE-BASED MODEL SELECTION
 # ============================================================================
 
+
 def create_model_table(
     models: list,
     title: str = "Mallit",
@@ -524,7 +532,7 @@ def create_model_table(
     show_format: bool = True,
     show_date: bool = False,
     show_source: bool = False,
-    max_name_length: int = 40
+    max_name_length: int = 40,
 ) -> Table:
     """
     Create a beautiful Rich table for displaying models.
@@ -600,7 +608,7 @@ def create_model_table(
         display_name = format_display_name(
             model.name,
             max_length=max_name_length,
-            include_quant=not show_quant  # Only show in name if no quant column
+            include_quant=not show_quant,  # Only show in name if no quant column
         )
 
         # Build row
@@ -811,11 +819,13 @@ def display_model_details(model, show_path: bool = True):
     from ..models.library import format_display_name
 
     if isinstance(model, str):
-        console.print(Panel(
-            f"[yellow]Mallin ID:[/yellow] {model}",
-            title="[bold]Mallin tiedot[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[yellow]Mallin ID:[/yellow] {model}",
+                title="[bold]Mallin tiedot[/bold]",
+                border_style="yellow",
+            )
+        )
         return
 
     # Create details table
@@ -854,20 +864,24 @@ def display_model_details(model, show_path: bool = True):
         table.add_row("Polku", f"[dim]{model.path}[/dim]")
 
     # Determine border color
-    if model.format == 'gguf':
-        border = 'cyan' if model.quantization and model.quantization not in ('F16', 'F32') else 'yellow'
-    elif model.format in ('safetensors', 'pytorch'):
-        border = 'green'
+    if model.format == "gguf":
+        border = (
+            "cyan" if model.quantization and model.quantization not in ("F16", "F32") else "yellow"
+        )
+    elif model.format in ("safetensors", "pytorch"):
+        border = "green"
     else:
-        border = 'white'
+        border = "white"
 
-    console.print(Panel(
-        table,
-        title="[bold orange1]▣ Mallin tiedot[/bold orange1]",
-        border_style=border,
-        padding=(1, 2),
-        box=box.ROUNDED
-    ))
+    console.print(
+        Panel(
+            table,
+            title="[bold orange1]▣ Mallin tiedot[/bold orange1]",
+            border_style=border,
+            padding=(1, 2),
+            box=box.ROUNDED,
+        )
+    )
 
 
 # ==========================================
@@ -876,48 +890,48 @@ def display_model_details(model, show_path: bool = True):
 
 # Category configuration for display
 CATEGORY_CONFIG = {
-    'safetensors': {
-        'title': 'SafeTensors (Muunnettavat)',
-        'icon': '🏠',
-        'border_color': 'green',
-        'description': 'HuggingFace-mallit, jotka voidaan muuntaa GGUF-muotoon'
+    "safetensors": {
+        "title": "SafeTensors (Muunnettavat)",
+        "icon": "🏠",
+        "border_color": "green",
+        "description": "HuggingFace-mallit, jotka voidaan muuntaa GGUF-muotoon",
     },
-    'gguf_f16': {
-        'title': 'GGUF F16 (Kvantisoitavat)',
-        'icon': '📦',
-        'border_color': 'yellow',
-        'description': 'F16/F32 GGUF-mallit, jotka voidaan kvantisoida'
+    "gguf_f16": {
+        "title": "GGUF F16 (Kvantisoitavat)",
+        "icon": "📦",
+        "border_color": "yellow",
+        "description": "F16/F32 GGUF-mallit, jotka voidaan kvantisoida",
     },
-    'gguf_quantized': {
-        'title': 'GGUF Kvantisoidut',
-        'icon': '⚡',
-        'border_color': 'cyan',
-        'description': 'Valmiit kvantisoidut mallit'
+    "gguf_quantized": {
+        "title": "GGUF Kvantisoidut",
+        "icon": "⚡",
+        "border_color": "cyan",
+        "description": "Valmiit kvantisoidut mallit",
     },
-    'merged': {
-        'title': 'Yhdistetyt Mallit',
-        'icon': '🔀',
-        'border_color': 'magenta',
-        'description': 'LoRA-yhdistetyt tai muuten yhdistellyt mallit'
+    "merged": {
+        "title": "Yhdistetyt Mallit",
+        "icon": "🔀",
+        "border_color": "magenta",
+        "description": "LoRA-yhdistetyt tai muuten yhdistellyt mallit",
     },
-    'ollama': {
-        'title': 'Ollama-mallit',
-        'icon': '🤖',
-        'border_color': 'blue',
-        'description': 'Ollamassa kaynnistettavat mallit'
+    "ollama": {
+        "title": "Ollama-mallit",
+        "icon": "🤖",
+        "border_color": "blue",
+        "description": "Ollamassa kaynnistettavat mallit",
     },
-    'adapter': {
-        'title': 'LoRA-adapterit',
-        'icon': '🔧',
-        'border_color': 'white',
-        'description': 'Koulutetut LoRA-adapterit'
+    "adapter": {
+        "title": "LoRA-adapterit",
+        "icon": "🔧",
+        "border_color": "white",
+        "description": "Koulutetut LoRA-adapterit",
     },
-    'other': {
-        'title': 'Muut',
-        'icon': '📄',
-        'border_color': 'dim',
-        'description': 'Muut formaatit'
-    }
+    "other": {
+        "title": "Muut",
+        "icon": "📄",
+        "border_color": "dim",
+        "description": "Muut formaatit",
+    },
 }
 
 
@@ -939,12 +953,12 @@ def create_model_preview_card(model, show_path: bool = False) -> Panel:
             title="[bold]Mallin tiedot[/bold]",
             border_style="yellow",
             padding=(1, 2),
-            box=box.ROUNDED
+            box=box.ROUNDED,
         )
 
     # Determine category icon
-    cat_icons = {'base': '🏠', 'adapter': '🔧', 'merged': '🔀', 'ollama': '🤖'}
-    icon = cat_icons.get(model.category, '📄')
+    cat_icons = {"base": "🏠", "adapter": "🔧", "merged": "🔀", "ollama": "🤖"}
+    icon = cat_icons.get(model.category, "📄")
 
     # Format details
     lines = [
@@ -977,26 +991,28 @@ def create_model_preview_card(model, show_path: bool = False) -> Panel:
     content = "\n".join(lines)
 
     # Determine border color based on format
-    if model.format == 'gguf':
-        if model.quantization and model.quantization not in ('F16', 'F32', 'BF16'):
-            border = 'cyan'
+    if model.format == "gguf":
+        if model.quantization and model.quantization not in ("F16", "F32", "BF16"):
+            border = "cyan"
         else:
-            border = 'yellow'
-    elif model.format in ('safetensors', 'pytorch'):
-        border = 'green'
+            border = "yellow"
+    elif model.format in ("safetensors", "pytorch"):
+        border = "green"
     else:
-        border = 'white'
+        border = "white"
 
     return Panel(
         content,
         title="[bold]Mallin tiedot[/bold]",
         border_style=border,
         padding=(1, 2),
-        box=box.ROUNDED
+        box=box.ROUNDED,
     )
 
 
-def format_model_choice_title(model, category_key: str = None, index: int = None, use_display_name: bool = True) -> str:
+def format_model_choice_title(
+    model, category_key: str = None, index: int = None, use_display_name: bool = True
+) -> str:
     """
     Format a two-line title for questionary Choice.
 
@@ -1020,16 +1036,17 @@ def format_model_choice_title(model, category_key: str = None, index: int = None
 
     # Get icon
     if category_key:
-        config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG['other'])
-        icon = config['icon']
+        config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG["other"])
+        icon = config["icon"]
     else:
-        cat_icons = {'base': '🏠', 'adapter': '🔧', 'merged': '🔀', 'ollama': '🤖'}
-        icon = cat_icons.get(model.category, '📄')
+        cat_icons = {"base": "🏠", "adapter": "🔧", "merged": "🔀", "ollama": "🤖"}
+        icon = cat_icons.get(model.category, "📄")
 
     # Get display name (clean version for readability)
     # Don't include quant since it's shown separately in line 2
     if use_display_name:
         from ..models.library import format_display_name
+
         display_name = format_display_name(model.name, max_length=45, include_quant=False)
     else:
         display_name = model.name if len(model.name) <= 45 else model.name[:42] + "..."
@@ -1079,14 +1096,14 @@ def build_model_choices(models_by_category: dict, include_back: bool = True) -> 
         if not models:
             continue
 
-        config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG['other'])
-        icon = config['icon']
-        title = config['title']
+        config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG["other"])
+        icon = config["icon"]
+        title = config["title"]
 
         # Category separator with count
-        choices.append(questionary.Separator(
-            f"\n{'─' * 60}\n   {icon} {title} ({len(models)})\n{'─' * 60}"
-        ))
+        choices.append(
+            questionary.Separator(f"\n{'─' * 60}\n   {icon} {title} ({len(models)})\n{'─' * 60}")
+        )
 
         for model in models:
             # Two-line title
@@ -1101,11 +1118,7 @@ def build_model_choices(models_by_category: dict, include_back: bool = True) -> 
     return choices
 
 
-def create_model_section_panel(
-    category_key: str,
-    models: list,
-    show_details: bool = True
-) -> Panel:
+def create_model_section_panel(category_key: str, models: list, show_details: bool = True) -> Panel:
     """
     Create a Rich Panel for a category of models.
 
@@ -1117,10 +1130,10 @@ def create_model_section_panel(
     Returns:
         Rich Panel with formatted model list
     """
-    config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG['other'])
-    icon = config['icon']
-    title = config['title']
-    border_color = config['border_color']
+    config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG["other"])
+    icon = config["icon"]
+    title = config["title"]
+    border_color = config["border_color"]
 
     if not models:
         content = "[dim]Ei malleja[/dim]"
@@ -1145,14 +1158,11 @@ def create_model_section_panel(
         title=f"[bold]{icon} {title} ({len(models)})[/bold]",
         border_style=border_color,
         padding=(0, 1),
-        box=box.ROUNDED
+        box=box.ROUNDED,
     )
 
 
-def display_categorized_library(
-    grouped_models: dict,
-    categories_to_show: list = None
-):
+def display_categorized_library(grouped_models: dict, categories_to_show: list = None):
     """
     Display models grouped by category as panels.
 
@@ -1165,8 +1175,13 @@ def display_categorized_library(
     # Default: show all non-empty categories
     if categories_to_show is None:
         categories_to_show = [
-            'safetensors', 'gguf_f16', 'gguf_quantized',
-            'merged', 'ollama', 'adapter', 'other'
+            "safetensors",
+            "gguf_f16",
+            "gguf_quantized",
+            "merged",
+            "ollama",
+            "adapter",
+            "other",
         ]
 
     total_count = 0
@@ -1184,18 +1199,12 @@ def display_categorized_library(
 
     # Print summary
     if total_count > 0:
-        console.print(
-            f"[dim]Yhteensa: {total_count} mallia, {format_size(total_size)}[/dim]\n"
-        )
+        console.print(f"[dim]Yhteensa: {total_count} mallia, {format_size(total_size)}[/dim]\n")
     else:
         console.print("[yellow]Kirjasto on tyhja.[/yellow]\n")
 
 
-def display_tool_model_selection(
-    models: list,
-    category_key: str,
-    title: str = None
-) -> Panel:
+def display_tool_model_selection(models: list, category_key: str, title: str = None) -> Panel:
     """
     Create a panel for tool-specific model selection.
 
@@ -1207,10 +1216,10 @@ def display_tool_model_selection(
     Returns:
         Rich Panel with numbered model list for selection
     """
-    config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG['other'])
-    icon = config['icon']
-    display_title = title or config['title']
-    border_color = config['border_color']
+    config = CATEGORY_CONFIG.get(category_key, CATEGORY_CONFIG["other"])
+    icon = config["icon"]
+    display_title = title or config["title"]
+    border_color = config["border_color"]
 
     if not models:
         content = "[dim]Ei malleja saatavilla[/dim]"
@@ -1230,5 +1239,5 @@ def display_tool_model_selection(
         title=f"[bold]{icon} {display_title}[/bold]",
         border_style=border_color,
         padding=(0, 1),
-        box=box.ROUNDED
+        box=box.ROUNDED,
     )

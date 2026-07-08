@@ -8,96 +8,115 @@ Custom exception classes for the toolbox.
 
 class ToolboxError(Exception):
     """Base exception for all AI Toolbox errors."""
+
     pass
 
 
 class ModelError(ToolboxError):
     """Base exception for model-related errors."""
+
     pass
 
 
 class ModelNotFoundError(ModelError):
     """Raised when a model cannot be found."""
+
     pass
 
 
 class ModelDownloadError(ModelError):
     """Raised when model download fails."""
+
     pass
 
 
 class ModelConversionError(ModelError):
     """Raised when model conversion fails."""
+
     pass
 
 
 class ModelLoadError(ModelError):
     """Raised when model loading fails."""
+
     pass
 
 
 class TrainingError(ToolboxError):
     """Base exception for training-related errors."""
+
     pass
 
 
 class DatasetError(TrainingError):
     """Raised when there's a dataset issue."""
+
     pass
 
 
 class DatasetNotFoundError(DatasetError):
     """Raised when a dataset cannot be found."""
+
     pass
 
 
 class DatasetFormatError(DatasetError):
     """Raised when dataset format is invalid."""
+
     pass
 
 
 class TrainingConfigError(TrainingError):
     """Raised when training configuration is invalid."""
+
     pass
 
 
 class ConversionError(ToolboxError):
     """Base exception for conversion errors."""
+
     pass
 
 
 class LlamaCppNotFoundError(ConversionError):
     """Raised when llama.cpp binaries are not found."""
+
     pass
 
 
 class QuantizationError(ConversionError):
     """Raised when quantization fails."""
+
     pass
 
 
 class UnsupportedModelFormatError(ConversionError):
     """Raised when model format is not supported."""
+
     pass
 
 
 class ConfigError(ToolboxError):
     """Base exception for configuration errors."""
+
     pass
 
 
 class ConfigNotFoundError(ConfigError):
     """Raised when configuration file is not found."""
+
     pass
 
 
 class ConfigValidationError(ConfigError):
     """Raised when configuration validation fails."""
+
     pass
 
 
 class DependencyError(ToolboxError):
     """Base exception for dependency errors."""
+
     pass
 
 
@@ -115,16 +134,19 @@ class MissingDependencyError(DependencyError):
 
 class IntegrationError(ToolboxError):
     """Base exception for integration errors."""
+
     pass
 
 
 class OllamaError(IntegrationError):
     """Raised when Ollama integration fails."""
+
     pass
 
 
 class HuggingFaceError(IntegrationError):
     """Raised when HuggingFace integration fails."""
+
     pass
 
 
@@ -132,8 +154,10 @@ class HuggingFaceError(IntegrationError):
 # Merge Errors
 # =============================================================================
 
+
 class MergeError(ModelError):
     """Base exception for merge-related errors."""
+
     pass
 
 

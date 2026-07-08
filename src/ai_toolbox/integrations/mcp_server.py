@@ -16,6 +16,7 @@ try:
     from mcp.server import Server
     from mcp.server.stdio import stdio_server
     from mcp.types import Tool, TextContent
+
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -30,7 +31,7 @@ from ..conversion.converter import GGUFConverter
 
 def format_size(size_bytes: int) -> str:
     """Format bytes to human-readable size."""
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size_bytes < 1024:
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024
@@ -57,21 +58,25 @@ class AIToolboxMCP:
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Search query (e.g., 'llama', 'mistral', 'qwen')"
+                            "description": "Search query (e.g., 'llama', 'mistral', 'qwen')",
                         },
                         "limit": {
                             "type": "integer",
                             "description": "Maximum number of results (default: 10)",
-                            "default": 10
+                            "default": 10,
                         },
                         "task": {
                             "type": "string",
                             "description": "Filter by task type",
-                            "enum": ["text-generation", "text2text-generation", "feature-extraction"]
-                        }
+                            "enum": [
+                                "text-generation",
+                                "text2text-generation",
+                                "feature-extraction",
+                            ],
+                        },
                     },
-                    "required": ["query"]
-                }
+                    "required": ["query"],
+                },
             },
             {
                 "name": "get_model_info",
@@ -81,11 +86,11 @@ class AIToolboxMCP:
                     "properties": {
                         "model_id": {
                             "type": "string",
-                            "description": "HuggingFace model ID (e.g., 'meta-llama/Llama-2-7b-hf')"
+                            "description": "HuggingFace model ID (e.g., 'meta-llama/Llama-2-7b-hf')",
                         }
                     },
-                    "required": ["model_id"]
-                }
+                    "required": ["model_id"],
+                },
             },
             {
                 "name": "download_model",
@@ -95,16 +100,16 @@ class AIToolboxMCP:
                     "properties": {
                         "model_id": {
                             "type": "string",
-                            "description": "HuggingFace model ID to download"
+                            "description": "HuggingFace model ID to download",
                         },
                         "safetensors_only": {
                             "type": "boolean",
                             "description": "Download only safetensors files (default: true)",
-                            "default": True
-                        }
+                            "default": True,
+                        },
                     },
-                    "required": ["model_id"]
-                }
+                    "required": ["model_id"],
+                },
             },
             {
                 "name": "check_downloaded",
@@ -114,13 +119,12 @@ class AIToolboxMCP:
                     "properties": {
                         "model_id": {
                             "type": "string",
-                            "description": "HuggingFace model ID to check"
+                            "description": "HuggingFace model ID to check",
                         }
                     },
-                    "required": ["model_id"]
-                }
+                    "required": ["model_id"],
+                },
             },
-
             # === Model Library ===
             {
                 "name": "list_library",
@@ -130,24 +134,20 @@ class AIToolboxMCP:
                     "properties": {
                         "format_filter": {
                             "type": "string",
-                            "description": "Filter by format (e.g., 'gguf', 'safetensors')"
+                            "description": "Filter by format (e.g., 'gguf', 'safetensors')",
                         },
                         "source_filter": {
                             "type": "string",
-                            "description": "Filter by source (e.g., 'huggingface', 'local')"
-                        }
-                    }
-                }
+                            "description": "Filter by source (e.g., 'huggingface', 'local')",
+                        },
+                    },
+                },
             },
             {
                 "name": "library_stats",
                 "description": "Get statistics about the model library (total models, size, etc.).",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {}
-                }
+                "inputSchema": {"type": "object", "properties": {}},
             },
-
             # === GGUF Conversion ===
             {
                 "name": "convert_to_gguf",
@@ -157,17 +157,17 @@ class AIToolboxMCP:
                     "properties": {
                         "model_path": {
                             "type": "string",
-                            "description": "Path to the HuggingFace model directory"
+                            "description": "Path to the HuggingFace model directory",
                         },
                         "output_type": {
                             "type": "string",
                             "description": "Output type (f32, f16, bf16, q8_0)",
                             "default": "f16",
-                            "enum": ["f32", "f16", "bf16", "q8_0"]
-                        }
+                            "enum": ["f32", "f16", "bf16", "q8_0"],
+                        },
                     },
-                    "required": ["model_path"]
-                }
+                    "required": ["model_path"],
+                },
             },
             {
                 "name": "quantize_gguf",
@@ -177,17 +177,28 @@ class AIToolboxMCP:
                     "properties": {
                         "input_path": {
                             "type": "string",
-                            "description": "Path to the input GGUF file"
+                            "description": "Path to the input GGUF file",
                         },
                         "quantization": {
                             "type": "string",
                             "description": "Quantization type (q4_k_m recommended)",
                             "default": "q4_k_m",
-                            "enum": ["q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s", "q4_0", "q3_k_m", "q3_k_s", "q2_k"]
-                        }
+                            "enum": [
+                                "q8_0",
+                                "q6_k",
+                                "q5_k_m",
+                                "q5_k_s",
+                                "q4_k_m",
+                                "q4_k_s",
+                                "q4_0",
+                                "q3_k_m",
+                                "q3_k_s",
+                                "q2_k",
+                            ],
+                        },
                     },
-                    "required": ["input_path"]
-                }
+                    "required": ["input_path"],
+                },
             },
             {
                 "name": "convert_and_quantize",
@@ -197,30 +208,38 @@ class AIToolboxMCP:
                     "properties": {
                         "model_path": {
                             "type": "string",
-                            "description": "Path to the HuggingFace model directory"
+                            "description": "Path to the HuggingFace model directory",
                         },
                         "quantization": {
                             "type": "string",
                             "description": "Target quantization (q4_k_m recommended)",
                             "default": "q4_k_m",
-                            "enum": ["q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s", "q4_0", "q3_k_m", "q3_k_s", "q2_k"]
+                            "enum": [
+                                "q8_0",
+                                "q6_k",
+                                "q5_k_m",
+                                "q5_k_s",
+                                "q4_k_m",
+                                "q4_k_s",
+                                "q4_0",
+                                "q3_k_m",
+                                "q3_k_s",
+                                "q2_k",
+                            ],
                         },
                         "keep_f16": {
                             "type": "boolean",
                             "description": "Keep intermediate F16 file (default: false)",
-                            "default": False
-                        }
+                            "default": False,
+                        },
                     },
-                    "required": ["model_path"]
-                }
+                    "required": ["model_path"],
+                },
             },
             {
                 "name": "list_quantization_types",
                 "description": "List all available quantization types with their properties (bits per weight, quality level, description).",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {}
-                }
+                "inputSchema": {"type": "object", "properties": {}},
             },
             {
                 "name": "recommend_quantization",
@@ -230,15 +249,15 @@ class AIToolboxMCP:
                     "properties": {
                         "model_params_billion": {
                             "type": "number",
-                            "description": "Model parameters in billions (e.g., 7, 13, 70)"
+                            "description": "Model parameters in billions (e.g., 7, 13, 70)",
                         },
                         "available_ram_gb": {
                             "type": "number",
-                            "description": "Available RAM in GB (auto-detected if not provided)"
-                        }
+                            "description": "Available RAM in GB (auto-detected if not provided)",
+                        },
                     },
-                    "required": ["model_params_billion"]
-                }
+                    "required": ["model_params_billion"],
+                },
             },
             {
                 "name": "estimate_model_size",
@@ -248,26 +267,22 @@ class AIToolboxMCP:
                     "properties": {
                         "model_path": {
                             "type": "string",
-                            "description": "Path to the HuggingFace model directory"
+                            "description": "Path to the HuggingFace model directory",
                         },
                         "quantization": {
                             "type": "string",
                             "description": "Target quantization type",
-                            "default": "q4_k_m"
-                        }
+                            "default": "q4_k_m",
+                        },
                     },
-                    "required": ["model_path"]
-                }
+                    "required": ["model_path"],
+                },
             },
-
             # === Converter Setup ===
             {
                 "name": "check_converter_status",
                 "description": "Check if the GGUF converter (llama.cpp) is installed and ready.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {}
-                }
+                "inputSchema": {"type": "object", "properties": {}},
             },
             {
                 "name": "setup_llama_cpp",
@@ -278,12 +293,11 @@ class AIToolboxMCP:
                         "force": {
                             "type": "boolean",
                             "description": "Force re-download even if exists",
-                            "default": False
+                            "default": False,
                         }
-                    }
-                }
+                    },
+                },
             },
-
             # === Utilities ===
             {
                 "name": "calculate_vram",
@@ -293,19 +307,16 @@ class AIToolboxMCP:
                     "properties": {
                         "parameters_billion": {
                             "type": "number",
-                            "description": "Model parameters in billions (e.g., 7, 13, 70)"
+                            "description": "Model parameters in billions (e.g., 7, 13, 70)",
                         }
                     },
-                    "required": ["parameters_billion"]
-                }
+                    "required": ["parameters_billion"],
+                },
             },
             {
                 "name": "get_system_info",
                 "description": "Get system information (RAM, CPU) for conversion recommendations.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {}
-                }
+                "inputSchema": {"type": "object", "properties": {}},
             },
         ]
 
@@ -315,16 +326,13 @@ class AIToolboxMCP:
             # Model Search & Download
             if name == "search_models":
                 return self._search_models(
-                    arguments.get("query", ""),
-                    arguments.get("limit", 10),
-                    arguments.get("task")
+                    arguments.get("query", ""), arguments.get("limit", 10), arguments.get("task")
                 )
             elif name == "get_model_info":
                 return self._get_model_info(arguments["model_id"])
             elif name == "download_model":
                 return self._download_model(
-                    arguments["model_id"],
-                    arguments.get("safetensors_only", True)
+                    arguments["model_id"], arguments.get("safetensors_only", True)
                 )
             elif name == "check_downloaded":
                 return self._check_downloaded(arguments["model_id"])
@@ -332,8 +340,7 @@ class AIToolboxMCP:
             # Model Library
             elif name == "list_library":
                 return self._list_library(
-                    arguments.get("format_filter"),
-                    arguments.get("source_filter")
+                    arguments.get("format_filter"), arguments.get("source_filter")
                 )
             elif name == "library_stats":
                 return self._library_stats()
@@ -341,31 +348,27 @@ class AIToolboxMCP:
             # GGUF Conversion
             elif name == "convert_to_gguf":
                 return self._convert_to_gguf(
-                    arguments["model_path"],
-                    arguments.get("output_type", "f16")
+                    arguments["model_path"], arguments.get("output_type", "f16")
                 )
             elif name == "quantize_gguf":
                 return self._quantize_gguf(
-                    arguments["input_path"],
-                    arguments.get("quantization", "q4_k_m")
+                    arguments["input_path"], arguments.get("quantization", "q4_k_m")
                 )
             elif name == "convert_and_quantize":
                 return self._convert_and_quantize(
                     arguments["model_path"],
                     arguments.get("quantization", "q4_k_m"),
-                    arguments.get("keep_f16", False)
+                    arguments.get("keep_f16", False),
                 )
             elif name == "list_quantization_types":
                 return self._list_quantization_types()
             elif name == "recommend_quantization":
                 return self._recommend_quantization(
-                    arguments["model_params_billion"],
-                    arguments.get("available_ram_gb")
+                    arguments["model_params_billion"], arguments.get("available_ram_gb")
                 )
             elif name == "estimate_model_size":
                 return self._estimate_model_size(
-                    arguments["model_path"],
-                    arguments.get("quantization", "q4_k_m")
+                    arguments["model_path"], arguments.get("quantization", "q4_k_m")
                 )
 
             # Converter Setup
@@ -397,14 +400,16 @@ class AIToolboxMCP:
 
         models = []
         for r in results:
-            models.append({
-                "model_id": r.model_id,
-                "author": r.author,
-                "downloads": r.downloads,
-                "likes": r.likes,
-                "task": r.pipeline_tag,
-                "tags": r.tags[:5] if r.tags else []
-            })
+            models.append(
+                {
+                    "model_id": r.model_id,
+                    "author": r.author,
+                    "downloads": r.downloads,
+                    "likes": r.likes,
+                    "task": r.pipeline_tag,
+                    "tags": r.tags[:5] if r.tags else [],
+                }
+            )
 
         return json.dumps({"results": models, "total": len(models)})
 
@@ -417,32 +422,36 @@ class AIToolboxMCP:
 
         existing = self.downloader.check_exists(model_id)
 
-        return json.dumps({
-            "model_id": details.model_id,
-            "author": details.author,
-            "downloads": details.downloads,
-            "likes": details.likes,
-            "task": details.pipeline_tag,
-            "total_size": format_size(details.total_size),
-            "total_size_bytes": details.total_size,
-            "file_count": len(details.files),
-            "tags": details.tags[:10] if details.tags else [],
-            "already_downloaded": str(existing) if existing else None,
-            "files": [
-                {"name": f["name"], "size": format_size(f["size"])}
-                for f in sorted(details.files, key=lambda x: x["size"], reverse=True)[:10]
-            ]
-        })
+        return json.dumps(
+            {
+                "model_id": details.model_id,
+                "author": details.author,
+                "downloads": details.downloads,
+                "likes": details.likes,
+                "task": details.pipeline_tag,
+                "total_size": format_size(details.total_size),
+                "total_size_bytes": details.total_size,
+                "file_count": len(details.files),
+                "tags": details.tags[:10] if details.tags else [],
+                "already_downloaded": str(existing) if existing else None,
+                "files": [
+                    {"name": f["name"], "size": format_size(f["size"])}
+                    for f in sorted(details.files, key=lambda x: x["size"], reverse=True)[:10]
+                ],
+            }
+        )
 
     def _download_model(self, model_id: str, safetensors_only: bool) -> str:
         """Download a model."""
         existing = self.downloader.check_exists(model_id)
         if existing:
-            return json.dumps({
-                "status": "already_exists",
-                "path": str(existing),
-                "message": f"Model already downloaded at {existing}"
-            })
+            return json.dumps(
+                {
+                    "status": "already_exists",
+                    "path": str(existing),
+                    "message": f"Model already downloaded at {existing}",
+                }
+            )
 
         include_patterns = None
         exclude_patterns = None
@@ -452,112 +461,101 @@ class AIToolboxMCP:
             exclude_patterns = ["*.bin", "*.md"]
 
         path = self.downloader.download_model(
-            model_id,
-            include_patterns=include_patterns,
-            exclude_patterns=exclude_patterns
+            model_id, include_patterns=include_patterns, exclude_patterns=exclude_patterns
         )
 
         if path:
             try:
                 entry = self.library.add_model(
-                    path=str(path),
-                    source="huggingface",
-                    source_id=model_id
+                    path=str(path), source="huggingface", source_id=model_id
                 )
-                return json.dumps({
-                    "status": "success",
-                    "path": str(path),
-                    "library_id": entry.id,
-                    "message": f"Downloaded and added to library: {entry.name}"
-                })
+                return json.dumps(
+                    {
+                        "status": "success",
+                        "path": str(path),
+                        "library_id": entry.id,
+                        "message": f"Downloaded and added to library: {entry.name}",
+                    }
+                )
             except Exception as e:
-                return json.dumps({
-                    "status": "partial",
-                    "path": str(path),
-                    "message": f"Downloaded but failed to add to library: {e}"
-                })
+                return json.dumps(
+                    {
+                        "status": "partial",
+                        "path": str(path),
+                        "message": f"Downloaded but failed to add to library: {e}",
+                    }
+                )
         else:
-            return json.dumps({
-                "status": "failed",
-                "message": "Download failed. Check if the model exists and you have access."
-            })
+            return json.dumps(
+                {
+                    "status": "failed",
+                    "message": "Download failed. Check if the model exists and you have access.",
+                }
+            )
 
     def _check_downloaded(self, model_id: str) -> str:
         """Check if a model is downloaded."""
         existing = self.downloader.check_exists(model_id)
 
         if existing:
-            return json.dumps({
-                "downloaded": True,
-                "path": str(existing)
-            })
+            return json.dumps({"downloaded": True, "path": str(existing)})
         else:
-            return json.dumps({
-                "downloaded": False,
-                "path": None
-            })
+            return json.dumps({"downloaded": False, "path": None})
 
     # === Model Library ===
 
     def _list_library(self, format_filter: Optional[str], source_filter: Optional[str]) -> str:
         """List models in library."""
-        models = self.library.list_models(
-            format_filter=format_filter,
-            source_filter=source_filter
-        )
+        models = self.library.list_models(format_filter=format_filter, source_filter=source_filter)
 
         if not models:
             return json.dumps({"models": [], "message": "No models in library"})
 
         result = []
         for m in models:
-            result.append({
-                "id": m.id,
-                "name": m.name,
-                "format": m.format,
-                "quantization": m.quantization,
-                "size": format_size(m.size_bytes),
-                "source": m.source,
-                "source_id": m.source_id,
-                "path": m.path
-            })
+            result.append(
+                {
+                    "id": m.id,
+                    "name": m.name,
+                    "format": m.format,
+                    "quantization": m.quantization,
+                    "size": format_size(m.size_bytes),
+                    "source": m.source,
+                    "source_id": m.source_id,
+                    "path": m.path,
+                }
+            )
 
         return json.dumps({"models": result, "total": len(result)})
 
     def _library_stats(self) -> str:
         """Get library statistics."""
         stats = self.library.get_stats()
-        return json.dumps({
-            "total_models": stats["total_models"],
-            "total_size_gb": round(stats["total_size_gb"], 2),
-            "formats": stats.get("formats", {}),
-            "sources": stats.get("sources", {})
-        })
+        return json.dumps(
+            {
+                "total_models": stats["total_models"],
+                "total_size_gb": round(stats["total_size_gb"], 2),
+                "formats": stats.get("formats", {}),
+                "sources": stats.get("sources", {}),
+            }
+        )
 
     # === GGUF Conversion ===
 
     def _convert_to_gguf(self, model_path: str, output_type: str) -> str:
         """Convert model to GGUF."""
-        result = self.converter.convert_to_gguf(
-            model_path=model_path,
-            output_type=output_type
-        )
+        result = self.converter.convert_to_gguf(model_path=model_path, output_type=output_type)
         return json.dumps(result)
 
     def _quantize_gguf(self, input_path: str, quantization: str) -> str:
         """Quantize GGUF model."""
-        result = self.converter.quantize_gguf(
-            input_path=input_path,
-            quantization=quantization
-        )
+        result = self.converter.quantize_gguf(input_path=input_path, quantization=quantization)
         return json.dumps(result)
 
     def _convert_and_quantize(self, model_path: str, quantization: str, keep_f16: bool) -> str:
         """Convert and quantize in one step."""
         result = self.converter.convert_and_quantize(
-            model_path=model_path,
-            quantization=quantization,
-            keep_f16=keep_f16
+            model_path=model_path, quantization=quantization, keep_f16=keep_f16
         )
         return json.dumps(result)
 
@@ -566,22 +564,21 @@ class AIToolboxMCP:
         types = self.converter.list_quantization_types()
         return json.dumps({"quantization_types": types})
 
-    def _recommend_quantization(self, model_params_billion: float, available_ram_gb: Optional[float]) -> str:
+    def _recommend_quantization(
+        self, model_params_billion: float, available_ram_gb: Optional[float]
+    ) -> str:
         """Get quantization recommendations."""
         recommendations = self.converter.recommend_quantization(
-            model_params_billions=model_params_billion,
-            available_ram_gb=available_ram_gb
+            model_params_billions=model_params_billion, available_ram_gb=available_ram_gb
         )
-        return json.dumps({
-            "model_params_billion": model_params_billion,
-            "recommendations": recommendations
-        })
+        return json.dumps(
+            {"model_params_billion": model_params_billion, "recommendations": recommendations}
+        )
 
     def _estimate_model_size(self, model_path: str, quantization: str) -> str:
         """Estimate model size."""
         estimate = self.converter.estimate_model_size(
-            model_path=Path(model_path),
-            quantization=quantization
+            model_path=Path(model_path), quantization=quantization
         )
         return json.dumps(estimate)
 
@@ -597,16 +594,16 @@ class AIToolboxMCP:
         success = self.converter.setup_llama_cpp(force=force)
         if success:
             status = self.converter.check_llama_cpp()
-            return json.dumps({
-                "success": True,
-                "message": "llama.cpp set up successfully",
-                "status": status
-            })
+            return json.dumps(
+                {"success": True, "message": "llama.cpp set up successfully", "status": status}
+            )
         else:
-            return json.dumps({
-                "success": False,
-                "message": "Failed to set up llama.cpp. Make sure git is installed."
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "message": "Failed to set up llama.cpp. Make sure git is installed.",
+                }
+            )
 
     # === Utilities ===
 
@@ -629,19 +626,18 @@ class AIToolboxMCP:
             ctx_4k = model_gb + 0.5
             ctx_8k = model_gb + 1.0
 
-            results.append({
-                "quantization": name,
-                "bits": bits,
-                "model_size_gb": round(model_gb, 1),
-                "with_4k_context_gb": round(ctx_4k, 1),
-                "with_8k_context_gb": round(ctx_8k, 1),
-                "description": desc
-            })
+            results.append(
+                {
+                    "quantization": name,
+                    "bits": bits,
+                    "model_size_gb": round(model_gb, 1),
+                    "with_4k_context_gb": round(ctx_4k, 1),
+                    "with_8k_context_gb": round(ctx_8k, 1),
+                    "description": desc,
+                }
+            )
 
-        return json.dumps({
-            "model_parameters_billion": params_b,
-            "requirements": results
-        })
+        return json.dumps({"model_parameters_billion": params_b, "requirements": results})
 
     def _get_system_info(self) -> str:
         """Get system info."""
@@ -662,11 +658,7 @@ def create_mcp_server() -> Optional[Any]:
         """List available tools."""
         tools = toolbox.get_tools()
         return [
-            Tool(
-                name=t["name"],
-                description=t["description"],
-                inputSchema=t["inputSchema"]
-            )
+            Tool(name=t["name"], description=t["description"], inputSchema=t["inputSchema"])
             for t in tools
         ]
 
@@ -694,6 +686,7 @@ async def run_server():
 def main():
     """Entry point for MCP server."""
     import asyncio
+
     asyncio.run(run_server())
 
 

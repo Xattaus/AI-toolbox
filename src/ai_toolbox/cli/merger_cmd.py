@@ -36,8 +36,12 @@ from ..core.paths import get_paths
 from ..merging.merger import ModelMerger
 from ..merging.mergekit_wrapper import MergekitWrapper, MergekitMethod, MergekitConfig
 from ..merging.presets import (
-    PRESETS, get_preset, list_presets, get_recommended_preset,
-    get_presets_by_category, PresetCategory,
+    PRESETS,
+    get_preset,
+    list_presets,
+    get_recommended_preset,
+    get_presets_by_category,
+    PresetCategory,
 )
 from ..merging.config_manager import MergeConfigManager
 from ..models.library import ModelLibrary
@@ -187,7 +191,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         info1 = self.merger.get_model_info(model1)
         if info1.get("architecture"):
             console.print(f"  [green]+[/green] {info1.get('name')} ({info1.get('architecture')})")
-            console.print(f"    [dim]Kerroksia: {info1.get('num_layers')}, Hidden: {info1.get('hidden_size')}[/dim]\n")
+            console.print(
+                f"    [dim]Kerroksia: {info1.get('num_layers')}, Hidden: {info1.get('hidden_size')}[/dim]\n"
+            )
 
         # Select model 2
         console.print("[bold]Malli 2:[/bold]")
@@ -198,7 +204,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         info2 = self.merger.get_model_info(model2)
         if info2.get("architecture"):
             console.print(f"  [green]+[/green] {info2.get('name')} ({info2.get('architecture')})")
-            console.print(f"    [dim]Kerroksia: {info2.get('num_layers')}, Hidden: {info2.get('hidden_size')}[/dim]\n")
+            console.print(
+                f"    [dim]Kerroksia: {info2.get('num_layers')}, Hidden: {info2.get('hidden_size')}[/dim]\n"
+            )
 
         # Check compatibility
         compatible, msg, _ = self.merger.validate_models_compatible([model1, model2])
@@ -225,10 +233,14 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             print_warning("Virheellinen ratio, käytetään oletusta: 0.5")
             ratio = 0.5
 
-        console.print(f"\n[dim]Ratio {ratio:.2f}: {100-ratio*100:.0f}% malli 1, {ratio*100:.0f}% malli 2[/dim]")
+        console.print(
+            f"\n[dim]Ratio {ratio:.2f}: {100-ratio*100:.0f}% malli 1, {ratio*100:.0f}% malli 2[/dim]"
+        )
 
         # Output name
-        default_name = f"slerp_{info1.get('name', 'model1')[:15]}_{info2.get('name', 'model2')[:15]}"
+        default_name = (
+            f"slerp_{info1.get('name', 'model1')[:15]}_{info2.get('name', 'model2')[:15]}"
+        )
         output_name = questionary.text(
             "Tulosteen nimi:",
             default=default_name,
@@ -237,15 +249,17 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         # Show summary
         reqs = self.merger.estimate_merge_requirements([model1, model2])
-        console.print(Panel(
-            f"[white]Malli 1:[/white] {model1.name}\n"
-            f"[white]Malli 2:[/white] {model2.name}\n"
-            f"[white]Ratio:[/white] {ratio:.2f}\n"
-            f"[white]Tuloste:[/white] {output_name}\n\n"
-            f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
-            title="[bold]SLERP Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Malli 1:[/white] {model1.name}\n"
+                f"[white]Malli 2:[/white] {model2.name}\n"
+                f"[white]Ratio:[/white] {ratio:.2f}\n"
+                f"[white]Tuloste:[/white] {output_name}\n\n"
+                f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
+                title="[bold]SLERP Merge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -266,18 +280,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         )
 
         if result["success"]:
-            console.print(Panel(
-                f"[green]Merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {result['output_path']}\n"
-                f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {result['output_path']}\n"
+                    f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged",
                     source_id=f"slerp:{model1.name}+{model2.name}",
                 )
@@ -310,7 +326,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         console.print("[bold]Mallit yhdistettavaksi (vahintaan 2):[/bold]")
 
         while True:
-            model = self._select_model_for_merge(f"Valitse malli {len(models)+1} (tai peruuta lopettaaksesi):")
+            model = self._select_model_for_merge(
+                f"Valitse malli {len(models)+1} (tai peruuta lopettaaksesi):"
+            )
             if not model:
                 break
 
@@ -324,7 +342,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             console.print(f"  [green]+[/green] Lisatty: {model.name}")
 
             if len(models) >= 2:
-                if not questionary.confirm("Lisaa toinen malli?", default=False, style=custom_style).ask():
+                if not questionary.confirm(
+                    "Lisaa toinen malli?", default=False, style=custom_style
+                ).ask():
                     break
 
         if len(models) < 2:
@@ -360,14 +380,16 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         reqs = self.merger.estimate_merge_requirements(all_models)
 
         model_list = "\n".join([f"  - {m.name}" for m in models])
-        console.print(Panel(
-            f"[white]Base:[/white] {base_model.name}\n"
-            f"[white]Mallit:[/white]\n{model_list}\n"
-            f"[white]Density:[/white] {density:.2f}\n\n"
-            f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
-            title="[bold]TIES Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Base:[/white] {base_model.name}\n"
+                f"[white]Mallit:[/white]\n{model_list}\n"
+                f"[white]Density:[/white] {density:.2f}\n\n"
+                f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
+                title="[bold]TIES Merge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -388,18 +410,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         )
 
         if result["success"]:
-            console.print(Panel(
-                f"[green]Merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {result['output_path']}\n"
-                f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {result['output_path']}\n"
+                    f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged",
                     source_id=f"ties:{len(models)}models",
                 )
@@ -448,18 +472,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
             end_str = questionary.text(
                 f"Lopetuskerros (0-{num_layers-1}):",
-                default=str(num_layers-1),
+                default=str(num_layers - 1),
                 style=custom_style,
             ).ask()
 
             try:
                 start = int(start_str)
                 end = int(end_str)
-                start = max(0, min(num_layers-1, start))
-                end = max(0, min(num_layers-1, end))
+                start = max(0, min(num_layers - 1, start))
+                end = max(0, min(num_layers - 1, end))
                 # Varmista että start <= end
                 if start > end:
-                    print_warning(f"Aloituskerros ({start}) > lopetuskerros ({end}), vaihdetaan järjestys")
+                    print_warning(
+                        f"Aloituskerros ({start}) > lopetuskerros ({end}), vaihdetaan järjestys"
+                    )
                     start, end = end, start
             except ValueError:
                 print_warning("Virheellinen kerrosarvo, käytetään oletuksia")
@@ -469,7 +495,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             console.print(f"    Kerrokset {start}-{end}\n")
 
             if len(layer_config) >= 2:
-                if not questionary.confirm("Lisaa toinen malli?", default=False, style=custom_style).ask():
+                if not questionary.confirm(
+                    "Lisaa toinen malli?", default=False, style=custom_style
+                ).ask():
                     break
 
         if len(layer_config) < 2:
@@ -489,12 +517,14 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         for model, (start, end) in layer_config.items():
             config_text += f"  {model.name}: kerrokset {start}-{end}\n"
 
-        console.print(Panel(
-            f"[white]Kerrosten lahteet:[/white]\n{config_text}\n"
-            f"[white]Tuloste:[/white] {output_name}",
-            title="[bold]Frankenmerge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Kerrosten lahteet:[/white]\n{config_text}\n"
+                f"[white]Tuloste:[/white] {output_name}",
+                title="[bold]Frankenmerge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -512,18 +542,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         )
 
         if result["success"]:
-            console.print(Panel(
-                f"[green]Merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {result['output_path']}\n"
-                f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {result['output_path']}\n"
+                    f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged",
                     source_id="frankenmerge",
                 )
@@ -561,16 +593,17 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         if downloaded_loras:
             choices.append(questionary.Separator("-- Ladatut LoRA-adapterit --"))
             for lora in downloaded_loras[:15]:
-                base = lora.get('base_model', '')
-                size = format_size(lora.get('size', 0)) if lora.get('size') else "?"
-                base_short = base.split('/')[-1][:25] if base and '/' in base else (base[:25] if base else "Tuntematon")
+                base = lora.get("base_model", "")
+                size = format_size(lora.get("size", 0)) if lora.get("size") else "?"
+                base_short = (
+                    base.split("/")[-1][:25]
+                    if base and "/" in base
+                    else (base[:25] if base else "Tuntematon")
+                )
                 # Rivi 1: Nimi ja koko
                 # Rivi 2: Base model
-                title = (
-                    f"{lora['name'][:42]:<42} {size:>10}\n"
-                    f"      Base: {base_short}"
-                )
-                choices.append(questionary.Choice(title=title, value=("lora", lora['path'])))
+                title = f"{lora['name'][:42]:<42} {size:>10}\n" f"      Base: {base_short}"
+                choices.append(questionary.Choice(title=title, value=("lora", lora["path"])))
 
         if not downloaded_loras:
             console.print("[yellow]Ei ladattuja LoRA-adaptereita.[/yellow]")
@@ -582,11 +615,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         choices.append(questionary.Choice(title="<-  Peruuta", value=("back", None)))
 
         result = questionary.select(
-            "Valitse adapter:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Valitse adapter:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if result is None or result[0] == "back":
@@ -600,32 +629,38 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         if adapter_config_file.exists():
             try:
                 import json
-                with open(adapter_config_file, 'r', encoding='utf-8') as f:
+
+                with open(adapter_config_file, "r", encoding="utf-8") as f:
                     adapter_config = json.load(f)
-                expected_base = adapter_config.get('base_model_name_or_path', '')
+                expected_base = adapter_config.get("base_model_name_or_path", "")
 
                 if expected_base:
                     # Tarkista yhteensopivuus
-                    llama_variants = ['llama', 'poro', 'viking', 'finllama']
+                    llama_variants = ["llama", "poro", "viking", "finllama"]
+
                     def get_family(name):
                         name_lower = name.lower()
                         if any(v in name_lower for v in llama_variants):
-                            return 'llama'
+                            return "llama"
                         return name_lower
 
                     expected_family = get_family(expected_base)
                     selected_family = get_family(base_model.name)
 
                     if expected_family != selected_family:
-                        console.print(Panel(
-                            f"[bold yellow]VAROITUS: Eri arkkitehtuuriperhe[/bold yellow]\n\n"
-                            f"[white]Adapterin base:[/white] {expected_base}\n"
-                            f"[white]Valittu malli:[/white] {base_model.name}\n\n"
-                            f"[dim]LoRA toimii parhaiten alkuperaisella base-mallilla.[/dim]",
-                            title="[yellow]Compatibility[/yellow]",
-                            border_style="yellow"
-                        ))
-                        if not questionary.confirm("Jatka silti?", default=False, style=custom_style).ask():
+                        console.print(
+                            Panel(
+                                f"[bold yellow]VAROITUS: Eri arkkitehtuuriperhe[/bold yellow]\n\n"
+                                f"[white]Adapterin base:[/white] {expected_base}\n"
+                                f"[white]Valittu malli:[/white] {base_model.name}\n\n"
+                                f"[dim]LoRA toimii parhaiten alkuperaisella base-mallilla.[/dim]",
+                                title="[yellow]Compatibility[/yellow]",
+                                border_style="yellow",
+                            )
+                        )
+                        if not questionary.confirm(
+                            "Jatka silti?", default=False, style=custom_style
+                        ).ask():
                             return
             except Exception:
                 pass
@@ -642,14 +677,16 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             return
 
         # 5. Yhteenveto
-        console.print(Panel(
-            f"[white]Base-malli:[/white] {base_model.name}\n"
-            f"[white]Adapter:[/white] {adapter_path.name}\n"
-            f"[white]Adapterin base:[/white] {expected_base or 'Tuntematon'}\n"
-            f"[white]Tuloste:[/white] {output_name}",
-            title="[bold]LoRA Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Base-malli:[/white] {base_model.name}\n"
+                f"[white]Adapter:[/white] {adapter_path.name}\n"
+                f"[white]Adapterin base:[/white] {expected_base or 'Tuntematon'}\n"
+                f"[white]Tuloste:[/white] {output_name}",
+                title="[bold]LoRA Merge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -669,18 +706,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         )
 
         if merge_result["success"]:
-            console.print(Panel(
-                f"[green]LoRA merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {merge_result['output_path']}\n"
-                f"[white]Koko:[/white] {merge_result['file_size_gb']:.2f} GB",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]LoRA merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {merge_result['output_path']}\n"
+                    f"[white]Koko:[/white] {merge_result['file_size_gb']:.2f} GB",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Lisaa kirjastoon
             try:
                 entry = self.library.add_model(
-                    path=merge_result['output_path'],
+                    path=merge_result["output_path"],
                     source="merged",
                     source_id=f"lora:{base_model.name}+{adapter_path.name}",
                 )
@@ -712,7 +751,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         info1 = self.merger.get_model_info(model1)
         if info1.get("architecture"):
             console.print(f"  [green]+[/green] {info1.get('name')} ({info1.get('architecture')})")
-            console.print(f"    [dim]Kerroksia: {info1.get('num_layers')}, Hidden: {info1.get('hidden_size')}, Vocab: {info1.get('vocab_size')}[/dim]\n")
+            console.print(
+                f"    [dim]Kerroksia: {info1.get('num_layers')}, Hidden: {info1.get('hidden_size')}, Vocab: {info1.get('vocab_size')}[/dim]\n"
+            )
 
         # Select model 2
         console.print("[bold]Malli 2:[/bold]")
@@ -723,7 +764,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         info2 = self.merger.get_model_info(model2)
         if info2.get("architecture"):
             console.print(f"  [green]+[/green] {info2.get('name')} ({info2.get('architecture')})")
-            console.print(f"    [dim]Kerroksia: {info2.get('num_layers')}, Hidden: {info2.get('hidden_size')}, Vocab: {info2.get('vocab_size')}[/dim]\n")
+            console.print(
+                f"    [dim]Kerroksia: {info2.get('num_layers')}, Hidden: {info2.get('hidden_size')}, Vocab: {info2.get('vocab_size')}[/dim]\n"
+            )
 
         # Check compatibility with strict=False
         compatible, msg, details = self.merger.validate_models_compatible(
@@ -737,23 +780,27 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         # Show differences
         if details.get("vocab_warning"):
-            vocab_sizes = details.get('vocab_sizes', [])
+            vocab_sizes = details.get("vocab_sizes", [])
             vocab_info = ""
             if len(vocab_sizes) >= 2:
                 vocab_info = f"\n[white]Vocab sizes:[/white]\n  Malli 1: {vocab_sizes[0]}\n  Malli 2: {vocab_sizes[1]}\n"
-            console.print(Panel(
-                f"[yellow]{details['vocab_warning']}[/yellow]\n{vocab_info}\n"
-                f"[dim]Advanced Merge kasittelee eron automaattisesti.[/dim]",
-                title="[yellow]Huomio[/yellow]",
-                border_style="yellow"
-            ))
+            console.print(
+                Panel(
+                    f"[yellow]{details['vocab_warning']}[/yellow]\n{vocab_info}\n"
+                    f"[dim]Advanced Merge kasittelee eron automaattisesti.[/dim]",
+                    title="[yellow]Huomio[/yellow]",
+                    border_style="yellow",
+                )
+            )
 
         # RoPE scaling info
         if details.get("rope_scaling"):
             rope1, rope2 = details["rope_scaling"]
             if rope1 != rope2:
                 has_rope = "Malli 1" if rope1 else "Malli 2"
-                console.print(f"[dim]RoPE scaling: {has_rope} - kaytetaan pidemman kontekstin konfiguraatiota[/dim]\n")
+                console.print(
+                    f"[dim]RoPE scaling: {has_rope} - kaytetaan pidemman kontekstin konfiguraatiota[/dim]\n"
+                )
 
         print_success("Mallit voidaan yhdistaa Advanced Mergella!")
 
@@ -801,7 +848,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         except ValueError:
             ratio = 0.5
 
-        console.print(f"\n[dim]Ratio {ratio:.2f}: {100-ratio*100:.0f}% malli 1, {ratio*100:.0f}% malli 2[/dim]")
+        console.print(
+            f"\n[dim]Ratio {ratio:.2f}: {100-ratio*100:.0f}% malli 1, {ratio*100:.0f}% malli 2[/dim]"
+        )
 
         # Tokenizer source
         tokenizer_source = questionary.select(
@@ -818,7 +867,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             return
 
         # Output name
-        default_name = f"advanced_{info1.get('name', 'model1')[:15]}_{info2.get('name', 'model2')[:15]}"
+        default_name = (
+            f"advanced_{info1.get('name', 'model1')[:15]}_{info2.get('name', 'model2')[:15]}"
+        )
         output_name = questionary.text(
             "Tulosteen nimi:",
             default=default_name,
@@ -844,18 +895,20 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         # Show summary
         reqs = self.merger.estimate_merge_requirements([model1, model2])
 
-        console.print(Panel(
-            f"[white]Malli 1:[/white] {model1.name}\n"
-            f"[white]Malli 2:[/white] {model2.name}\n"
-            f"[white]Vocab strategia:[/white] {vocab_strategy}\n"
-            f"[white]Presisio:[/white] {target_dtype}\n"
-            f"[white]Ratio:[/white] {ratio:.2f}\n"
-            f"[white]Tokenizer:[/white] {'Malli 1' if tokenizer_source == 'first' else 'Malli 2'}\n"
-            f"[white]Tuloste:[/white] {output_name}\n\n"
-            f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
-            title="[bold]Advanced Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Malli 1:[/white] {model1.name}\n"
+                f"[white]Malli 2:[/white] {model2.name}\n"
+                f"[white]Vocab strategia:[/white] {vocab_strategy}\n"
+                f"[white]Presisio:[/white] {target_dtype}\n"
+                f"[white]Ratio:[/white] {ratio:.2f}\n"
+                f"[white]Tokenizer:[/white] {'Malli 1' if tokenizer_source == 'first' else 'Malli 2'}\n"
+                f"[white]Tuloste:[/white] {output_name}\n\n"
+                f"[yellow]Arvioitu RAM-tarve:[/yellow] {reqs['estimated_ram_gb']:.1f} GB",
+                title="[bold]Advanced Merge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -880,21 +933,23 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             if len(original_vocabs) >= 2:
                 vocab_info = f"\n[white]Alkuperaiset vocab:[/white] {original_vocabs[0]} / {original_vocabs[1]}"
 
-            console.print(Panel(
-                f"[green]Advanced Merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {result['output_path']}\n"
-                f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB\n"
-                f"[white]Lopullinen vocab:[/white] {result.get('final_vocab_size', 'N/A')}"
-                f"{vocab_info}\n"
-                f"[white]Presisio:[/white] {result.get('target_dtype', 'N/A')}",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Advanced Merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {result['output_path']}\n"
+                    f"[white]Koko:[/white] {result['file_size_gb']:.2f} GB\n"
+                    f"[white]Lopullinen vocab:[/white] {result.get('final_vocab_size', 'N/A')}"
+                    f"{vocab_info}\n"
+                    f"[white]Presisio:[/white] {result.get('target_dtype', 'N/A')}",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged",
                     source_id=f"advanced:{model1.name}+{model2.name}",
                 )
@@ -927,7 +982,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             status_items = []
             if vram_gb > 0:
                 vram_color = "green" if vram_gb >= 12 else ("yellow" if vram_gb >= 8 else "red")
-                status_items.append(f"[dim]VRAM:[/dim] [{vram_color}]{vram_gb:.0f} GB[/{vram_color}]")
+                status_items.append(
+                    f"[dim]VRAM:[/dim] [{vram_color}]{vram_gb:.0f} GB[/{vram_color}]"
+                )
 
             if mergekit_installed:
                 status_items.append("[dim]Mergekit:[/dim] [green]OK[/green]")
@@ -948,37 +1005,38 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 questionary.Separator("--- Merge Tools ---"),
                 questionary.Choice(
                     title=format_menu_item("New Merge", "Luo uusi merge wizardilla"),
-                    value="new_merge"
+                    value="new_merge",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Presets", "Valmiit konfiguraatiot"),
-                    value="presets"
+                    title=format_menu_item("Presets", "Valmiit konfiguraatiot"), value="presets"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Config Manager", f"YAML-hallinta ({len(configs)} tallennettua)"),
-                    value="config_manager"
+                    title=format_menu_item(
+                        "Config Manager", f"YAML-hallinta ({len(configs)} tallennettua)"
+                    ),
+                    value="config_manager",
                 ),
                 questionary.Separator("--- Info ---"),
                 questionary.Choice(
-                    title=format_menu_item("Merge Methods", "Tietoa eri menetelmista"),
-                    value="info"
+                    title=format_menu_item("Merge Methods", "Tietoa eri menetelmista"), value="info"
                 ),
             ]
 
             if not mergekit_installed:
                 choices.append(questionary.Separator("--- Setup ---"))
-                choices.append(questionary.Choice(
-                    title=format_menu_item("Install Mergekit", "Asenna mergekit-kirjasto"),
-                    value="install"
-                ))
+                choices.append(
+                    questionary.Choice(
+                        title=format_menu_item("Install Mergekit", "Asenna mergekit-kirjasto"),
+                        value="install",
+                    )
+                )
 
-            choices.extend([
-                questionary.Separator("---------------------------"),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
-            ])
+            choices.extend(
+                [
+                    questionary.Separator("---------------------------"),
+                    questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
+                ]
+            )
 
             choice = questionary.select(
                 "",
@@ -986,7 +1044,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse, Enter vahvista)"
+                instruction="(↑↓ valitse, Enter vahvista)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -1050,7 +1108,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             if optimizations.get("low_cpu_memory"):
                 opt_list.append("Low Memory")
             opt_str = f" [dim]({', '.join(opt_list)})[/dim]" if opt_list else ""
-            console.print(f"  [dim]VRAM:[/dim] [{vram_color}]{vram_gb:.0f} GB[/{vram_color}]{opt_str}\n")
+            console.print(
+                f"  [dim]VRAM:[/dim] [{vram_color}]{vram_gb:.0f} GB[/{vram_color}]{opt_str}\n"
+            )
 
         # 1. Select merge method
         print_section_header("Step 1: Merge Method", "Valitse yhdistamistapa")
@@ -1059,39 +1119,31 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             questionary.Separator("--- Interpolation ---"),
             questionary.Choice(
                 title=format_menu_item("SLERP", "Kaksi mallia, tasainen interpolointi"),
-                value="slerp"
+                value="slerp",
             ),
             questionary.Choice(
-                title=format_menu_item("LINEAR", "Painotettu keskiarvo"),
-                value="linear"
+                title=format_menu_item("LINEAR", "Painotettu keskiarvo"), value="linear"
             ),
             questionary.Separator("--- Task Vectors ---"),
             questionary.Choice(
                 title=format_menu_item("DARE-TIES", "2+ mallia, alykas harvennus (suositeltu)"),
-                value="dare_ties"
+                value="dare_ties",
             ),
             questionary.Choice(
                 title=format_menu_item("DARE-LINEAR", "2+ mallia, lineaarinen DARE"),
-                value="dare_linear"
+                value="dare_linear",
             ),
-            questionary.Choice(
-                title=format_menu_item("TIES", "Trim-Elect-Merge"),
-                value="ties"
-            ),
+            questionary.Choice(title=format_menu_item("TIES", "Trim-Elect-Merge"), value="ties"),
             questionary.Choice(
                 title=format_menu_item("Task Arithmetic", "Additiivinen task vector merge"),
-                value="task_arithmetic"
+                value="task_arithmetic",
             ),
             questionary.Separator("--- Advanced ---"),
             questionary.Choice(
-                title=format_menu_item("DELLA", "DARE + pruning + rescale"),
-                value="della"
+                title=format_menu_item("DELLA", "DARE + pruning + rescale"), value="della"
             ),
             questionary.Separator("---------------------------"),
-            questionary.Choice(
-                title=format_menu_item("<- Cancel", "Peruuta"),
-                value="back"
-            ),
+            questionary.Choice(title=format_menu_item("<- Cancel", "Peruuta"), value="back"),
         ]
 
         method = questionary.select(
@@ -1100,7 +1152,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             style=custom_style,
             qmark="",
             pointer=">",
-            instruction="(↑↓ valitse)"
+            instruction="(↑↓ valitse)",
         ).ask()
 
         if method is None or method == "back":
@@ -1143,7 +1195,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         # 3. Select models to merge
         step_num = 3 if needs_base else 2
-        print_section_header(f"Step {step_num}: Models", f"Valitse yhdistettavat mallit (max {max_models})")
+        print_section_header(
+            f"Step {step_num}: Models", f"Valitse yhdistettavat mallit (max {max_models})"
+        )
         models = []
 
         while len(models) < max_models:
@@ -1169,9 +1223,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
             if len(models) >= min_models and len(models) < max_models:
                 add_more = questionary.confirm(
-                    "Lisaa toinen malli?",
-                    default=False,
-                    style=custom_style
+                    "Lisaa toinen malli?", default=False, style=custom_style
                 ).ask()
                 if not add_more:
                     break
@@ -1231,7 +1283,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             console.print("[dim]Kaikki merge-metodit toimivat.[/dim]\n")
         elif arch_check.get("compatible_slerp") and not arch_check.get("compatible_dare"):
             console.print("[bold yellow]⚠️  Mallit ovat OSITTAIN yhteensopivat[/bold yellow]")
-            console.print("[yellow]Eri arkkitehtuurit: SLERP/LINEAR toimii, DARE-TIES EI![/yellow]\n")
+            console.print(
+                "[yellow]Eri arkkitehtuurit: SLERP/LINEAR toimii, DARE-TIES EI![/yellow]\n"
+            )
         elif not arch_check.get("compatible_slerp"):
             console.print("[bold red]❌ Mallit EIVÄT OLE yhteensopivat![/bold red]\n")
 
@@ -1257,13 +1311,15 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         method_compat = next((m for m in compatible_methods if m["method"].value == method), None)
 
         if method_compat and not method_compat["compatible"]:
-            console.print(Panel(
-                f"[bold red]VAROITUS:[/bold red] {method.upper()} ei ole yhteensopiva näille malleille!\n\n"
-                f"[white]Syy:[/white] {method_compat['reason']}\n\n"
-                f"[yellow]Suositus:[/yellow] Käytä SLERP tai LINEAR sen sijaan.",
-                title="[red]Yhteensopivuusongelma[/red]",
-                border_style="red"
-            ))
+            console.print(
+                Panel(
+                    f"[bold red]VAROITUS:[/bold red] {method.upper()} ei ole yhteensopiva näille malleille!\n\n"
+                    f"[white]Syy:[/white] {method_compat['reason']}\n\n"
+                    f"[yellow]Suositus:[/yellow] Käytä SLERP tai LINEAR sen sijaan.",
+                    title="[red]Yhteensopivuusongelma[/red]",
+                    border_style="red",
+                )
+            )
 
             # Ask if user wants to continue anyway or switch method
             action = questionary.select(
@@ -1271,7 +1327,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 choices=[
                     questionary.Choice("Vaihda metodiksi SLERP (suositeltu)", value="slerp"),
                     questionary.Choice("Vaihda metodiksi LINEAR", value="linear"),
-                    questionary.Choice("Jatka silti (todennäköisesti epäonnistuu)", value="continue"),
+                    questionary.Choice(
+                        "Jatka silti (todennäköisesti epäonnistuu)", value="continue"
+                    ),
                     questionary.Choice("Peruuta", value="cancel"),
                 ],
                 style=custom_style,
@@ -1310,7 +1368,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             except ValueError:
                 print_warning("Virheellinen t, käytetään oletusta: 0.5")
                 slerp_t = 0.5
-            console.print(f"[dim]t={slerp_t:.2f}: {(1-slerp_t)*100:.0f}% malli 1, {slerp_t*100:.0f}% malli 2[/dim]")
+            console.print(
+                f"[dim]t={slerp_t:.2f}: {(1-slerp_t)*100:.0f}% malli 1, {slerp_t*100:.0f}% malli 2[/dim]"
+            )
 
         elif method in {"dare_ties", "dare_linear", "della", "ties"}:
             density_str = questionary.text(
@@ -1326,10 +1386,13 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             except ValueError:
                 print_warning("Virheellinen density, käytetään oletusta: 0.5")
                 ties_density = 0.5
-            console.print(f"[dim]Density {ties_density:.2f}: sailytetaan {ties_density*100:.0f}% painoista[/dim]")
+            console.print(
+                f"[dim]Density {ties_density:.2f}: sailytetaan {ties_density*100:.0f}% painoista[/dim]"
+            )
 
         # 5. Output name - use clean naming
         from ..models.library import generate_merge_name
+
         default_name = generate_merge_name(
             method=method,
             model_names=models,
@@ -1370,17 +1433,13 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 opt_list.append("Low CPU memory")
             summary_text += f"[yellow]Optimoinnit:[/yellow] {', '.join(opt_list)}"
 
-        console.print(Panel(
-            summary_text,
-            title="[bold]Mergekit Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(summary_text, title="[bold]Mergekit Merge[/bold]", border_style="yellow")
+        )
 
         # 7. Save config option
         save_config = questionary.confirm(
-            "Tallenna konfiguraatio YAML:ksi?",
-            default=False,
-            style=custom_style
+            "Tallenna konfiguraatio YAML:ksi?", default=False, style=custom_style
         ).ask()
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
@@ -1439,20 +1498,22 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
         # 10. Handle result
         if result.get("success"):
-            console.print(Panel(
-                f"[green]Merge valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {result['output_path']}\n"
-                f"[white]Kesto:[/white] {duration/60:.1f} min",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Merge valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {result['output_path']}\n"
+                    f"[white]Kesto:[/white] {duration/60:.1f} min",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to history
             self.config_manager.add_history_entry(
                 config_name=output_name,
                 method=method,
                 models=models,
-                output_path=str(result['output_path']),
+                output_path=str(result["output_path"]),
                 success=True,
                 duration_seconds=duration,
             )
@@ -1460,7 +1521,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged",
                     source_id=f"mergekit:{method}",
                 )
@@ -1510,10 +1571,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                         choices.append(questionary.Choice(title=title, value=preset_key))
 
             choices.append(questionary.Separator("---------------------------"))
-            choices.append(questionary.Choice(
-                title=format_menu_item("<- Palaa", ""),
-                value="back"
-            ))
+            choices.append(questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"))
 
             choice = questionary.select(
                 "",
@@ -1521,7 +1579,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse)"
+                instruction="(↑↓ valitse)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -1567,7 +1625,9 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             console.print(f"  [green]+[/green] {model.name}")
 
             if len(models) >= preset.min_models and len(models) < preset.max_models:
-                if not questionary.confirm("Lisaa toinen malli?", default=False, style=custom_style).ask():
+                if not questionary.confirm(
+                    "Lisaa toinen malli?", default=False, style=custom_style
+                ).ask():
                     break
 
         if len(models) < preset.min_models:
@@ -1587,14 +1647,16 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             return
 
         # Show summary
-        console.print(Panel(
-            f"[white]Preset:[/white] {preset.name}\n"
-            f"[white]Metodi:[/white] {preset.method.upper()}\n"
-            f"[white]Mallit:[/white] {len(models)} kpl\n"
-            f"[white]Tuloste:[/white] {output_name}",
-            title="[bold]Preset Merge[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Preset:[/white] {preset.name}\n"
+                f"[white]Metodi:[/white] {preset.method.upper()}\n"
+                f"[white]Mallit:[/white] {len(models)} kpl\n"
+                f"[white]Tuloste:[/white] {output_name}",
+                title="[bold]Preset Merge[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -1630,7 +1692,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
                 try:
                     self.library.add_model(
-                        path=result['output_path'],
+                        path=result["output_path"],
                         source="merged",
                         source_id=f"preset:{preset_name}",
                     )
@@ -1654,10 +1716,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
             if configs:
                 table = Table(
-                    box=box.ROUNDED,
-                    show_header=True,
-                    header_style="bold cyan",
-                    border_style="dim"
+                    box=box.ROUNDED, show_header=True, header_style="bold cyan", border_style="dim"
                 )
                 table.add_column("Name", style="white")
                 table.add_column("Method", style="yellow")
@@ -1680,27 +1739,21 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             choices = [
                 questionary.Separator("--- Actions ---"),
                 questionary.Choice(
-                    title=format_menu_item("Load & Run", "Lataa YAML ja aja merge"),
-                    value="load"
+                    title=format_menu_item("Load & Run", "Lataa YAML ja aja merge"), value="load"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Import", "Tuo YAML toisesta sijainnista"),
-                    value="import"
+                    value="import",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Export", "Vie YAML toiseen sijaintiin"),
-                    value="export"
+                    title=format_menu_item("Export", "Vie YAML toiseen sijaintiin"), value="export"
                 ),
                 questionary.Separator("--- History ---"),
                 questionary.Choice(
-                    title=format_menu_item("Merge History", "Nae aiemmat merget"),
-                    value="history"
+                    title=format_menu_item("Merge History", "Nae aiemmat merget"), value="history"
                 ),
                 questionary.Separator("---------------------------"),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
@@ -1709,7 +1762,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse)"
+                instruction="(↑↓ valitse)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -1741,11 +1794,7 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
         choices.append(questionary.Choice(title="<-  Peruuta", value="back"))
 
         choice = questionary.select(
-            "Valitse konfiguraatio:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Valitse konfiguraatio:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if choice is None or choice == "back":
@@ -1763,11 +1812,14 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
 
             # Show config
             import yaml
-            console.print(Panel(
-                yaml.dump(config_dict, default_flow_style=False),
-                title=f"[bold]{choice}[/bold]",
-                border_style="cyan"
-            ))
+
+            console.print(
+                Panel(
+                    yaml.dump(config_dict, default_flow_style=False),
+                    title=f"[bold]{choice}[/bold]",
+                    border_style="cyan",
+                )
+            )
 
             if not questionary.confirm("Suorita merge?", default=True, style=custom_style).ask():
                 return
@@ -1828,19 +1880,12 @@ Kokeellinen menetelma, voi tuottaa yllattavia tuloksia.
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
 
-        choices = [
-            questionary.Choice(title=cfg["name"], value=cfg["name"])
-            for cfg in configs
-        ]
+        choices = [questionary.Choice(title=cfg["name"], value=cfg["name"]) for cfg in configs]
         choices.append(questionary.Separator())
         choices.append(questionary.Choice(title="<-  Peruuta", value="back"))
 
         choice = questionary.select(
-            "Valitse vietava:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Valitse vietava:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if choice is None or choice == "back":

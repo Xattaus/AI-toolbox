@@ -16,7 +16,6 @@ from .helpers import MENU_STYLE, create_choice, create_separator, press_any_key
 from ..core.ui import format_size, print_warning, console
 from ..core.paths import get_paths
 
-
 # Type aliases for selection results
 SelectionResult = Optional[Path]
 TaggedSelectionResult = Optional[Tuple[str, Path]]
@@ -35,21 +34,25 @@ def build_conversion_choices(convertible_models, downloaded) -> List[dict]:
     """
     items: List[dict] = []
     for m in convertible_models:
-        items.append({
-            "path": Path(m.path),
-            "name": m.name,
-            "size_bytes": m.size_bytes,
-            "source": "library",
-        })
+        items.append(
+            {
+                "path": Path(m.path),
+                "name": m.name,
+                "size_bytes": m.size_bytes,
+                "source": "library",
+            }
+        )
     for d in downloaded:
         model_id = d.get("model_id", "")
         name = model_id.split("/")[-1] if "/" in model_id else model_id
-        items.append({
-            "path": Path(d["path"]),
-            "name": name,
-            "size_bytes": d.get("size", 0),
-            "source": "download",
-        })
+        items.append(
+            {
+                "path": Path(d["path"]),
+                "name": name,
+                "size_bytes": d.get("size", 0),
+                "source": "download",
+            }
+        )
     return items
 
 
@@ -97,10 +100,10 @@ def select_model(
         if downloaded:
             choices.append(create_separator("Downloaded HF Models"))
             for d in downloaded[:max_items]:
-                size = format_size(d['size'])
-                name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
+                size = format_size(d["size"])
+                name = d["model_id"].split("/")[-1] if "/" in d["model_id"] else d["model_id"]
                 title = f"[hf]  {name[:30]:<30} {'HF':<12} {size:>10}"
-                choices.append(create_choice(title, ("download", d['path'])))
+                choices.append(create_choice(title, ("download", d["path"])))
 
     if not choices:
         print_warning("No models found in library.")
@@ -112,11 +115,7 @@ def select_model(
     choices.append(create_choice("<-  Cancel", ("cancel", None)))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result[0] == "cancel":
@@ -125,11 +124,7 @@ def select_model(
     return Path(result[1])
 
 
-def select_model_for_merge(
-    library,
-    downloader,
-    prompt: str = "Select model:"
-) -> SelectionResult:
+def select_model_for_merge(library, downloader, prompt: str = "Select model:") -> SelectionResult:
     """
     Select a model suitable for merging (safetensors/pytorch).
 
@@ -160,10 +155,10 @@ def select_model_for_merge(
     if downloaded:
         choices.append(create_separator("Downloaded HF Models"))
         for d in downloaded[:10]:
-            size = format_size(d['size'])
-            name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
+            size = format_size(d["size"])
+            name = d["model_id"].split("/")[-1] if "/" in d["model_id"] else d["model_id"]
             title = f"[hf]  {name[:30]:<30} {'HF':<12} {size:>10}"
-            choices.append(create_choice(title, ("download", d['path'])))
+            choices.append(create_choice(title, ("download", d["path"])))
 
     if not models and not downloaded:
         print_warning("No models in library or downloads.")
@@ -175,11 +170,7 @@ def select_model_for_merge(
     choices.append(create_choice("<-  Cancel", ("cancel", None)))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result[0] == "cancel":
@@ -189,9 +180,7 @@ def select_model_for_merge(
 
 
 def select_model_for_training(
-    library,
-    downloader,
-    prompt: str = "Select base model:"
+    library, downloader, prompt: str = "Select base model:"
 ) -> SelectionResult:
     """
     Select a model suitable for training (safetensors/pytorch).
@@ -226,10 +215,10 @@ def select_model_for_training(
     if downloaded:
         choices.append(create_separator("Downloaded HF Models"))
         for d in downloaded[:10]:
-            size = format_size(d['size'])
-            name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
+            size = format_size(d["size"])
+            name = d["model_id"].split("/")[-1] if "/" in d["model_id"] else d["model_id"]
             title = f"[hf]  {name[:30]:<30} {'HF':<12} {size:>10}"
-            choices.append(create_choice(title, ("download", d['path'])))
+            choices.append(create_choice(title, ("download", d["path"])))
 
     if not models and not downloaded:
         console.print("[yellow]No models in library or downloads.[/yellow]")
@@ -239,11 +228,7 @@ def select_model_for_training(
     choices.append(create_choice("<-  Cancel", ("cancel", None)))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result[0] == "cancel":
@@ -253,9 +238,7 @@ def select_model_for_training(
 
 
 def select_gguf_model(
-    library,
-    prompt: str = "Select GGUF model:",
-    max_items: int = 20
+    library, prompt: str = "Select GGUF model:", max_items: int = 20
 ) -> SelectionResult:
     """
     Select a GGUF model from the library.
@@ -272,7 +255,9 @@ def select_gguf_model(
 
     if not gguf_models:
         print_warning("No GGUF models in library.")
-        console.print("[dim]Add models via Model Library -> Refresh Library or GGUF Converter[/dim]")
+        console.print(
+            "[dim]Add models via Model Library -> Refresh Library or GGUF Converter[/dim]"
+        )
         console.print(f"[dim]GGUF directory: {get_paths().gguf_dir}[/dim]")
         press_any_key()
         return None
@@ -288,11 +273,7 @@ def select_gguf_model(
     choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result == "back":
@@ -302,9 +283,7 @@ def select_gguf_model(
 
 
 def select_dataset(
-    dataset_prep,
-    prompt: str = "Select dataset:",
-    include_processed: bool = True
+    dataset_prep, prompt: str = "Select dataset:", include_processed: bool = True
 ) -> SelectionResult:
     """
     Select a dataset from the datasets directory.
@@ -329,7 +308,7 @@ def select_dataset(
     for ds in datasets:
         size = format_size(ds["size_bytes"])
         processed_tag = " [processed]" if ds.get("is_processed") else ""
-        fmt = ds['format'] or '?'
+        fmt = ds["format"] or "?"
         title = f"{ds['name']:<35} {fmt:<10} {size:>10}{processed_tag}"
         choices.append(create_choice(title, ds["path"]))
 
@@ -337,11 +316,7 @@ def select_dataset(
     choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result == "back":
@@ -350,10 +325,7 @@ def select_dataset(
     return result
 
 
-def select_dataset_for_training(
-    trainer,
-    prompt: str = "Select dataset:"
-) -> SelectionResult:
+def select_dataset_for_training(trainer, prompt: str = "Select dataset:") -> SelectionResult:
     """
     Select a dataset suitable for training.
 
@@ -373,7 +345,7 @@ def select_dataset_for_training(
         choices.append(create_separator("Training Datasets"))
         for ds in datasets:
             size = format_size(ds["size_bytes"])
-            fmt = ds['format'] or '?'
+            fmt = ds["format"] or "?"
             title = f"[ds]  {ds['name'][:30]:<30} {fmt:<10} {size:>10}"
             choices.append(create_choice(title, ds["path"]))
 
@@ -396,11 +368,7 @@ def select_dataset_for_training(
     choices.append(create_choice("<-  Cancel", "cancel"))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result == "cancel":
@@ -410,10 +378,7 @@ def select_dataset_for_training(
 
 
 def select_lora_adapter(
-    library=None,
-    loras_dir: Path = None,
-    prompt: str = "Select LoRA adapter:",
-    max_items: int = 20
+    library=None, loras_dir: Path = None, prompt: str = "Select LoRA adapter:", max_items: int = 20
 ) -> SelectionResult:
     """
     Select a LoRA adapter.
@@ -466,11 +431,7 @@ def select_lora_adapter(
     choices.append(create_choice("<- Palaa", "back"))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result == "back":
@@ -486,7 +447,7 @@ def select_from_list(
     value_key: str = "path",
     format_item: Callable[[dict], str] = None,
     empty_message: str = "No items found.",
-    back_label: str = "Back"
+    back_label: str = "Back",
 ) -> Optional[Any]:
     """
     Generic selection helper for any list of items.
@@ -522,11 +483,7 @@ def select_from_list(
     choices.append(create_choice(f"<-  {back_label}", "back"))
 
     result = questionary.select(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        prompt, choices=choices, style=MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
     if result is None or result == "back":
@@ -540,7 +497,7 @@ def multi_select_models(
     prompt: str = "Select models:",
     format_filter: Optional[str] = None,
     min_selections: int = 1,
-    max_selections: Optional[int] = None
+    max_selections: Optional[int] = None,
 ) -> List[Path]:
     """
     Select multiple models from the library.
@@ -580,10 +537,7 @@ def multi_select_models(
         return True
 
     result = questionary.checkbox(
-        prompt,
-        choices=choices,
-        style=MENU_STYLE,
-        validate=validate_selection
+        prompt, choices=choices, style=MENU_STYLE, validate=validate_selection
     ).ask()
 
     if result is None:

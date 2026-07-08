@@ -36,7 +36,10 @@ def test_list_quantization_types_shape():
 
 
 def test_bits_ordering_f16_heavier_than_q4():
-    assert get_quantization_info("f16").bits_per_weight > get_quantization_info("q4_k_m").bits_per_weight
+    assert (
+        get_quantization_info("f16").bits_per_weight
+        > get_quantization_info("q4_k_m").bits_per_weight
+    )
 
 
 def test_recommend_quantization_returns_list():

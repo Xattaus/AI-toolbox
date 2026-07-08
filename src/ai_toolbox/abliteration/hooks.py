@@ -70,11 +70,11 @@ def parse_layer_number(name: str) -> Optional[int]:
         Layer number or None if not found
     """
     patterns = [
-        r'layers\.(\d+)',           # Llama, Mistral
-        r'h\.(\d+)',                # GPT-2, GPT-Neo
-        r'decoder\.layers\.(\d+)', # Some T5 variants
-        r'encoder\.layers\.(\d+)', # BERT, etc
-        r'block\.(\d+)',           # Some custom models
+        r"layers\.(\d+)",  # Llama, Mistral
+        r"h\.(\d+)",  # GPT-2, GPT-Neo
+        r"decoder\.layers\.(\d+)",  # Some T5 variants
+        r"encoder\.layers\.(\d+)",  # BERT, etc
+        r"block\.(\d+)",  # Some custom models
     ]
 
     for pattern in patterns:
@@ -97,18 +97,16 @@ def get_target_module_patterns() -> List[str]:
         List of pattern strings to match module names
     """
     return [
-        "mlp.down_proj",      # Llama, Mistral, Qwen
-        "mlp.c_proj",         # GPT-2, GPT-Neo
+        "mlp.down_proj",  # Llama, Mistral, Qwen
+        "mlp.c_proj",  # GPT-2, GPT-Neo
         "mlp.dense_4h_to_h",  # GPT-NeoX
-        "mlp.wo",             # Some custom
-        "feed_forward.w2",    # Alternative naming
+        "mlp.wo",  # Some custom
+        "feed_forward.w2",  # Alternative naming
     ]
 
 
 def create_activation_hook(
-    cache: ActivationCache,
-    layer_num: int,
-    extract_last_token: bool = True
+    cache: ActivationCache, layer_num: int, extract_last_token: bool = True
 ) -> Callable:
     """
     Create a forward hook for capturing activations.
@@ -121,6 +119,7 @@ def create_activation_hook(
     Returns:
         Hook function
     """
+
     def hook(module, input, output):
         try:
             import torch
@@ -150,7 +149,7 @@ def register_activation_hooks(
     model,
     target_layers: List[int],
     module_patterns: Optional[List[str]] = None,
-    extract_last_token: bool = True
+    extract_last_token: bool = True,
 ) -> ActivationCache:
     """
     Register forward hooks on specified layers.
@@ -168,8 +167,7 @@ def register_activation_hooks(
         module_patterns = get_target_module_patterns()
 
     cache = ActivationCache(
-        activations={layer: [] for layer in target_layers},
-        target_layers=target_layers
+        activations={layer: [] for layer in target_layers}, target_layers=target_layers
     )
 
     for name, module in model.named_modules():

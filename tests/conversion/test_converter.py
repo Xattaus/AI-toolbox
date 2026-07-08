@@ -28,12 +28,17 @@ def test_estimate_model_size_missing_config(tmp_path):
 
 
 def test_estimate_model_size_computes_from_config(tmp_path):
-    (tmp_path / "config.json").write_text(json.dumps({
-        "hidden_size": 4096,
-        "num_hidden_layers": 32,
-        "vocab_size": 32000,
-        "intermediate_size": 11008,
-    }), encoding="utf-8")
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "hidden_size": 4096,
+                "num_hidden_layers": 32,
+                "vocab_size": 32000,
+                "intermediate_size": 11008,
+            }
+        ),
+        encoding="utf-8",
+    )
 
     result = GGUFConverter().estimate_model_size(tmp_path, quantization="q4_k_m")
     assert result["estimated_size_gb"] > 0
@@ -43,10 +48,17 @@ def test_estimate_model_size_computes_from_config(tmp_path):
 
 
 def test_estimate_size_smaller_quant_is_smaller(tmp_path):
-    (tmp_path / "config.json").write_text(json.dumps({
-        "hidden_size": 2048, "num_hidden_layers": 16,
-        "vocab_size": 32000, "intermediate_size": 5504,
-    }), encoding="utf-8")
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "hidden_size": 2048,
+                "num_hidden_layers": 16,
+                "vocab_size": 32000,
+                "intermediate_size": 5504,
+            }
+        ),
+        encoding="utf-8",
+    )
     conv = GGUFConverter()
     q8 = conv.estimate_model_size(tmp_path, "q8_0")["estimated_size_gb"]
     q4 = conv.estimate_model_size(tmp_path, "q4_k_m")["estimated_size_gb"]

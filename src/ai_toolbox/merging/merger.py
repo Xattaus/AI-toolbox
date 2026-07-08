@@ -19,9 +19,9 @@ from ..core.ui import console
 from ..core.paths import get_paths
 
 
-
 class MergeMethod(Enum):
     """Tuetut merge-metodit."""
+
     SLERP = "slerp"
     TIES = "ties"
     FRANKENMERGE = "frankenmerge"
@@ -31,6 +31,7 @@ class MergeMethod(Enum):
 @dataclass
 class MergeConfig:
     """Merge-konfiguraatio."""
+
     method: MergeMethod
     models: List[Path]
     output_name: str
@@ -61,16 +62,17 @@ class AdvancedMergeConfig:
     - Eri presisio (FP16/BF16/FP32 normalisointi)
     - Eri RoPE scaling konfiguraatiot
     """
+
     method: MergeMethod
     models: List[Path]
     output_name: str
 
     # Vocab handling
     vocab_strategy: str = "minimum"  # "minimum", "maximum", "first", "second"
-    vocab_pad_value: float = 0.0     # Padding value for extended vocab
+    vocab_pad_value: float = 0.0  # Padding value for extended vocab
 
     # Precision handling
-    target_dtype: str = "bfloat16"   # "float16", "bfloat16", "float32"
+    target_dtype: str = "bfloat16"  # "float16", "bfloat16", "float32"
     normalize_precision: bool = True  # Convert all models to same precision
 
     # Merge parameters
@@ -78,12 +80,12 @@ class AdvancedMergeConfig:
     ties_density: float = 0.5
 
     # Config handling
-    config_source: str = "first"      # "first", "second", "merge"
-    merge_rope_scaling: bool = True   # Prefer model with RoPE scaling
+    config_source: str = "first"  # "first", "second", "merge"
+    merge_rope_scaling: bool = True  # Prefer model with RoPE scaling
 
     # Advanced options
     skip_embedding_merge: bool = False  # Skip merging embed_tokens
-    skip_lm_head_merge: bool = False    # Skip merging lm_head
+    skip_lm_head_merge: bool = False  # Skip merging lm_head
     embedding_merge_ratio: Optional[float] = None  # Different ratio for embeddings
 
     # Tokenizer source
@@ -109,12 +111,14 @@ class ModelMerger:
         """Tarkista riippuvuudet."""
         try:
             import torch
+
             self._torch_available = True
         except ImportError:
             self._torch_available = False
 
         try:
             import safetensors
+
             self._safetensors_available = True
         except ImportError:
             self._safetensors_available = False
@@ -192,7 +196,7 @@ class ModelMerger:
             # Jos on konfiguraatio, lue mallin tiedot
             if config_file.exists():
                 try:
-                    with open(config_file, 'r') as f:
+                    with open(config_file, "r") as f:
                         config = json.load(f)
                         model_info["architecture"] = config.get("architectures", ["Unknown"])[0]
                         model_info["hidden_size"] = config.get("hidden_size", 0)
@@ -253,7 +257,7 @@ class ModelMerger:
 
             if config_file and config_file.exists():
                 try:
-                    with open(config_file, 'r') as f:
+                    with open(config_file, "r") as f:
                         configs.append(json.load(f))
                 except json.JSONDecodeError as e:
                     return False, f"Virheellinen config.json: {model_path} - {e}", details
@@ -293,9 +297,15 @@ class ModelMerger:
                 return False, f"Eri vocab_size: {vocab_sizes} (ero: {vocab_diff})", details
             else:
                 if vocab_diff > max_vocab_diff:
-                    return False, f"Vocab_size ero liian suuri ({vocab_diff} > {max_vocab_diff})", details
+                    return (
+                        False,
+                        f"Vocab_size ero liian suuri ({vocab_diff} > {max_vocab_diff})",
+                        details,
+                    )
                 # Pieni ero OK advanced mergessa - jatketaan varoituksella
-                details["vocab_warning"] = f"Vocab_size ero: {vocab_diff} tokenia (kasitellaan automaattisesti)"
+                details["vocab_warning"] = (
+                    f"Vocab_size ero: {vocab_diff} tokenia (kasitellaan automaattisesti)"
+                )
 
         return True, "Mallit ovat yhteensopivia", details
 
@@ -403,7 +413,10 @@ class ModelMerger:
         import torch
 
         if not self._torch_available or not self._safetensors_available:
-            return {"success": False, "error": "Riippuvuudet puuttuvat. Asenna torch ja safetensors."}
+            return {
+                "success": False,
+                "error": "Riippuvuudet puuttuvat. Asenna torch ja safetensors.",
+            }
 
         try:
             if progress_callback:
@@ -421,7 +434,9 @@ class ModelMerger:
             if set(tensors1.keys()) != set(tensors2.keys()):
                 # Kayta yhteisia avaimia
                 common_keys = set(tensors1.keys()) & set(tensors2.keys())
-                console.print(f"[yellow]Varoitus: {len(tensors1) - len(common_keys)} avainta puuttuu[/yellow]")
+                console.print(
+                    f"[yellow]Varoitus: {len(tensors1) - len(common_keys)} avainta puuttuu[/yellow]"
+                )
             else:
                 common_keys = set(tensors1.keys())
 
@@ -438,7 +453,9 @@ class ModelMerger:
 
                 # Varmista sama koko
                 if t1.shape != t2.shape:
-                    console.print(f"[yellow]Ohitetaan {key}: eri koot {t1.shape} vs {t2.shape}[/yellow]")
+                    console.print(
+                        f"[yellow]Ohitetaan {key}: eri koot {t1.shape} vs {t2.shape}[/yellow]"
+                    )
                     merged_tensors[key] = t1  # Kayta ensimmaista
                     continue
 
@@ -466,13 +483,17 @@ class ModelMerger:
 
             # Kopioi config.json
             for src_path in [model1_path, model2_path]:
-                config_src = src_path / "config.json" if src_path.is_dir() else src_path.parent / "config.json"
+                config_src = (
+                    src_path / "config.json"
+                    if src_path.is_dir()
+                    else src_path.parent / "config.json"
+                )
                 if config_src.exists():
                     config_dest = output_dir / "config.json"
                     shutil.copy2(config_src, config_dest)
 
                     # Paivita config
-                    with open(config_dest, 'r') as f:
+                    with open(config_dest, "r") as f:
                         config = json.load(f)
                     config["_merge_info"] = {
                         "method": "slerp",
@@ -480,15 +501,21 @@ class ModelMerger:
                         "model1": str(model1_path),
                         "model2": str(model2_path),
                     }
-                    with open(config_dest, 'w', encoding='utf-8') as f:
+                    with open(config_dest, "w", encoding="utf-8") as f:
                         json.dump(config, f, indent=2)
                     break
 
             # Kopioi tokenizer-tiedostot
             for src_path in [model1_path, model2_path]:
                 src_dir = src_path if src_path.is_dir() else src_path.parent
-                for tok_file in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json",
-                                 "vocab.json", "merges.txt", "tokenizer.model"]:
+                for tok_file in [
+                    "tokenizer.json",
+                    "tokenizer_config.json",
+                    "special_tokens_map.json",
+                    "vocab.json",
+                    "merges.txt",
+                    "tokenizer.model",
+                ]:
                     tok_src = src_dir / tok_file
                     if tok_src.exists():
                         shutil.copy2(tok_src, output_dir / tok_file)
@@ -604,7 +631,9 @@ class ModelMerger:
                 merged_delta = aligned.sum(dim=0) / count
 
                 # Lisaa base modeliin
-                merged_tensors[key] = (base_tensors[key].float() + merged_delta).to(base_tensors[key].dtype)
+                merged_tensors[key] = (base_tensors[key].float() + merged_delta).to(
+                    base_tensors[key].dtype
+                )
 
             # Lisaa loput avaimet base modelista
             for key in base_tensors:
@@ -626,12 +655,16 @@ class ModelMerger:
             self._save_safetensors(merged_tensors, output_file)
 
             # Kopioi config ja tokenizer
-            config_src = base_model / "config.json" if base_model.is_dir() else base_model.parent / "config.json"
+            config_src = (
+                base_model / "config.json"
+                if base_model.is_dir()
+                else base_model.parent / "config.json"
+            )
             if config_src.exists():
                 config_dest = output_dir / "config.json"
                 shutil.copy2(config_src, config_dest)
 
-                with open(config_dest, 'r') as f:
+                with open(config_dest, "r") as f:
                     config = json.load(f)
                 config["_merge_info"] = {
                     "method": "ties",
@@ -639,13 +672,19 @@ class ModelMerger:
                     "base_model": str(base_model),
                     "models": [str(m) for m in models],
                 }
-                with open(config_dest, 'w', encoding='utf-8') as f:
+                with open(config_dest, "w", encoding="utf-8") as f:
                     json.dump(config, f, indent=2)
 
             # Kopioi tokenizer
             src_dir = base_model if base_model.is_dir() else base_model.parent
-            for tok_file in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json",
-                             "vocab.json", "merges.txt", "tokenizer.model"]:
+            for tok_file in [
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "special_tokens_map.json",
+                "vocab.json",
+                "merges.txt",
+                "tokenizer.model",
+            ]:
                 tok_src = src_dir / tok_file
                 if tok_src.exists():
                     shutil.copy2(tok_src, output_dir / tok_file)
@@ -708,7 +747,8 @@ class ModelMerger:
             # Tunnista kerrosavaimet (esim. "model.layers.0.self_attn.q_proj.weight")
             # Yleinen kaava: layers.N. tai h.N. tai blocks.N.
             import re
-            layer_pattern = re.compile(r'(layers|blocks|h)\.(\d+)\.')
+
+            layer_pattern = re.compile(r"(layers|blocks|h)\.(\d+)\.")
 
             # Kay lapi jokainen malli ja sen kerrosalue
             for model_path, (start_layer, end_layer) in models.items():
@@ -740,24 +780,34 @@ class ModelMerger:
             self._save_safetensors(merged_tensors, output_file)
 
             # Kopioi config ensimmaisesta mallista
-            config_src = first_model / "config.json" if first_model.is_dir() else first_model.parent / "config.json"
+            config_src = (
+                first_model / "config.json"
+                if first_model.is_dir()
+                else first_model.parent / "config.json"
+            )
             if config_src.exists():
                 config_dest = output_dir / "config.json"
                 shutil.copy2(config_src, config_dest)
 
-                with open(config_dest, 'r') as f:
+                with open(config_dest, "r") as f:
                     config = json.load(f)
                 config["_merge_info"] = {
                     "method": "frankenmerge",
                     "layer_sources": {str(k): v for k, v in models.items()},
                 }
-                with open(config_dest, 'w', encoding='utf-8') as f:
+                with open(config_dest, "w", encoding="utf-8") as f:
                     json.dump(config, f, indent=2)
 
             # Kopioi tokenizer
             src_dir = first_model if first_model.is_dir() else first_model.parent
-            for tok_file in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json",
-                             "vocab.json", "merges.txt", "tokenizer.model"]:
+            for tok_file in [
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "special_tokens_map.json",
+                "vocab.json",
+                "merges.txt",
+                "tokenizer.model",
+            ]:
                 tok_src = src_dir / tok_file
                 if tok_src.exists():
                     shutil.copy2(tok_src, output_dir / tok_file)
@@ -787,10 +837,12 @@ class ModelMerger:
             return info
 
         # Etsi config.json
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
         if config_file.exists():
             try:
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     config = json.load(f)
 
                 info["architecture"] = config.get("architectures", ["Unknown"])[0]
@@ -904,7 +956,9 @@ class ModelMerger:
             if torch.cuda.is_available():
                 if progress_callback:
                     gpu_mem = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-                    progress_callback(f"Ladataan base model (GPU {gpu_mem:.1f}GB + disk offload)...")
+                    progress_callback(
+                        f"Ladataan base model (GPU {gpu_mem:.1f}GB + disk offload)..."
+                    )
 
                 model = AutoModelForCausalLM.from_pretrained(
                     str(base_model_path),
@@ -944,7 +998,9 @@ class ModelMerger:
 
             # Maarita output
             if not output_name:
-                base_name = base_model_path.name if base_model_path.is_dir() else base_model_path.stem
+                base_name = (
+                    base_model_path.name if base_model_path.is_dir() else base_model_path.stem
+                )
                 adapter_name = adapter_path.name
                 output_name = f"{base_name}_{adapter_name}_merged"
 
@@ -973,10 +1029,10 @@ class ModelMerger:
             # Lue ja paivita config.json
             config_file = output_dir / "config.json"
             if config_file.exists():
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     config = json.load(f)
                 config["_merge_info"] = merge_info
-                with open(config_file, 'w', encoding='utf-8') as f:
+                with open(config_file, "w", encoding="utf-8") as f:
                     json.dump(config, f, indent=2)
 
             # Vapauta muisti
@@ -988,6 +1044,7 @@ class ModelMerger:
             # Siivoa valiaikaiskansio
             if offload_dir and offload_dir.exists():
                 import shutil
+
                 try:
                     shutil.rmtree(offload_dir)
                 except Exception:
@@ -1012,9 +1069,11 @@ class ModelMerger:
 
     def _load_model_config(self, model_path: Path) -> Dict[str, Any]:
         """Lataa mallin config.json."""
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
         if config_file.exists():
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 return json.load(f)
         return {}
 
@@ -1042,7 +1101,9 @@ class ModelMerger:
 
         # Laske odotettu koko eri presisioille
         # Parametrit: ~12*L*H^2 + 2*V*H
-        estimated_params = 12 * num_layers * hidden_size * hidden_size + 2 * vocab_size * hidden_size
+        estimated_params = (
+            12 * num_layers * hidden_size * hidden_size + 2 * vocab_size * hidden_size
+        )
         expected_fp16_gb = (estimated_params * 2) / (1024**3)  # 2 bytes per param
 
         # Vertaa toteutuneeseen kokoon
@@ -1254,7 +1315,10 @@ class ModelMerger:
         import gc
 
         if not self._torch_available or not self._safetensors_available:
-            return {"success": False, "error": "Riippuvuudet puuttuvat. Asenna torch ja safetensors."}
+            return {
+                "success": False,
+                "error": "Riippuvuudet puuttuvat. Asenna torch ja safetensors.",
+            }
 
         try:
             # 1. Lataa mallit ja konfiguraatiot
@@ -1290,9 +1354,13 @@ class ModelMerger:
                     progress_callback(f"Normalisoidaan presisioksi {config.target_dtype}...")
 
                 for key in tensors1:
-                    tensors1[key] = self._normalize_tensor_precision(tensors1[key], config.target_dtype)
+                    tensors1[key] = self._normalize_tensor_precision(
+                        tensors1[key], config.target_dtype
+                    )
                 for key in tensors2:
-                    tensors2[key] = self._normalize_tensor_precision(tensors2[key], config.target_dtype)
+                    tensors2[key] = self._normalize_tensor_precision(
+                        tensors2[key], config.target_dtype
+                    )
 
             # 5. Identifioi embedding-tensorit
             embedding_keys = ["model.embed_tokens.weight", "lm_head.weight"]
@@ -1381,7 +1449,7 @@ class ModelMerger:
 
             # Tallenna config
             config_file = output_dir / "config.json"
-            with open(config_file, 'w', encoding='utf-8') as f:
+            with open(config_file, "w", encoding="utf-8") as f:
                 json.dump(output_config, f, indent=2)
 
             # Kopioi tokenizer
@@ -1408,4 +1476,5 @@ class ModelMerger:
 
         except Exception as e:
             import traceback
+
             return {"success": False, "error": str(e), "traceback": traceback.format_exc()}

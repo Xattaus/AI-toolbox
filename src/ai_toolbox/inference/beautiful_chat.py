@@ -26,7 +26,6 @@ from rich.text import Text
 from rich.live import Live
 from rich import box
 
-
 # Thinking animation frames
 THINKING_FRAMES = ["", "", "", "", "", "", "", "", "", ""]
 
@@ -35,9 +34,11 @@ THINKING_FRAMES = ["", "", "", "", "", "", "", "", "", ""]
 # DATA TYPES
 # =============================================================================
 
+
 @dataclass
 class ChatChunk:
     """Yksittainen streaming-pala."""
+
     type: str  # "token", "thinking_start", "thinking_content", "thinking_end", "done", "error"
     content: str = ""
 
@@ -45,6 +46,7 @@ class ChatChunk:
 @dataclass
 class ChatMessage:
     """Keskusteluviesti."""
+
     role: str  # "user", "assistant", "system"
     content: str
     thinking: str = ""  # <think> sisalto (reasoning-malleille)
@@ -53,6 +55,7 @@ class ChatMessage:
 # =============================================================================
 # OLLAMA STREAM CLIENT
 # =============================================================================
+
 
 class OllamaStreamClient:
     """Ollama streaming client joka parsii <think> tagit lennossa."""
@@ -147,7 +150,7 @@ class OllamaStreamClient:
                             if think_start > 0:
                                 yield ChatChunk(type="token", content=buffer[:think_start])
                             yield ChatChunk(type="thinking_start")
-                            buffer = buffer[think_start + 7:]  # len("<think>") = 7
+                            buffer = buffer[think_start + 7 :]  # len("<think>") = 7
                             in_think = True
                         else:
                             # Check if we might be at a partial tag
@@ -180,7 +183,7 @@ class OllamaStreamClient:
                             if think_end > 0:
                                 yield ChatChunk(type="thinking_content", content=buffer[:think_end])
                             yield ChatChunk(type="thinking_end")
-                            buffer = buffer[think_end + 8:]  # len("</think>") = 8
+                            buffer = buffer[think_end + 8 :]  # len("</think>") = 8
                             in_think = False
                         else:
                             # Check for partial </think> tag
@@ -192,7 +195,9 @@ class OllamaStreamClient:
                                         break
 
                             if partial_idx > 0:
-                                yield ChatChunk(type="thinking_content", content=buffer[:partial_idx])
+                                yield ChatChunk(
+                                    type="thinking_content", content=buffer[:partial_idx]
+                                )
                                 buffer = buffer[partial_idx:]
                             elif partial_idx == 0:
                                 pass  # Wait for more
@@ -215,6 +220,7 @@ class OllamaStreamClient:
 # CHAT RENDERER
 # =============================================================================
 
+
 class ChatRenderer:
     """Renderoi chat-viestit kauniisti Rich-kirjastolla."""
 
@@ -236,24 +242,28 @@ class ChatRenderer:
 
         title = "  ".join(title_parts)
 
-        console.print(Panel(
-            f"{title}\n[dim]Komennot: lopeta, tyhjenna, nayta/piilota, ohje[/dim]",
-            border_style="bright_blue",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        console.print(
+            Panel(
+                f"{title}\n[dim]Komennot: lopeta, tyhjenna, nayta/piilota, ohje[/dim]",
+                border_style="bright_blue",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
         console.print()
 
     def render_user_message(self, content: str):
         """Renderoi kayttajan viesti."""
-        console.print(Panel(
-            Text(content, style="white"),
-            title="[bold blue]Sina[/bold blue]",
-            title_align="left",
-            border_style="blue",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        console.print(
+            Panel(
+                Text(content, style="white"),
+                title="[bold blue]Sina[/bold blue]",
+                title_align="left",
+                border_style="blue",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
 
     def create_thinking_panel(self, content: str, spinner_frame: int = 0) -> Panel:
         """Luo ajattelu-paneeli (ei tulosta, palauttaa Panelin)."""
@@ -267,7 +277,7 @@ class ChatRenderer:
             display_content = "..." + content[-400:]
 
         # Format thinking content (dim and wrapped)
-        lines = display_content.split('\n')
+        lines = display_content.split("\n")
         formatted_lines = []
         for line in lines[-8:]:  # Show last 8 lines
             if line.strip():
@@ -316,25 +326,29 @@ class ChatRenderer:
             thinking_text = thinking.strip()
 
             # Format as dim text for readability
-            console.print(Panel(
-                Text(thinking_text, style="dim"),
-                title="[bold yellow]Ajattelu[/bold yellow]",
-                title_align="left",
-                border_style="yellow",
-                box=box.ROUNDED,
-                padding=(0, 1),
-            ))
+            console.print(
+                Panel(
+                    Text(thinking_text, style="dim"),
+                    title="[bold yellow]Ajattelu[/bold yellow]",
+                    title_align="left",
+                    border_style="yellow",
+                    box=box.ROUNDED,
+                    padding=(0, 1),
+                )
+            )
         elif thinking and not self.show_thoughts:
             # Just show that there was thinking (collapsed)
-            thinking_lines = thinking.strip().split('\n')
-            console.print(Panel(
-                f"[dim italic]({len(thinking_lines)} rivia ajattelua - 'nayta' nayttaa)[/dim]",
-                title="[dim yellow]Ajattelu[/dim yellow]",
-                title_align="left",
-                border_style="dim yellow",
-                box=box.ROUNDED,
-                padding=(0, 1),
-            ))
+            thinking_lines = thinking.strip().split("\n")
+            console.print(
+                Panel(
+                    f"[dim italic]({len(thinking_lines)} rivia ajattelua - 'nayta' nayttaa)[/dim]",
+                    title="[dim yellow]Ajattelu[/dim yellow]",
+                    title_align="left",
+                    border_style="dim yellow",
+                    box=box.ROUNDED,
+                    padding=(0, 1),
+                )
+            )
 
         # Main response
         try:
@@ -342,30 +356,35 @@ class ChatRenderer:
         except Exception:
             rendered = Text(content)
 
-        console.print(Panel(
-            rendered,
-            title=f"[bold green]{self.model_name}[/bold green]",
-            title_align="left",
-            border_style="green",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        console.print(
+            Panel(
+                rendered,
+                title=f"[bold green]{self.model_name}[/bold green]",
+                title_align="left",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
 
     def render_error(self, error: str):
         """Renderoi virheviesti."""
-        console.print(Panel(
-            f"[red]{error}[/red]",
-            title="[bold red]Virhe[/bold red]",
-            title_align="left",
-            border_style="red",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        console.print(
+            Panel(
+                f"[red]{error}[/red]",
+                title="[bold red]Virhe[/bold red]",
+                title_align="left",
+                border_style="red",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
 
 
 # =============================================================================
 # CONVERSATION MANAGER
 # =============================================================================
+
 
 class ConversationManager:
     """Hallitsee keskusteluhistoriaa."""
@@ -386,11 +405,13 @@ class ConversationManager:
     def add_assistant(self, content: str, thinking: str = ""):
         """Lisaa assistentin viesti."""
         if content and content.strip():
-            self.messages.append(ChatMessage(
-                role="assistant",
-                content=content.strip(),
-                thinking=thinking.strip() if thinking else ""
-            ))
+            self.messages.append(
+                ChatMessage(
+                    role="assistant",
+                    content=content.strip(),
+                    thinking=thinking.strip() if thinking else "",
+                )
+            )
 
     def get_messages_for_api(self) -> List[Dict[str, str]]:
         """Palauta viestit Ollama API:n muodossa."""
@@ -400,18 +421,12 @@ class ConversationManager:
         # NOTE: Ollama already uses system prompt from Modelfile,
         # so only add if we want to override it
         if self.system_prompt and self.system_prompt.strip():
-            api_messages.append({
-                "role": "system",
-                "content": self.system_prompt.strip()
-            })
+            api_messages.append({"role": "system", "content": self.system_prompt.strip()})
 
         # Add conversation messages (skip empty content)
         for msg in self.messages:
             if msg.content and msg.content.strip():
-                api_messages.append({
-                    "role": msg.role,
-                    "content": msg.content
-                })
+                api_messages.append({"role": msg.role, "content": msg.content})
 
         return api_messages
 
@@ -435,6 +450,7 @@ class ConversationManager:
 # BEAUTIFUL CHAT - MAIN CLASS
 # =============================================================================
 
+
 class BeautifulChat:
     """Kaunis interaktiivinen chat Ollama-malleille."""
 
@@ -442,8 +458,8 @@ class BeautifulChat:
     # Only include models known to properly support the <think>...</think> format
     # Note: poro-r1 does NOT support prefill - it generates <think> tags on its own
     THINKING_MODEL_PATTERNS = [
-        "deepseek-r1",      # DeepSeek R1 distill models
-        "deepseek-reasoner", # DeepSeek reasoning models
+        "deepseek-r1",  # DeepSeek R1 distill models
+        "deepseek-reasoner",  # DeepSeek reasoning models
     ]
 
     @classmethod
@@ -521,10 +537,7 @@ class BeautifulChat:
         # This makes the model generate reasoning before answering
         prefill_used = False
         if self.thinking_prefill:
-            api_messages.append({
-                "role": "assistant",
-                "content": "<think>"
-            })
+            api_messages.append({"role": "assistant", "content": "<think>"})
             prefill_used = True
 
         # Stream response with live display
@@ -552,9 +565,7 @@ class BeautifulChat:
                     elif chunk.type == "thinking_content":
                         thinking_content += chunk.content
                         spinner_frame += 1
-                        panel = self.renderer.create_thinking_panel(
-                            thinking_content, spinner_frame
-                        )
+                        panel = self.renderer.create_thinking_panel(thinking_content, spinner_frame)
                         live.update(panel)
 
                     elif chunk.type == "thinking_end":
@@ -578,7 +589,9 @@ class BeautifulChat:
                                 if len(parts) > 1:
                                     response_content += parts[1]
                                     if response_content.strip():
-                                        panel = self.renderer.create_streaming_panel(response_content, thinking_content)
+                                        panel = self.renderer.create_streaming_panel(
+                                            response_content, thinking_content
+                                        )
                                         live.update(panel)
                             else:
                                 # Check for partial </think> at end of buffer
@@ -607,7 +620,9 @@ class BeautifulChat:
                                 live.update(panel)
                         else:
                             response_content += chunk.content
-                            panel = self.renderer.create_streaming_panel(response_content, thinking_content)
+                            panel = self.renderer.create_streaming_panel(
+                                response_content, thinking_content
+                            )
                             live.update(panel)
 
                     elif chunk.type == "error":
@@ -653,12 +668,14 @@ class BeautifulChat:
                 self.conversation.add_assistant(thinking_content, "")
             else:
                 # Model started thinking but never finished - unusual
-                console.print(Panel(
-                    f"[dim]Malli generoi ajattelua mutta ei vastausta.[/dim]",
-                    title="[yellow]Huomio[/yellow]",
-                    border_style="yellow",
-                    box=box.ROUNDED,
-                ))
+                console.print(
+                    Panel(
+                        f"[dim]Malli generoi ajattelua mutta ei vastausta.[/dim]",
+                        title="[yellow]Huomio[/yellow]",
+                        border_style="yellow",
+                        box=box.ROUNDED,
+                    )
+                )
                 self.renderer.render_complete_response(thinking_content, "")
                 self.conversation.add_assistant(thinking_content, "")
         else:
@@ -705,13 +722,15 @@ Kun prefill on POIS (oletus):
 - Ctrl+C keskeyttaa vastauksen
 
 """
-        console.print(Panel(
-            Markdown(help_text),
-            title="[bold cyan]Ohje[/bold cyan]",
-            border_style="cyan",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        console.print(
+            Panel(
+                Markdown(help_text),
+                title="[bold cyan]Ohje[/bold cyan]",
+                border_style="cyan",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
 
     def run(self):
         """Kaynnista interaktiivinen chat-sessio."""
@@ -738,39 +757,49 @@ Kun prefill on POIS (oletus):
 
                     if cmd in ["tyhjenna", "clear", "uusi"]:
                         self.conversation.clear()
-                        console.print(Panel(
-                            "[green]Keskustelu tyhjennetty.[/green]",
-                            border_style="green",
-                            box=box.ROUNDED,
-                        ))
+                        console.print(
+                            Panel(
+                                "[green]Keskustelu tyhjennetty.[/green]",
+                                border_style="green",
+                                box=box.ROUNDED,
+                            )
+                        )
                         continue
 
                     if cmd in ["ajattelu", "think", "thinking", "prefill"]:
                         self.set_thinking_prefill(not self.thinking_prefill)
-                        status = "[green]PAALLA[/green]" if self.thinking_prefill else "[red]POIS[/red]"
-                        console.print(Panel(
-                            f"Prefill-tila: {status}\n[dim]Temperature: {self.options['temperature']}[/dim]",
-                            border_style="yellow",
-                            box=box.ROUNDED,
-                        ))
+                        status = (
+                            "[green]PAALLA[/green]" if self.thinking_prefill else "[red]POIS[/red]"
+                        )
+                        console.print(
+                            Panel(
+                                f"Prefill-tila: {status}\n[dim]Temperature: {self.options['temperature']}[/dim]",
+                                border_style="yellow",
+                                box=box.ROUNDED,
+                            )
+                        )
                         continue
 
                     if cmd in ["nayta", "show"]:
                         self.renderer.show_thoughts = True
-                        console.print(Panel(
-                            "[green]Ajatukset naytetaan[/green]",
-                            border_style="green",
-                            box=box.ROUNDED,
-                        ))
+                        console.print(
+                            Panel(
+                                "[green]Ajatukset naytetaan[/green]",
+                                border_style="green",
+                                box=box.ROUNDED,
+                            )
+                        )
                         continue
 
                     if cmd in ["piilota", "hide"]:
                         self.renderer.show_thoughts = False
-                        console.print(Panel(
-                            "[yellow]Ajatukset piilotettu[/yellow]",
-                            border_style="yellow",
-                            box=box.ROUNDED,
-                        ))
+                        console.print(
+                            Panel(
+                                "[yellow]Ajatukset piilotettu[/yellow]",
+                                border_style="yellow",
+                                box=box.ROUNDED,
+                            )
+                        )
                         continue
 
                     if cmd in ["ohje", "help", "?"]:
@@ -790,16 +819,19 @@ Kun prefill on POIS (oletus):
             pass
 
         # Goodbye
-        console.print(Panel(
-            "[cyan]Kiitos keskustelusta![/cyan]",
-            border_style="cyan",
-            box=box.ROUNDED,
-        ))
+        console.print(
+            Panel(
+                "[cyan]Kiitos keskustelusta![/cyan]",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
 
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
+
 
 def extract_system_prompt_from_modelfile(modelfile: str) -> Optional[str]:
     """
@@ -830,7 +862,7 @@ def extract_system_prompt_from_modelfile(modelfile: str) -> Optional[str]:
         return match.group(1)
 
     # Try unquoted (single line): SYSTEM text here
-    match = re.search(r'SYSTEM\s+([^\n]+)', modelfile)
+    match = re.search(r"SYSTEM\s+([^\n]+)", modelfile)
     if match:
         return match.group(1).strip()
 

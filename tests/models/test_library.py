@@ -19,15 +19,24 @@ def _gguf(tmp_path, name):
 
 def _entry(**kw):
     base = dict(
-        id="i", name="N", source="local", source_id=None, path="/p",
-        format="gguf", size_bytes=0, quantization=None,
-        added_date="2026-01-01", tags=[], metadata={},
+        id="i",
+        name="N",
+        source="local",
+        source_id=None,
+        path="/p",
+        format="gguf",
+        size_bytes=0,
+        quantization=None,
+        added_date="2026-01-01",
+        tags=[],
+        metadata={},
     )
     base.update(kw)
     return ModelEntry(**base)
 
 
 # --- pure naming / sorting helpers ---
+
 
 def test_extract_identity_strips_path():
     out = extract_model_identity("meta-llama/Some-Model")
@@ -65,11 +74,13 @@ def test_get_sort_key_size_and_name():
 
 
 def test_get_sort_key_quant_orders_by_quality():
-    assert get_sort_key(_entry(quantization="Q8_0"), "quant") > \
-        get_sort_key(_entry(quantization="Q4_K_M"), "quant")
+    assert get_sort_key(_entry(quantization="Q8_0"), "quant") > get_sort_key(
+        _entry(quantization="Q4_K_M"), "quant"
+    )
 
 
 # --- ModelLibrary CRUD ---
+
 
 def test_add_detects_format_and_quant(tmp_path):
     lib = ModelLibrary(library_path=str(tmp_path / "lib"), auto_scan=False)
@@ -123,6 +134,7 @@ def test_search_models(tmp_path):
 
 # --- persistence / crash recovery ---
 
+
 def test_index_persists_across_instances(tmp_path):
     libdir = str(tmp_path / "lib")
     f = _gguf(tmp_path, "persist-q8_0.gguf")
@@ -137,8 +149,8 @@ def test_index_persists_across_instances(tmp_path):
 def test_corrupt_index_recovers_from_backup(tmp_path):
     libdir = tmp_path / "lib"
     lib = ModelLibrary(library_path=str(libdir), auto_scan=False)
-    lib.add_model(str(_gguf(tmp_path, "one.gguf")), name="One")   # save 1 (no .bak yet)
-    lib.add_model(str(_gguf(tmp_path, "two.gguf")), name="Two")   # save 2 -> .bak holds [One]
+    lib.add_model(str(_gguf(tmp_path, "one.gguf")), name="One")  # save 1 (no .bak yet)
+    lib.add_model(str(_gguf(tmp_path, "two.gguf")), name="Two")  # save 2 -> .bak holds [One]
 
     backup = libdir / "library_index.json.bak"
     assert backup.exists()

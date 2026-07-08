@@ -15,7 +15,7 @@ from typing import Optional
 class ToolboxPaths:
     """Manages all paths for the AI Toolbox in a portable way."""
 
-    _instance: Optional['ToolboxPaths'] = None
+    _instance: Optional["ToolboxPaths"] = None
     _root: Optional[Path] = None
 
     def __new__(cls):
@@ -38,7 +38,7 @@ class ToolboxPaths:
         3. Current working directory if it contains expected structure
         """
         # Check environment variable first
-        env_root = os.environ.get('AITOOLBOX_ROOT')
+        env_root = os.environ.get("AITOOLBOX_ROOT")
         if env_root:
             root = Path(env_root)
             if root.exists():
@@ -49,18 +49,18 @@ class ToolboxPaths:
         this_file = Path(__file__).resolve()
         possible_root = this_file.parent.parent.parent.parent  # Up 4 levels now
 
-        if (possible_root / 'src' / 'ai_toolbox').exists():
+        if (possible_root / "src" / "ai_toolbox").exists():
             return possible_root
 
         # Try current working directory
         cwd = Path.cwd()
-        if (cwd / 'src' / 'ai_toolbox').exists():
+        if (cwd / "src" / "ai_toolbox").exists():
             return cwd
 
         # Fallback: käytä tiedoston sijaintikansiota (ei possible_root joka voi olla väärä)
         # Tämä on turvallisempi koska tiedämme ainakin missä koodi sijaitsee
         fallback = this_file.parent.parent.parent  # <root>/src/ai_toolbox -> <root>/src
-        if fallback.name == 'src':
+        if fallback.name == "src":
             fallback = fallback.parent  # <root>
         return fallback
 
@@ -72,11 +72,11 @@ class ToolboxPaths:
             self.safetensors_dir,  # Alias for clarity
             self.gguf_dir,
             self.loras_dir,
-            self.adapters_dir,     # Final LoRA adapters
-            self.runs_dir,         # Training runs with checkpoints
+            self.adapters_dir,  # Final LoRA adapters
+            self.runs_dir,  # Training runs with checkpoints
             self.merged_dir,
             self.abliterated_dir,  # Abliterated models
-            self.ollama_dir,       # Ollama modelfiles
+            self.ollama_dir,  # Ollama modelfiles
             self.llama_cpp_dir,
             self.config_dir,
             self.datasets_dir,
@@ -94,89 +94,89 @@ class ToolboxPaths:
     @property
     def models_dir(self) -> Path:
         """Main models directory."""
-        return self._root / 'models'
+        return self._root / "models"
 
     @property
     def downloads_dir(self) -> Path:
         """Directory for HuggingFace downloads (legacy alias for safetensors_dir)."""
-        return self._root / 'models' / 'safetensors'
+        return self._root / "models" / "safetensors"
 
     @property
     def safetensors_dir(self) -> Path:
         """Directory for SafeTensors/HuggingFace models."""
-        return self._root / 'models' / 'safetensors'
+        return self._root / "models" / "safetensors"
 
     @property
     def gguf_dir(self) -> Path:
         """Directory for GGUF models."""
-        return self._root / 'models' / 'gguf'
+        return self._root / "models" / "gguf"
 
     @property
     def loras_dir(self) -> Path:
         """Directory for LoRA adapters (root)."""
-        return self._root / 'models' / 'lora'
+        return self._root / "models" / "lora"
 
     @property
     def adapters_dir(self) -> Path:
         """Directory for final trained LoRA adapters."""
-        return self._root / 'models' / 'lora' / 'adapters'
+        return self._root / "models" / "lora" / "adapters"
 
     @property
     def runs_dir(self) -> Path:
         """Directory for LoRA training runs with checkpoints."""
-        return self._root / 'models' / 'lora' / 'runs'
+        return self._root / "models" / "lora" / "runs"
 
     @property
     def merged_dir(self) -> Path:
         """Directory for merged models."""
-        return self._root / 'models' / 'merged'
+        return self._root / "models" / "merged"
 
     @property
     def abliterated_dir(self) -> Path:
         """Directory for abliterated models (refusal removed)."""
-        return self._root / 'models' / 'abliterated'
+        return self._root / "models" / "abliterated"
 
     @property
     def ollama_dir(self) -> Path:
         """Directory for Ollama modelfiles."""
-        return self._root / 'models' / 'ollama'
+        return self._root / "models" / "ollama"
 
     @property
     def library_file(self) -> Path:
         """Path to the library index file."""
-        return self._root / 'models' / 'library.json'
+        return self._root / "models" / "library.json"
 
     @property
     def llama_cpp_dir(self) -> Path:
         """Directory for llama.cpp installation."""
-        return self._root / 'tools' / 'llama.cpp'
+        return self._root / "tools" / "llama.cpp"
 
     @property
     def config_dir(self) -> Path:
         """Directory for configuration files."""
-        return self._root / 'config'
+        return self._root / "config"
 
     @property
     def datasets_dir(self) -> Path:
         """Directory for datasets."""
-        return self._root / 'datasets'
+        return self._root / "datasets"
 
     @property
     def processed_dir(self) -> Path:
         """Directory for processed datasets."""
-        return self._root / 'datasets' / 'processed'
+        return self._root / "datasets" / "processed"
 
     @property
     def benchmarks_dir(self) -> Path:
         """Directory for benchmark results."""
-        return self._root / 'benchmarks'
+        return self._root / "benchmarks"
 
     @property
     def config_file(self) -> Path:
         """Main configuration file."""
-        return self._root / 'config' / 'settings.json'
+        return self._root / "config" / "settings.json"
 
-    def get_model_path(self, model_name: str, model_type: str = 'gguf') -> Path:
+    def get_model_path(self, model_name: str, model_type: str = "gguf") -> Path:
         """
         Get the path for a model file.
 
@@ -188,15 +188,15 @@ class ToolboxPaths:
             Path to the model
         """
         type_dirs = {
-            'gguf': self.gguf_dir,
-            'safetensors': self.safetensors_dir,
-            'download': self.safetensors_dir,  # Legacy alias
-            'adapter': self.adapters_dir,
-            'lora': self.adapters_dir,  # Alias
-            'run': self.runs_dir,
-            'merged': self.merged_dir,
-            'abliterated': self.abliterated_dir,
-            'ollama': self.ollama_dir,
+            "gguf": self.gguf_dir,
+            "safetensors": self.safetensors_dir,
+            "download": self.safetensors_dir,  # Legacy alias
+            "adapter": self.adapters_dir,
+            "lora": self.adapters_dir,  # Alias
+            "run": self.runs_dir,
+            "merged": self.merged_dir,
+            "abliterated": self.abliterated_dir,
+            "ollama": self.ollama_dir,
         }
         base_dir = type_dirs.get(model_type, self.models_dir)
         return base_dir / model_name

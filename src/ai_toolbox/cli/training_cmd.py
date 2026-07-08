@@ -41,16 +41,18 @@ from ..models.downloader import ModelDownloader
 from ..merging.merger import ModelMerger
 
 # Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+custom_style = Style(
+    [
+        ("qmark", "fg:#ff9d00 bold"),
+        ("question", "fg:white bold"),
+        ("answer", "fg:#00d7ff bold"),
+        ("pointer", "fg:#ff9d00 bold"),
+        ("highlighted", "fg:#ff9d00 bold"),
+        ("selected", "fg:#00ff00"),
+        ("separator", "fg:#666666"),
+        ("instruction", "fg:#666666"),
+    ]
+)
 
 
 class TrainingCommands:
@@ -112,50 +114,44 @@ class TrainingCommands:
 
             choices = [
                 questionary.Choice(
-                    title="Quick Train             Nopea aloitus oletusasetuksilla",
-                    value="quick"
+                    title="Quick Train             Nopea aloitus oletusasetuksilla", value="quick"
                 ),
                 questionary.Choice(
-                    title="Advanced Training       Taysi kontrolli parametreihin",
-                    value="advanced"
+                    title="Advanced Training       Taysi kontrolli parametreihin", value="advanced"
                 ),
                 questionary.Separator(),
                 questionary.Choice(
-                    title="Dataset Manager         Hallitse datasetteja",
-                    value="datasets"
+                    title="Dataset Manager         Hallitse datasetteja", value="datasets"
                 ),
                 questionary.Choice(
-                    title="Test Adapter            Testaa valmista adapteria",
-                    value="test"
+                    title="Test Adapter            Testaa valmista adapteria", value="test"
                 ),
                 questionary.Choice(
-                    title="Merge Adapter           Yhdista adapter base-malliin",
-                    value="merge"
+                    title="Merge Adapter           Yhdista adapter base-malliin", value="merge"
                 ),
                 questionary.Separator(),
                 questionary.Choice(
-                    title="LoRA Info               Tietoa LoRA:sta ja parametreista",
-                    value="info"
+                    title="LoRA Info               Tietoa LoRA:sta ja parametreista", value="info"
                 ),
             ]
 
             if not status["ready"]:
-                choices.append(questionary.Choice(
-                    title="Install Dependencies    Asenna tarvittavat kirjastot",
-                    value="install"
-                ))
+                choices.append(
+                    questionary.Choice(
+                        title="Install Dependencies    Asenna tarvittavat kirjastot",
+                        value="install",
+                    )
+                )
 
-            choices.extend([
-                questionary.Separator(),
-                questionary.Choice(title="<- Palaa", value="back"),
-            ])
+            choices.extend(
+                [
+                    questionary.Separator(),
+                    questionary.Choice(title="<- Palaa", value="back"),
+                ]
+            )
 
             choice = questionary.select(
-                "LoRA Trainer:",
-                choices=choices,
-                style=custom_style,
-                qmark=">>",
-                pointer=">"
+                "LoRA Trainer:", choices=choices, style=custom_style, qmark=">>", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -199,9 +195,7 @@ class TrainingCommands:
         console.print("[cyan]Valinnaiset:[/cyan] bitsandbytes (QLoRA), unsloth (kiihdytys)\n")
 
         include_optional = questionary.confirm(
-            "Asenna myos valinnaiset (bitsandbytes)?",
-            default=True,
-            style=custom_style
+            "Asenna myos valinnaiset (bitsandbytes)?", default=True, style=custom_style
         ).ask()
 
         console.print("\n[cyan]Asennetaan riippuvuuksia...[/cyan]")
@@ -210,7 +204,9 @@ class TrainingCommands:
         def progress_cb(msg):
             console.print(f"  [dim]{msg}[/dim]")
 
-        if self.trainer.install_dependencies(include_optional=include_optional, progress_callback=progress_cb):
+        if self.trainer.install_dependencies(
+            include_optional=include_optional, progress_callback=progress_cb
+        ):
             print_success("Riippuvuudet asennettu!")
         else:
             print_error("Asennus epäonnistui")
@@ -306,16 +302,13 @@ ennen isompaa ajoa.[/dim]
 
             choices = [
                 questionary.Choice(
-                    title="List Datasets           Nayta saatavilla olevat",
-                    value="list"
+                    title="List Datasets           Nayta saatavilla olevat", value="list"
                 ),
                 questionary.Choice(
-                    title="Validate Dataset        Tarkista datasetin kelpoisuus",
-                    value="validate"
+                    title="Validate Dataset        Tarkista datasetin kelpoisuus", value="validate"
                 ),
                 questionary.Choice(
-                    title="Create Sample           Luo esimerkkidataset",
-                    value="sample"
+                    title="Create Sample           Luo esimerkkidataset", value="sample"
                 ),
                 questionary.Separator(),
                 questionary.Choice(title="<- Palaa", value="back"),
@@ -378,7 +371,9 @@ ennen isompaa ajoa.[/dim]
 
             if result["sample"]:
                 console.print(f"\n[white]Esimerkki:[/white]")
-                console.print(f"[dim]{json.dumps(result['sample'], ensure_ascii=False, indent=2)[:500]}[/dim]")
+                console.print(
+                    f"[dim]{json.dumps(result['sample'], ensure_ascii=False, indent=2)[:500]}[/dim]"
+                )
 
             for warning in result["warnings"]:
                 print_warning(warning)
@@ -446,8 +441,8 @@ ennen isompaa ajoa.[/dim]
         # Downloaded HuggingFace models (downloads folder)
         downloaded = self.downloader.list_downloaded()
         for d in downloaded[:10]:
-            name = d['model_id'].split('/')[-1] if '/' in d['model_id'] else d['model_id']
-            all_items.append(("hf", name, "HF", d['size'], d['path']))
+            name = d["model_id"].split("/")[-1] if "/" in d["model_id"] else d["model_id"]
+            all_items.append(("hf", name, "HF", d["size"], d["path"]))
 
         if not all_items:
             console.print("[yellow]Ei malleja kirjastossa tai ladattuna.[/yellow]")
@@ -478,8 +473,7 @@ ennen isompaa ajoa.[/dim]
 
         # Get selection
         answer = questionary.text(
-            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):",
-            style=MENU_STYLE
+            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):", style=MENU_STYLE
         ).ask()
 
         if answer is None or answer.strip() == "" or answer.strip() == "0":
@@ -504,7 +498,9 @@ ennen isompaa ajoa.[/dim]
         # Trainer datasets (datasets/ folder)
         datasets = self.trainer.list_datasets()
         for ds in datasets:
-            all_items.append(("dataset", ds['name'], ds['format'] or '?', ds['size_bytes'], ds['path']))
+            all_items.append(
+                ("dataset", ds["name"], ds["format"] or "?", ds["size_bytes"], ds["path"])
+            )
 
         # Processed datasets (datasets/processed/ folder)
         processed_dir = get_paths().processed_dir
@@ -542,8 +538,7 @@ ennen isompaa ajoa.[/dim]
 
         # Get selection
         answer = questionary.text(
-            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):",
-            style=MENU_STYLE
+            f"Valitse numero [1-{len(all_items)}] (0 = peruuta):", style=MENU_STYLE
         ).ask()
 
         if answer is None or answer.strip() == "" or answer.strip() == "0":
@@ -577,7 +572,9 @@ ennen isompaa ajoa.[/dim]
         # Get recommendations
         recommendations = self.trainer.get_recommended_config(model_path)
         console.print(f"  [green]+[/green] {model_path.name}")
-        console.print(f"    [dim]Tyyppi: {recommendations['model_type']}, ~{recommendations['estimated_params_b']}B parametria[/dim]\n")
+        console.print(
+            f"    [dim]Tyyppi: {recommendations['model_type']}, ~{recommendations['estimated_params_b']}B parametria[/dim]\n"
+        )
 
         # 2. Select dataset
         console.print("[bold]2. Valitse dataset:[/bold]")
@@ -593,7 +590,9 @@ ennen isompaa ajoa.[/dim]
             return
 
         console.print(f"  [green]+[/green] {dataset_path.name}")
-        console.print(f"    [dim]{validation['num_samples']} naytetta, formaatti: {validation['format']}[/dim]\n")
+        console.print(
+            f"    [dim]{validation['num_samples']} naytetta, formaatti: {validation['format']}[/dim]\n"
+        )
 
         # 3. Give name
         run_name = questionary.text(
@@ -625,17 +624,19 @@ ennen isompaa ajoa.[/dim]
         )
 
         # Show summary
-        console.print(Panel(
-            f"[white]Malli:[/white] {model_path.name}\n"
-            f"[white]Dataset:[/white] {dataset_path.name} ({validation['num_samples']} naytetta)\n"
-            f"[white]LoRA rank:[/white] {config.lora.rank}, alpha: {config.lora.alpha}\n"
-            f"[white]Batch size:[/white] {config.training.batch_size}\n"
-            f"[white]Learning rate:[/white] {config.training.learning_rate}\n"
-            f"[white]Epochs:[/white] {config.training.epochs}\n"
-            f"[white]Output:[/white] {run_name}",
-            title="[bold]Training Configuration[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Malli:[/white] {model_path.name}\n"
+                f"[white]Dataset:[/white] {dataset_path.name} ({validation['num_samples']} naytetta)\n"
+                f"[white]LoRA rank:[/white] {config.lora.rank}, alpha: {config.lora.alpha}\n"
+                f"[white]Batch size:[/white] {config.training.batch_size}\n"
+                f"[white]Learning rate:[/white] {config.training.learning_rate}\n"
+                f"[white]Epochs:[/white] {config.training.epochs}\n"
+                f"[white]Output:[/white] {run_name}",
+                title="[bold]Training Configuration[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita training?", default=True, style=custom_style).ask():
             return
@@ -727,7 +728,9 @@ ennen isompaa ajoa.[/dim]
         try:
             learning_rate = float(learning_rate) if learning_rate else preset["learning_rate"]
         except ValueError:
-            print_warning(f"Virheellinen learning rate, käytetään oletusta: {preset['learning_rate']}")
+            print_warning(
+                f"Virheellinen learning rate, käytetään oletusta: {preset['learning_rate']}"
+            )
             learning_rate = preset["learning_rate"]
 
         batch_size = questionary.text(
@@ -792,17 +795,19 @@ ennen isompaa ajoa.[/dim]
         )
 
         # Show summary
-        console.print(Panel(
-            f"[white]Malli:[/white] {model_path.name}\n"
-            f"[white]Dataset:[/white] {dataset_path.name}\n"
-            f"[white]LoRA:[/white] rank={rank}, alpha={alpha}\n"
-            f"[white]Modules:[/white] {', '.join(target_modules)}\n"
-            f"[white]Training:[/white] lr={learning_rate}, batch={batch_size}, epochs={epochs}\n"
-            f"[white]Quantization:[/white] {quantization or 'None'}\n"
-            f"[white]Output:[/white] {run_name}",
-            title="[bold]Advanced Configuration[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Malli:[/white] {model_path.name}\n"
+                f"[white]Dataset:[/white] {dataset_path.name}\n"
+                f"[white]LoRA:[/white] rank={rank}, alpha={alpha}\n"
+                f"[white]Modules:[/white] {', '.join(target_modules)}\n"
+                f"[white]Training:[/white] lr={learning_rate}, batch={batch_size}, epochs={epochs}\n"
+                f"[white]Quantization:[/white] {quantization or 'None'}\n"
+                f"[white]Output:[/white] {run_name}",
+                title="[bold]Advanced Configuration[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita training?", default=True, style=custom_style).ask():
             return
@@ -836,7 +841,9 @@ ennen isompaa ajoa.[/dim]
             # Näytä VRAM-säästö
             if compat.vram_savings_percent > 0:
                 console.print(f"  [cyan]VRAM-säästö:[/cyan] ~{compat.vram_savings_percent:.0f}%")
-                console.print(f"  [dim]PEFT: ~{compat.estimated_vram_peft:.1f} GB → Unsloth: ~{compat.estimated_vram_unsloth:.1f} GB[/dim]")
+                console.print(
+                    f"  [dim]PEFT: ~{compat.estimated_vram_peft:.1f} GB → Unsloth: ~{compat.estimated_vram_unsloth:.1f} GB[/dim]"
+                )
 
             # Näytä varoitukset
             if compat.warnings:
@@ -862,7 +869,9 @@ ennen isompaa ajoa.[/dim]
                 # Yhteensopiva mutta ei optimaalinen
                 choices = [
                     questionary.Choice(title="Kyllä, käytä Unslothia", value=True),
-                    questionary.Choice(title="Ei, käytä tavallista PEFT (turvallisempi)", value=False),
+                    questionary.Choice(
+                        title="Ei, käytä tavallista PEFT (turvallisempi)", value=False
+                    ),
                 ]
 
             use_unsloth = questionary.select(
@@ -875,7 +884,9 @@ ennen isompaa ajoa.[/dim]
 
         else:
             # Ei yhteensopiva - näytä syyt
-            console.print(f"[yellow]![/yellow] Unsloth asennettu (v{compat.unsloth_version}), mutta ei yhteensopiva:")
+            console.print(
+                f"[yellow]![/yellow] Unsloth asennettu (v{compat.unsloth_version}), mutta ei yhteensopiva:"
+            )
 
             for error in compat.errors[:3]:
                 console.print(f"  [red]✗[/red] {error}")
@@ -902,7 +913,9 @@ ennen isompaa ajoa.[/dim]
             return
 
         if prep["gpu_available"]:
-            console.print(f"[green]GPU:[/green] {prep['gpu_name']} ({prep['gpu_memory_gb']:.1f} GB)")
+            console.print(
+                f"[green]GPU:[/green] {prep['gpu_name']} ({prep['gpu_memory_gb']:.1f} GB)"
+            )
         else:
             print_warning("GPU ei saatavilla - training on hidasta!")
 
@@ -912,15 +925,24 @@ ennen isompaa ajoa.[/dim]
         # Tarjoa jatkamista jos run-kansiossa on aiempia checkpointteja
         # (keskeytynyt training voidaan jatkaa save_steps-checkpointista)
         resume = False
-        run_dir = Path(config.output_dir) if config.output_dir else self.trainer.output_dir / config.run_name
+        run_dir = (
+            Path(config.output_dir)
+            if config.output_dir
+            else self.trainer.output_dir / config.run_name
+        )
         checkpoints = sorted(run_dir.glob("checkpoint-*")) if run_dir.exists() else []
         if checkpoints:
-            console.print(f"\n[yellow]Loytyi {len(checkpoints)} aiempaa checkpointtia:[/yellow] {checkpoints[-1].name}")
-            resume = questionary.confirm(
-                "Jatketaanko viimeisimmasta checkpointista?",
-                default=True,
-                style=custom_style,
-            ).ask() or False
+            console.print(
+                f"\n[yellow]Loytyi {len(checkpoints)} aiempaa checkpointtia:[/yellow] {checkpoints[-1].name}"
+            )
+            resume = (
+                questionary.confirm(
+                    "Jatketaanko viimeisimmasta checkpointista?",
+                    default=True,
+                    style=custom_style,
+                ).ask()
+                or False
+            )
 
         def progress_cb(msg):
             console.print(f"  [dim]{msg}[/dim]")
@@ -937,21 +959,25 @@ ennen isompaa ajoa.[/dim]
             backend = result.get("backend", "peft")
             backend_text = "Unsloth" if backend == "unsloth" else "PEFT/transformers"
 
-            console.print(Panel(
-                f"[green]Training valmis![/green]\n\n"
-                f"[white]Backend:[/white] {backend_text}\n"
-                f"[white]Adapter:[/white] {result['adapter_path']}\n"
-                f"[white]Aika:[/white] {result['elapsed_formatted']}\n"
-                f"[white]Trainable params:[/white] {result['trainable_params']:,} / {result['total_params']:,}",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Training valmis![/green]\n\n"
+                    f"[white]Backend:[/white] {backend_text}\n"
+                    f"[white]Adapter:[/white] {result['adapter_path']}\n"
+                    f"[white]Aika:[/white] {result['elapsed_formatted']}\n"
+                    f"[white]Trainable params:[/white] {result['trainable_params']:,} / {result['total_params']:,}",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
         else:
             print_error(f"Training epäonnistui: {result.get('error', 'Tuntematon virhe')}")
             # Näytä käytetty backend jos virhe
             backend = result.get("backend", "unknown")
             if backend == "unsloth":
-                console.print("[dim]Vinkki: Kokeile PEFT-koulutusta valitsemalla 'Ei' Unsloth-kysymyksessä[/dim]")
+                console.print(
+                    "[dim]Vinkki: Kokeile PEFT-koulutusta valitsemalla 'Ei' Unsloth-kysymyksessä[/dim]"
+                )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -975,23 +1001,24 @@ ennen isompaa ajoa.[/dim]
         if downloaded_loras:
             choices.append(questionary.Separator("-- Ladatut LoRA-adapterit --"))
             for lora in downloaded_loras[:10]:
-                base = lora.get('base_model', '')
+                base = lora.get("base_model", "")
                 if base:
-                    base_short = base.split('/')[-1][:20] if '/' in base else base[:20]
+                    base_short = base.split("/")[-1][:20] if "/" in base else base[:20]
                     title = f"[lora] {lora['name'][:35]:<35} ({base_short})"
                 else:
                     title = f"[lora] {lora['name'][:35]}"
-                choices.append(questionary.Choice(title=title, value=("lora", lora['path'])))
+                choices.append(questionary.Choice(title=title, value=("lora", lora["path"])))
 
         # Training checkpoints
         checkpoints = self.trainer.list_checkpoints()
         if checkpoints:
             choices.append(questionary.Separator("-- Training Checkpoints --"))
             for cp in checkpoints[:10]:
-                choices.append(questionary.Choice(
-                    title=f"[cp]  {cp['name']}",
-                    value=("checkpoint", cp["path"])
-                ))
+                choices.append(
+                    questionary.Choice(
+                        title=f"[cp]  {cp['name']}", value=("checkpoint", cp["path"])
+                    )
+                )
 
         if not downloaded_loras and not checkpoints:
             console.print("[yellow]Ei ladattuja LoRA-adaptereita eika checkpointteja.[/yellow]")
@@ -1004,11 +1031,7 @@ ennen isompaa ajoa.[/dim]
         choices.append(questionary.Choice(title="<- Palaa", value=("back", None)))
 
         result = questionary.select(
-            "Valitse adapter:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Valitse adapter:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if result is None or result[0] == "back":
@@ -1044,11 +1067,13 @@ ennen isompaa ajoa.[/dim]
         result = self.trainer.test_adapter(base_model, adapter_path, prompt)
 
         if result["success"]:
-            console.print(Panel(
-                result["response"],
-                title="[bold]Generated Response[/bold]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    result["response"],
+                    title="[bold]Generated Response[/bold]",
+                    border_style="green",
+                )
+            )
         else:
             print_error(f"Testi epäonnistui: {result.get('error')}")
 
@@ -1077,23 +1102,24 @@ ennen isompaa ajoa.[/dim]
         if downloaded_loras:
             choices.append(questionary.Separator("-- Ladatut LoRA-adapterit --"))
             for lora in downloaded_loras[:10]:
-                base = lora.get('base_model', '')
+                base = lora.get("base_model", "")
                 if base:
-                    base_short = base.split('/')[-1][:20] if '/' in base else base[:20]
+                    base_short = base.split("/")[-1][:20] if "/" in base else base[:20]
                     title = f"[lora] {lora['name'][:35]:<35} ({base_short})"
                 else:
                     title = f"[lora] {lora['name'][:35]}"
-                choices.append(questionary.Choice(title=title, value=("lora", lora['path'])))
+                choices.append(questionary.Choice(title=title, value=("lora", lora["path"])))
 
         # Training checkpoints
         checkpoints = self.trainer.list_checkpoints()
         if checkpoints:
             choices.append(questionary.Separator("-- Training Checkpoints --"))
             for cp in checkpoints[:10]:
-                choices.append(questionary.Choice(
-                    title=f"[cp]  {cp['name']}",
-                    value=("checkpoint", cp["path"])
-                ))
+                choices.append(
+                    questionary.Choice(
+                        title=f"[cp]  {cp['name']}", value=("checkpoint", cp["path"])
+                    )
+                )
 
         if not downloaded_loras and not checkpoints:
             console.print("[yellow]Ei ladattuja LoRA-adaptereita eika checkpointteja.[/yellow]")
@@ -1106,11 +1132,7 @@ ennen isompaa ajoa.[/dim]
         choices.append(questionary.Choice(title="<- Palaa", value=("back", None)))
 
         result = questionary.select(
-            "Valitse adapter:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Valitse adapter:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if result is None or result[0] == "back":
@@ -1132,58 +1154,65 @@ ennen isompaa ajoa.[/dim]
         if adapter_config_file.exists():
             try:
                 import json
-                with open(adapter_config_file, 'r', encoding='utf-8') as f:
+
+                with open(adapter_config_file, "r", encoding="utf-8") as f:
                     adapter_config = json.load(f)
 
-                expected_base = adapter_config.get('base_model_name_or_path', '')
+                expected_base = adapter_config.get("base_model_name_or_path", "")
                 if expected_base:
                     # Extract model name for comparison
-                    expected_name = expected_base.split('/')[-1].lower() if '/' in expected_base else expected_base.lower()
+                    expected_name = (
+                        expected_base.split("/")[-1].lower()
+                        if "/" in expected_base
+                        else expected_base.lower()
+                    )
                     selected_name = base_model.name.lower()
 
                     # Check compatibility - same architecture family is OK
                     # Llama 3.1 pohjaiset mallit (Poro, etc.) ovat yhteensopivia
-                    llama_variants = ['llama', 'poro', 'viking', 'finllama']
-                    mistral_variants = ['mistral', 'mixtral']
-                    qwen_variants = ['qwen']
+                    llama_variants = ["llama", "poro", "viking", "finllama"]
+                    mistral_variants = ["mistral", "mixtral"]
+                    qwen_variants = ["qwen"]
 
                     def get_family(name):
                         name_lower = name.lower()
                         if any(v in name_lower for v in llama_variants):
-                            return 'llama'
+                            return "llama"
                         if any(v in name_lower for v in mistral_variants):
-                            return 'mistral'
+                            return "mistral"
                         if any(v in name_lower for v in qwen_variants):
-                            return 'qwen'
+                            return "qwen"
                         return name_lower
 
                     expected_family = get_family(expected_name)
                     selected_family = get_family(selected_name)
 
                     is_compatible = (
-                        expected_name in selected_name or
-                        selected_name in expected_name or
-                        expected_family == selected_family
+                        expected_name in selected_name
+                        or selected_name in expected_name
+                        or expected_family == selected_family
                     )
 
                     if not is_compatible:
-                        console.print(Panel(
-                            f"[bold red]VAROITUS: Yhteensopivuusongelma![/bold red]\n\n"
-                            f"[white]Adapterin alkuperainen base-malli:[/white]\n"
-                            f"  [cyan]{expected_base}[/cyan]\n\n"
-                            f"[white]Valitsemasi base-malli:[/white]\n"
-                            f"  [yellow]{base_model.name}[/yellow]\n\n"
-                            f"[dim]LoRA-adapterit toimivat vain alkuperaisen\n"
-                            f"base-mallinsa kanssa. Vaara malli tuottaa\n"
-                            f"rikkinaisen tuloksen.[/dim]",
-                            title="[bold red]Compatibility Warning[/bold red]",
-                            border_style="red"
-                        ))
+                        console.print(
+                            Panel(
+                                f"[bold red]VAROITUS: Yhteensopivuusongelma![/bold red]\n\n"
+                                f"[white]Adapterin alkuperainen base-malli:[/white]\n"
+                                f"  [cyan]{expected_base}[/cyan]\n\n"
+                                f"[white]Valitsemasi base-malli:[/white]\n"
+                                f"  [yellow]{base_model.name}[/yellow]\n\n"
+                                f"[dim]LoRA-adapterit toimivat vain alkuperaisen\n"
+                                f"base-mallinsa kanssa. Vaara malli tuottaa\n"
+                                f"rikkinaisen tuloksen.[/dim]",
+                                title="[bold red]Compatibility Warning[/bold red]",
+                                border_style="red",
+                            )
+                        )
 
                         if not questionary.confirm(
                             "Haluatko silti jatkaa? (EI SUOSITELLA)",
                             default=False,
-                            style=custom_style
+                            style=custom_style,
                         ).ask():
                             return
             except Exception:
@@ -1202,13 +1231,15 @@ ennen isompaa ajoa.[/dim]
         output_path = self.merger.output_dir / output_name
 
         # Show summary
-        console.print(Panel(
-            f"[white]Base:[/white] {base_model.name}\n"
-            f"[white]Adapter:[/white] {adapter_path}\n"
-            f"[white]Output:[/white] {output_path}",
-            title="[bold]Merge Configuration[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Base:[/white] {base_model.name}\n"
+                f"[white]Adapter:[/white] {adapter_path}\n"
+                f"[white]Output:[/white] {output_path}",
+                title="[bold]Merge Configuration[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita merge?", default=True, style=custom_style).ask():
             return
@@ -1219,20 +1250,24 @@ ennen isompaa ajoa.[/dim]
         def progress_cb(msg):
             console.print(f"  [dim]{msg}[/dim]")
 
-        result = self.trainer.merge_adapter(base_model, adapter_path, output_path, progress_callback=progress_cb)
+        result = self.trainer.merge_adapter(
+            base_model, adapter_path, output_path, progress_callback=progress_cb
+        )
 
         if result["success"]:
-            console.print(Panel(
-                f"[green]Merge valmis![/green]\n\n"
-                f"[white]Output:[/white] {result['output_path']}",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Merge valmis![/green]\n\n"
+                    f"[white]Output:[/white] {result['output_path']}",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add to library
             try:
                 entry = self.library.add_model(
-                    path=result['output_path'],
+                    path=result["output_path"],
                     source="merged_lora",
                     source_id=f"{base_model.name}+{adapter_path.name}",
                 )

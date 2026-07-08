@@ -46,7 +46,7 @@ class ToolboxConfig:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ToolboxConfig':
+    def from_dict(cls, data: dict) -> "ToolboxConfig":
         """Create config from dictionary."""
         # Only use keys that exist in the dataclass
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}
@@ -72,7 +72,7 @@ def load_config() -> ToolboxConfig:
 
     if config_file.exists():
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return ToolboxConfig.from_dict(data)
         except (json.JSONDecodeError, IOError):
@@ -90,9 +90,9 @@ def save_config(config: Optional[ToolboxConfig] = None):
     config_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Atomaarinen tallennus: temp-tiedosto + rename
-    temp_file = config_file.with_suffix('.tmp')
+    temp_file = config_file.with_suffix(".tmp")
     try:
-        with open(temp_file, 'w', encoding='utf-8') as f:
+        with open(temp_file, "w", encoding="utf-8") as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
         temp_file.replace(config_file)
         # The config may hold an HF token; restrict to owner-only on POSIX.
@@ -106,6 +106,7 @@ def save_config(config: Optional[ToolboxConfig] = None):
         if temp_file.exists():
             temp_file.unlink()
         from rich.console import Console
+
         Console().print(f"[red]Virhe tallennettaessa asetuksia: {e}[/red]")
 
 

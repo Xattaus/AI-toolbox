@@ -36,14 +36,19 @@ from .types import ModelSearchResult, ModelDetails, ExtendedModelInfo, HFSearchR
 from .hf_search import HFSearchEngine, SearchFilters, SearchResult, ModelCardInfo
 
 
-
 class ModelDownloader:
     """Downloads models from HuggingFace Hub."""
 
-    MODEL_EXTENSIONS = ['.safetensors', '.bin', '.pt', '.pth', '.gguf', '.ggml']
-    CONFIG_FILES = ['config.json', 'tokenizer.json', 'tokenizer_config.json',
-                    'vocab.json', 'merges.txt', 'special_tokens_map.json',
-                    'generation_config.json']
+    MODEL_EXTENSIONS = [".safetensors", ".bin", ".pt", ".pth", ".gguf", ".ggml"]
+    CONFIG_FILES = [
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json",
+        "merges.txt",
+        "special_tokens_map.json",
+        "generation_config.json",
+    ]
 
     def __init__(
         self,
@@ -71,6 +76,7 @@ class ModelDownloader:
         """Read HF token from the toolbox config file (Settings menu)."""
         try:
             from ..core.config import get_config
+
             return get_config().hf_token
         except Exception:
             return None
@@ -113,15 +119,17 @@ class ModelDownloader:
         # Convert to legacy format for backward compatibility
         legacy_results = []
         for result in results:
-            legacy_results.append(ModelSearchResult(
-                model_id=result.model_id,
-                author=result.author,
-                downloads=result.downloads,
-                likes=result.likes,
-                pipeline_tag=result.pipeline_tag,
-                tags=result.tags,
-                last_modified=result.last_modified,
-            ))
+            legacy_results.append(
+                ModelSearchResult(
+                    model_id=result.model_id,
+                    author=result.author,
+                    downloads=result.downloads,
+                    likes=result.likes,
+                    pipeline_tag=result.pipeline_tag,
+                    tags=result.tags,
+                    last_modified=result.last_modified,
+                )
+            )
 
         return legacy_results
 
@@ -190,10 +198,12 @@ class ModelDownloader:
 
             for sibling in info.siblings or []:
                 file_size = sibling.size or 0
-                files.append({
-                    'name': sibling.rfilename,
-                    'size': file_size,
-                })
+                files.append(
+                    {
+                        "name": sibling.rfilename,
+                        "size": file_size,
+                    }
+                )
                 total_size += file_size
 
             return ModelDetails(
@@ -214,7 +224,9 @@ class ModelDownloader:
             return None
         except GatedRepoError:
             console.print(f"[yellow]This model requires authentication.[/yellow]")
-            console.print("[dim]Set HF_TOKEN environment variable or login with 'huggingface-cli login'[/dim]")
+            console.print(
+                "[dim]Set HF_TOKEN environment variable or login with 'huggingface-cli login'[/dim]"
+            )
             return None
         except Exception as e:
             console.print(f"[red]Error getting model info: {e}[/red]")
@@ -351,15 +363,15 @@ class ModelDownloader:
             if item.is_dir():
                 config_file = item / "config.json"
                 if config_file.exists():
-                    total_size = sum(
-                        f.stat().st_size for f in item.rglob('*') if f.is_file()
-                    )
+                    total_size = sum(f.stat().st_size for f in item.rglob("*") if f.is_file())
                     model_id = item.name.replace("_", "/", 1)
-                    models.append({
-                        'model_id': model_id,
-                        'path': str(item),
-                        'size': total_size,
-                    })
+                    models.append(
+                        {
+                            "model_id": model_id,
+                            "path": str(item),
+                            "size": total_size,
+                        }
+                    )
 
         return models
 
@@ -375,24 +387,26 @@ class ModelDownloader:
             return True
         return False
 
-    def get_download_size_estimate(self, model_id: str, include_safetensors_only: bool = True) -> int:
+    def get_download_size_estimate(
+        self, model_id: str, include_safetensors_only: bool = True
+    ) -> int:
         """Estimate download size for a model."""
         details = self.get_model_details(model_id)
         if not details:
             return 0
 
         total = 0
-        has_safetensors = any(f['name'].endswith('.safetensors') for f in details.files)
+        has_safetensors = any(f["name"].endswith(".safetensors") for f in details.files)
 
         for file_info in details.files:
-            name = file_info['name']
-            size = file_info['size']
+            name = file_info["name"]
+            size = file_info["size"]
 
             if include_safetensors_only and has_safetensors:
-                if name.endswith('.bin') and not name.endswith('tokenizer.bin'):
+                if name.endswith(".bin") and not name.endswith("tokenizer.bin"):
                     continue
 
-            if name.endswith(('.md', '.txt', '.gitattributes')):
+            if name.endswith((".md", ".txt", ".gitattributes")):
                 continue
 
             total += size
@@ -406,10 +420,7 @@ class ModelDownloader:
             return
 
         table = Table(
-            title="Search Results",
-            box=box.ROUNDED,
-            show_header=True,
-            header_style="bold cyan"
+            title="Search Results", box=box.ROUNDED, show_header=True, header_style="bold cyan"
         )
 
         table.add_column("#", style="dim", width=4)
@@ -437,9 +448,9 @@ class ModelDownloader:
         """Print detailed model information."""
         size_str = format_size(details.total_size)
 
-        safetensors_count = sum(1 for f in details.files if f['name'].endswith('.safetensors'))
-        bin_count = sum(1 for f in details.files if f['name'].endswith('.bin'))
-        gguf_count = sum(1 for f in details.files if f['name'].endswith('.gguf'))
+        safetensors_count = sum(1 for f in details.files if f["name"].endswith(".safetensors"))
+        bin_count = sum(1 for f in details.files if f["name"].endswith(".bin"))
+        gguf_count = sum(1 for f in details.files if f["name"].endswith(".gguf"))
 
         panel_content = f"""[bold white]{details.model_id}[/bold white]
 
@@ -461,42 +472,41 @@ class ModelDownloader:
                 tags_str += f" (+{len(details.tags) - 8} more)"
             panel_content += f"\n\n[cyan]Tags:[/cyan] {tags_str}"
 
-        console.print(Panel(
-            panel_content,
-            title="[bold]Model Details[/bold]",
-            border_style="cyan",
-            padding=(1, 2)
-        ))
+        console.print(
+            Panel(
+                panel_content,
+                title="[bold]Model Details[/bold]",
+                border_style="cyan",
+                padding=(1, 2),
+            )
+        )
 
     def print_files_table(self, details: ModelDetails, limit: int = 20):
         """Print model files as a table."""
         table = Table(
-            title="Model Files",
-            box=box.SIMPLE,
-            show_header=True,
-            header_style="bold cyan"
+            title="Model Files", box=box.SIMPLE, show_header=True, header_style="bold cyan"
         )
 
         table.add_column("File", style="white", max_width=50)
         table.add_column("Size", style="yellow", justify="right", width=12)
         table.add_column("Type", style="green", width=12)
 
-        sorted_files = sorted(details.files, key=lambda x: x['size'], reverse=True)
+        sorted_files = sorted(details.files, key=lambda x: x["size"], reverse=True)
 
         for file_info in sorted_files[:limit]:
-            name = file_info['name']
-            size = format_size(file_info['size'])
+            name = file_info["name"]
+            size = format_size(file_info["size"])
 
-            if name.endswith('.safetensors'):
+            if name.endswith(".safetensors"):
                 ftype = "safetensors"
-            elif name.endswith('.bin'):
+            elif name.endswith(".bin"):
                 ftype = "pytorch"
-            elif name.endswith('.gguf'):
+            elif name.endswith(".gguf"):
                 ftype = "gguf"
-            elif name.endswith('.json'):
+            elif name.endswith(".json"):
                 ftype = "config"
             else:
-                ftype = name.split('.')[-1] if '.' in name else "other"
+                ftype = name.split(".")[-1] if "." in name else "other"
 
             table.add_row(name[:48], size, ftype)
 
@@ -561,10 +571,11 @@ class ModelDownloader:
             # Show LoRA info
             try:
                 import json
-                with open(adapter_config, 'r', encoding='utf-8') as f:
+
+                with open(adapter_config, "r", encoding="utf-8") as f:
                     config = json.load(f)
-                base_model = config.get('base_model_name_or_path', 'Unknown')
-                rank = config.get('r', config.get('rank', '?'))
+                base_model = config.get("base_model_name_or_path", "Unknown")
+                rank = config.get("r", config.get("rank", "?"))
                 console.print(f"\n[green]LoRA downloaded successfully![/green]")
                 console.print(f"[dim]Base model: {base_model}[/dim]")
                 console.print(f"[dim]Rank: {rank}[/dim]")
@@ -588,6 +599,7 @@ class ModelDownloader:
     def list_downloaded_loras(self) -> List[Dict[str, Any]]:
         """List all downloaded LoRA adapters."""
         import json
+
         loras = []
         loras_dir = get_loras_dir()
 
@@ -598,26 +610,26 @@ class ModelDownloader:
             if item.is_dir():
                 adapter_config = item / "adapter_config.json"
                 if adapter_config.exists():
-                    total_size = sum(
-                        f.stat().st_size for f in item.rglob('*') if f.is_file()
-                    )
+                    total_size = sum(f.stat().st_size for f in item.rglob("*") if f.is_file())
                     model_id = item.name.replace("_", "/", 1)
 
                     base_model = None
                     try:
-                        with open(adapter_config, 'r', encoding='utf-8') as f:
+                        with open(adapter_config, "r", encoding="utf-8") as f:
                             config = json.load(f)
-                            base_model = config.get('base_model_name_or_path', None)
+                            base_model = config.get("base_model_name_or_path", None)
                     except:
                         pass
 
-                    loras.append({
-                        'model_id': model_id,
-                        'name': item.name,
-                        'path': str(item),
-                        'size': total_size,
-                        'base_model': base_model,
-                    })
+                    loras.append(
+                        {
+                            "model_id": model_id,
+                            "name": item.name,
+                            "path": str(item),
+                            "size": total_size,
+                            "base_model": base_model,
+                        }
+                    )
 
         return loras
 
@@ -649,21 +661,24 @@ class ModelDownloader:
             results = []
             for model in models:
                 tags = model.tags or []
-                is_lora = any(
-                    tag.lower() in ['lora', 'peft', 'adapter']
-                    for tag in tags
-                ) or 'lora' in model.id.lower() or 'adapter' in model.id.lower()
+                is_lora = (
+                    any(tag.lower() in ["lora", "peft", "adapter"] for tag in tags)
+                    or "lora" in model.id.lower()
+                    or "adapter" in model.id.lower()
+                )
 
                 if is_lora:
-                    results.append(ModelSearchResult(
-                        model_id=model.id,
-                        author=model.author or "Unknown",
-                        downloads=model.downloads or 0,
-                        likes=model.likes or 0,
-                        pipeline_tag=model.pipeline_tag,
-                        tags=tags,
-                        last_modified=str(model.lastModified) if model.lastModified else "",
-                    ))
+                    results.append(
+                        ModelSearchResult(
+                            model_id=model.id,
+                            author=model.author or "Unknown",
+                            downloads=model.downloads or 0,
+                            likes=model.likes or 0,
+                            pipeline_tag=model.pipeline_tag,
+                            tags=tags,
+                            last_modified=str(model.lastModified) if model.lastModified else "",
+                        )
+                    )
 
             return results[:limit]
 
@@ -683,35 +698,37 @@ class ModelDownloader:
             has_adapter_weights = False
 
             for sibling in model_info.siblings or []:
-                files.append({
-                    'filename': sibling.rfilename,
-                    'size': sibling.size or 0,
-                })
+                files.append(
+                    {
+                        "filename": sibling.rfilename,
+                        "size": sibling.size or 0,
+                    }
+                )
                 total_size += sibling.size or 0
 
-                if sibling.rfilename == 'adapter_config.json':
+                if sibling.rfilename == "adapter_config.json":
                     has_adapter_config = True
-                if 'adapter_model' in sibling.rfilename:
+                if "adapter_model" in sibling.rfilename:
                     has_adapter_weights = True
 
             # Try to get base model from card data
             base_model = None
             if model_info.card_data:
-                base_model = getattr(model_info.card_data, 'base_model', None)
+                base_model = getattr(model_info.card_data, "base_model", None)
 
             return {
-                'model_id': model_id,
-                'author': model_info.author or 'Unknown',
-                'downloads': model_info.downloads or 0,
-                'likes': model_info.likes or 0,
-                'tags': model_info.tags or [],
-                'files': files,
-                'total_size': total_size,
-                'base_model': base_model,
-                'has_adapter_config': has_adapter_config,
-                'has_adapter_weights': has_adapter_weights,
-                'last_modified': str(model_info.lastModified) if model_info.lastModified else '',
-                'is_valid_lora': has_adapter_config and has_adapter_weights,
+                "model_id": model_id,
+                "author": model_info.author or "Unknown",
+                "downloads": model_info.downloads or 0,
+                "likes": model_info.likes or 0,
+                "tags": model_info.tags or [],
+                "files": files,
+                "total_size": total_size,
+                "base_model": base_model,
+                "has_adapter_config": has_adapter_config,
+                "has_adapter_weights": has_adapter_weights,
+                "last_modified": str(model_info.lastModified) if model_info.lastModified else "",
+                "is_valid_lora": has_adapter_config and has_adapter_weights,
             }
 
         except Exception as e:
@@ -722,21 +739,27 @@ class ModelDownloader:
         """Print LoRA adapter details."""
         from rich.panel import Panel
 
-        model_id = details.get('model_id', 'Unknown')
-        base_model = details.get('base_model', 'Tuntematon')
-        downloads = details.get('downloads', 0)
-        likes = details.get('likes', 0)
-        total_size = details.get('total_size', 0)
-        is_valid = details.get('is_valid_lora', False)
+        model_id = details.get("model_id", "Unknown")
+        base_model = details.get("base_model", "Tuntematon")
+        downloads = details.get("downloads", 0)
+        likes = details.get("likes", 0)
+        total_size = details.get("total_size", 0)
+        is_valid = details.get("is_valid_lora", False)
 
-        size_str = format_size(total_size) if total_size > 0 else 'Tuntematon'
+        size_str = format_size(total_size) if total_size > 0 else "Tuntematon"
 
         # List important files
-        files = details.get('files', [])
-        important_files = [f['filename'] for f in files if f['filename'] in
-                         ['adapter_config.json', 'adapter_model.safetensors', 'adapter_model.bin']]
+        files = details.get("files", [])
+        important_files = [
+            f["filename"]
+            for f in files
+            if f["filename"]
+            in ["adapter_config.json", "adapter_model.safetensors", "adapter_model.bin"]
+        ]
 
-        validity_str = "[green]Validi LoRA[/green]" if is_valid else "[yellow]Ei validi LoRA?[/yellow]"
+        validity_str = (
+            "[green]Validi LoRA[/green]" if is_valid else "[yellow]Ei validi LoRA?[/yellow]"
+        )
 
         content = (
             f"[white]Model:[/white] {model_id}\n"
@@ -760,7 +783,7 @@ class ModelDownloader:
             title=f"Downloaded LoRA Adapters ({len(loras)})",
             box=box.ROUNDED,
             show_header=True,
-            header_style="bold magenta"
+            header_style="bold magenta",
         )
 
         table.add_column("#", style="dim", width=4)
@@ -769,15 +792,15 @@ class ModelDownloader:
         table.add_column("Size", style="yellow", justify="right", width=10)
 
         for i, lora in enumerate(loras, 1):
-            base = lora.get('base_model', '-')
+            base = lora.get("base_model", "-")
             if base and len(base) > 28:
                 base = "..." + base[-25:]
 
             table.add_row(
                 str(i),
-                lora['name'][:33],
+                lora["name"][:33],
                 base or "-",
-                format_size(lora['size']),
+                format_size(lora["size"]),
             )
 
         console.print(table)

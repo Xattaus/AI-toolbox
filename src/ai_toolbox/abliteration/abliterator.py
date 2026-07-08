@@ -31,18 +31,18 @@ from .hooks import (
 class AbliterationConfig:
     """Configuration for abliteration process."""
 
-    model_path: str                           # Path to source model
-    output_name: str                          # Name for abliterated model
-    strength: float = 1.0                     # Abliteration strength (0.0-2.0)
-    target_layers: Optional[List[int]] = None # Layers to modify (None = auto)
-    method: str = "projected"                 # "projected" (recommended), "mean_diff", or "pca"
-    num_harmful: int = 64                     # Number of harmful prompts (0 = all)
-    num_harmless: int = 64                    # Number of harmless prompts (0 = all)
-    include_llama31_prompts: bool = False     # Use Llama 3.1 specific prompts
-    dtype: str = "float16"                    # Tensor dtype for computation
+    model_path: str  # Path to source model
+    output_name: str  # Name for abliterated model
+    strength: float = 1.0  # Abliteration strength (0.0-2.0)
+    target_layers: Optional[List[int]] = None  # Layers to modify (None = auto)
+    method: str = "projected"  # "projected" (recommended), "mean_diff", or "pca"
+    num_harmful: int = 64  # Number of harmful prompts (0 = all)
+    num_harmless: int = 64  # Number of harmless prompts (0 = all)
+    include_llama31_prompts: bool = False  # Use Llama 3.1 specific prompts
+    dtype: str = "float16"  # Tensor dtype for computation
 
     # Custom prompt files (optional)
-    harmful_prompts_file: Optional[str] = None   # Path to harmful prompts file
+    harmful_prompts_file: Optional[str] = None  # Path to harmful prompts file
     harmless_prompts_file: Optional[str] = None  # Path to harmless prompts file
 
     # Extraction prompt language - "auto" detects from the model, or force
@@ -51,7 +51,7 @@ class AbliterationConfig:
     prompt_language: str = "auto"
 
     # Performance options
-    batch_size: int = 8                          # Prompt batch size (lower = less VRAM)
+    batch_size: int = 8  # Prompt batch size (lower = less VRAM)
 
     # GPU/Memory offload mode - controls how model is loaded when VRAM is limited
     # "auto"           - Let transformers decide (may compute on CPU if offloaded there)
@@ -62,47 +62,49 @@ class AbliterationConfig:
 
     # Refusal priming (recommended for stronger signal)
     # Adds response prefix to prime the model into refusal/helpful mode
-    use_refusal_priming: bool = True             # Enable refusal priming
-    refusal_prefix: str = "I cannot"             # Prefix for harmful prompts (triggers refusal state)
-    helpful_prefix: str = "Sure, here"           # Prefix for harmless prompts (triggers helpful state)
+    use_refusal_priming: bool = True  # Enable refusal priming
+    refusal_prefix: str = "I cannot"  # Prefix for harmful prompts (triggers refusal state)
+    helpful_prefix: str = "Sure, here"  # Prefix for harmless prompts (triggers helpful state)
 
     # Additional abliteration targets (optional, experimental)
-    abliterate_embeddings: bool = False          # Also abliterate embed_tokens layer
-    abliterate_lm_head: bool = False             # Also abliterate lm_head (output layer)
+    abliterate_embeddings: bool = False  # Also abliterate embed_tokens layer
+    abliterate_lm_head: bool = False  # Also abliterate lm_head (output layer)
 
     # Smart abliteration options
-    use_smart_layers: bool = True                # Enable signal-based layer selection
-    layer_signal_threshold: float = 0.5          # Minimum signal ratio to include layer (0.0-1.0)
-    use_dynamic_strength: bool = True            # Scale strength per layer based on signal
+    use_smart_layers: bool = True  # Enable signal-based layer selection
+    layer_signal_threshold: float = 0.5  # Minimum signal ratio to include layer (0.0-1.0)
+    use_dynamic_strength: bool = True  # Scale strength per layer based on signal
 
     # === ADVANCED ABLITERATION OPTIONS ===
 
     # 1. Linear Probing - Train classifiers to find layers with actual refusal
-    use_linear_probe: bool = False               # Enable linear probe layer selection
-    probe_accuracy_threshold: float = 0.85       # Minimum accuracy to include layer (0.0-1.0)
-    probe_train_samples: int = 32                # Samples per class for probe training
+    use_linear_probe: bool = False  # Enable linear probe layer selection
+    probe_accuracy_threshold: float = 0.85  # Minimum accuracy to include layer (0.0-1.0)
+    probe_train_samples: int = 32  # Samples per class for probe training
 
     # 2. Gradient Ascent - Optimize direction to maximize refusal (method="gradient")
     # Use method="gradient" to enable. More precise than mean_diff.
-    gradient_steps: int = 50                     # Optimization steps for gradient method
-    gradient_lr: float = 0.1                     # Learning rate for gradient optimization
-    refusal_tokens: Optional[List[str]] = None   # Refusal tokens for gradient (None = auto-detect language)
+    gradient_steps: int = 50  # Optimization steps for gradient method
+    gradient_lr: float = 0.1  # Learning rate for gradient optimization
+    refusal_tokens: Optional[List[str]] = (
+        None  # Refusal tokens for gradient (None = auto-detect language)
+    )
 
     # 3. Auto-tuning - Test in memory before saving
-    use_auto_tune: bool = False                  # Enable auto-tuning with dry run
-    auto_tune_target_refusal: float = 0.10       # Target refusal rate (0.0-1.0, default 10%)
-    auto_tune_max_iterations: int = 5            # Max binary search iterations
-    auto_tune_test_prompts: int = 10             # Number of test prompts for dry run
+    use_auto_tune: bool = False  # Enable auto-tuning with dry run
+    auto_tune_target_refusal: float = 0.10  # Target refusal rate (0.0-1.0, default 10%)
+    auto_tune_max_iterations: int = 5  # Max binary search iterations
+    auto_tune_test_prompts: int = 10  # Number of test prompts for dry run
 
     # 4. Capability Preservation - Ensure refusal direction is orthogonal to general capability
-    use_capability_preservation: bool = False    # Enable capability preservation
+    use_capability_preservation: bool = False  # Enable capability preservation
     capability_prompts_file: Optional[str] = None  # Path to capability prompts file
-    num_capability_prompts: int = 32             # Number of capability prompts to use
+    num_capability_prompts: int = 32  # Number of capability prompts to use
 
     # 5. Auto-scaling - Automatically adjust strength based on model size
     # Research shows smaller models need gentler abliteration to avoid "lobotomization"
     # Reference: Gabliteration (arxiv:2512.18901) - adaptive scaling based on model parameters
-    auto_scale_strength: bool = True             # Auto-adjust strength based on model size
+    auto_scale_strength: bool = True  # Auto-adjust strength based on model size
     # If True: ignores manual 'strength' and uses research-based recommendations:
     #   < 3B params  → 0.2-0.3 (conservative)
     #   3B - 7B      → 0.3-0.5 (moderate)
@@ -111,11 +113,11 @@ class AbliterationConfig:
 
     # 6. Reasoning Validation - Test reasoning capability before saving
     # Automatically reduces strength if reasoning is damaged
-    use_reasoning_validation: bool = True        # Enable reasoning validation
-    reasoning_min_score: float = 0.6             # Minimum reasoning score (0.0-1.0, 60% default)
-    reasoning_strength_reduction: float = 0.15   # Reduce strength by this much if reasoning fails
-    reasoning_min_strength: float = 0.15         # Don't go below this strength
-    reasoning_max_retries: int = 5               # Max retries before giving up
+    use_reasoning_validation: bool = True  # Enable reasoning validation
+    reasoning_min_score: float = 0.6  # Minimum reasoning score (0.0-1.0, 60% default)
+    reasoning_strength_reduction: float = 0.15  # Reduce strength by this much if reasoning fails
+    reasoning_min_strength: float = 0.15  # Don't go below this strength
+    reasoning_max_retries: int = 5  # Max retries before giving up
 
     # 7. Direction Selection - Validate candidate directions and use the BEST
     # one across ALL layers. This is the canonical approach (Arditi et al:
@@ -123,8 +125,8 @@ class AbliterationConfig:
     # using each layer's own direction, candidates are tested with dry-run
     # hooks and the direction that best removes refusals while keeping output
     # coherent is applied everywhere.
-    use_direction_selection: bool = False        # Evaluate candidates, apply best everywhere
-    direction_selection_candidates: int = 4      # How many top-signal layers to evaluate
+    use_direction_selection: bool = False  # Evaluate candidates, apply best everywhere
+    direction_selection_candidates: int = 4  # How many top-signal layers to evaluate
 
     # 8. Activation collection
     # Mean over the last K token positions instead of only the very last one.
@@ -216,6 +218,7 @@ class Abliterator:
 
         try:
             import torch
+
             self._torch = torch
             deps["torch"] = True
         except ImportError:
@@ -223,12 +226,14 @@ class Abliterator:
 
         try:
             import transformers
+
             deps["transformers"] = True
         except ImportError:
             pass
 
         try:
             import safetensors
+
             self._safetensors = safetensors
             deps["safetensors"] = True
         except ImportError:
@@ -236,6 +241,7 @@ class Abliterator:
 
         try:
             from sklearn.decomposition import PCA
+
             deps["sklearn"] = True
         except ImportError:
             pass
@@ -266,8 +272,7 @@ class Abliterator:
         }
 
     def install_dependencies(
-        self,
-        progress_callback: Optional[Callable[[str], None]] = None
+        self, progress_callback: Optional[Callable[[str], None]] = None
     ) -> bool:
         """
         Install required dependencies.
@@ -296,7 +301,7 @@ class Abliterator:
                 subprocess.check_call(
                     [sys.executable, "-m", "pip", "install", pkg, "-q"],
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
+                    stderr=subprocess.DEVNULL,
                 )
 
             return True
@@ -332,7 +337,9 @@ class Abliterator:
         }
 
         # Try to read config.json
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
         if config_file.exists():
             try:
                 with open(config_file, "r", encoding="utf-8") as f:
@@ -453,7 +460,7 @@ class Abliterator:
     def extract_refusal_direction(
         self,
         config: AbliterationConfig,
-        progress_callback: Optional[Callable[[str, float], None]] = None
+        progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> Dict[str, Any]:
         """
         Extract the refusal direction vector from a model.
@@ -511,7 +518,10 @@ class Abliterator:
                 try:
                     from accelerate import cpu_offload
                 except ImportError:
-                    return {"success": False, "error": "sequential_cpu requires accelerate: pip install accelerate"}
+                    return {
+                        "success": False,
+                        "error": "sequential_cpu requires accelerate: pip install accelerate",
+                    }
 
                 model = AutoModelForCausalLM.from_pretrained(
                     str(model_path),
@@ -585,8 +595,8 @@ class Abliterator:
             if prompt_language == "auto":
                 detected = self._detect_model_language(config.model_path)
                 # _detect_model_language returns fi/en/multi; map to prompt sets
-                prompt_language = "fi" if detected == "fi" else (
-                    "multi" if detected == "multi" else "en"
+                prompt_language = (
+                    "fi" if detected == "fi" else ("multi" if detected == "multi" else "en")
                 )
                 if progress_callback:
                     progress_callback(f"Extraction prompts: {prompt_language}", 0.16)
@@ -596,7 +606,8 @@ class Abliterator:
             harmful, harmless = get_prompts(
                 num_harmful=config.num_harmful,
                 num_harmless=config.num_harmless,
-                include_llama31=config.include_llama31_prompts or model_info.get("is_llama31", False),
+                include_llama31=config.include_llama31_prompts
+                or model_info.get("is_llama31", False),
                 harmful_file=config.harmful_prompts_file,
                 harmless_file=config.harmless_prompts_file,
                 language=prompt_language,
@@ -610,7 +621,9 @@ class Abliterator:
 
             if progress_callback:
                 progress_callback(f"Using {source}...", 0.18)
-                progress_callback(f"Collecting harmful activations (batch_size={config.batch_size})...", 0.2)
+                progress_callback(
+                    f"Collecting harmful activations (batch_size={config.batch_size})...", 0.2
+                )
 
             # Collect harmful activations using batched processing
             def harmful_progress(msg, prog):
@@ -627,7 +640,10 @@ class Abliterator:
             max_samples = config.probe_train_samples if collect_samples else 0
 
             harmful_result = self._run_prompts_batched(
-                model, tokenizer, harmful, device,
+                model,
+                tokenizer,
+                harmful,
+                device,
                 batch_size=config.batch_size,
                 progress_callback=harmful_progress,
                 response_prefix=harmful_prefix,  # "I cannot" primes refusal state
@@ -648,7 +664,9 @@ class Abliterator:
             self._clear_memory()
 
             if progress_callback:
-                progress_callback(f"Collecting harmless activations (batch_size={config.batch_size})...", 0.45)
+                progress_callback(
+                    f"Collecting harmless activations (batch_size={config.batch_size})...", 0.45
+                )
 
             # Collect harmless activations using batched processing
             def harmless_progress(msg, prog):
@@ -659,7 +677,10 @@ class Abliterator:
             helpful_prefix = config.helpful_prefix if config.use_refusal_priming else None
 
             harmless_result = self._run_prompts_batched(
-                model, tokenizer, harmless, device,
+                model,
+                tokenizer,
+                harmless,
+                device,
                 batch_size=config.batch_size,
                 progress_callback=harmless_progress,
                 response_prefix=helpful_prefix,  # "Sure, here" primes helpful state
@@ -691,12 +712,16 @@ class Abliterator:
                 capability_prompts = self._get_capability_prompts(config)
 
                 if capability_prompts:
+
                     def cap_progress(msg, prog):
                         if progress_callback:
                             progress_callback(f"Capability: {msg}", 0.72 + prog * 0.08)
 
                     capability_acts = self._run_prompts_batched(
-                        model, tokenizer, capability_prompts, device,
+                        model,
+                        tokenizer,
+                        capability_prompts,
+                        device,
                         batch_size=config.batch_size,
                         progress_callback=cap_progress,
                         response_prefix=None,  # No priming for capability prompts
@@ -726,21 +751,24 @@ class Abliterator:
                 threshold = mean_signal * config.layer_signal_threshold
 
                 # Select layers with signal above threshold
-                smart_layers = [l for l in target_layers
-                               if l in layer_signals and layer_signals[l] >= threshold]
+                smart_layers = [
+                    l for l in target_layers if l in layer_signals and layer_signals[l] >= threshold
+                ]
 
                 if progress_callback:
                     progress_callback(
                         f"Smart selection: {len(smart_layers)}/{len(target_layers)} layers "
                         f"(threshold={threshold:.2f})",
-                        0.84
+                        0.84,
                     )
 
                 # Fallback: if too few layers selected, use all
                 if len(smart_layers) < 3:
                     smart_layers = target_layers
                     if progress_callback:
-                        progress_callback("Warning: Using all layers (too few above threshold)", 0.84)
+                        progress_callback(
+                            "Warning: Using all layers (too few above threshold)", 0.84
+                        )
 
             # =====================================================================
             # LINEAR PROBING: Train classifiers to find layers with actual refusal
@@ -755,7 +783,8 @@ class Abliterator:
                         progress_callback(f"Probe: {msg}", 0.85 + prog * 0.05)
 
                 probe_accuracies = self._train_linear_probes(
-                    harmful_samples, harmless_samples,
+                    harmful_samples,
+                    harmless_samples,
                     target_layers,
                     accuracy_threshold=config.probe_accuracy_threshold,
                     progress_callback=probe_progress,
@@ -763,8 +792,11 @@ class Abliterator:
 
                 if probe_accuracies:
                     # Filter layers by probe accuracy
-                    probe_selected = [l for l, acc in probe_accuracies.items()
-                                     if acc >= config.probe_accuracy_threshold]
+                    probe_selected = [
+                        l
+                        for l, acc in probe_accuracies.items()
+                        if acc >= config.probe_accuracy_threshold
+                    ]
 
                     if probe_selected:
                         # Intersect with smart_layers (layers must pass both filters)
@@ -773,14 +805,18 @@ class Abliterator:
                         if progress_callback:
                             progress_callback(
                                 f"Linear probe: {len(probe_selected)} layers with accuracy >= {config.probe_accuracy_threshold:.0%}",
-                                0.88
+                                0.88,
                             )
 
                         # Fallback if too few
                         if len(smart_layers) < 3:
-                            smart_layers = probe_selected[:10] if len(probe_selected) >= 3 else target_layers
+                            smart_layers = (
+                                probe_selected[:10] if len(probe_selected) >= 3 else target_layers
+                            )
                             if progress_callback:
-                                progress_callback("Warning: Using fallback layers after probe filtering", 0.88)
+                                progress_callback(
+                                    "Warning: Using fallback layers after probe filtering", 0.88
+                                )
 
             if progress_callback:
                 progress_callback("Computing refusal direction...", 0.90)
@@ -794,7 +830,7 @@ class Abliterator:
                     base_direction = self._compute_refusal_vector(
                         harmful_acts[layer],
                         harmless_acts[layer],
-                        "mean_diff"  # Always start with mean_diff as base
+                        "mean_diff",  # Always start with mean_diff as base
                     )
 
                     if config.method == "gradient":
@@ -803,14 +839,16 @@ class Abliterator:
                         if progress_callback:
                             progress_callback(
                                 f"Gradient optimization layer {layer} ({i+1}/{len(smart_layers)}, {config.gradient_steps} steps)...",
-                                0.90 + (i / len(smart_layers)) * 0.05
+                                0.90 + (i / len(smart_layers)) * 0.05,
                             )
 
                         # Create a sub-progress callback for gradient steps
                         def gradient_progress(msg, prog):
                             if progress_callback:
                                 layer_progress = i / len(smart_layers)
-                                total_progress = 0.90 + layer_progress * 0.05 + prog * 0.05 / len(smart_layers)
+                                total_progress = (
+                                    0.90 + layer_progress * 0.05 + prog * 0.05 / len(smart_layers)
+                                )
                                 progress_callback(f"Layer {layer}: {msg}", total_progress)
 
                         direction = self._compute_gradient_direction(
@@ -837,9 +875,7 @@ class Abliterator:
                         )
                     elif config.method == "projected":
                         direction = self._compute_refusal_vector(
-                            harmful_acts[layer],
-                            harmless_acts[layer],
-                            "projected"
+                            harmful_acts[layer], harmless_acts[layer], "projected"
                         )
                     else:
                         # Default: use mean_diff (already computed as base_direction)
@@ -862,13 +898,15 @@ class Abliterator:
                 return {
                     "success": False,
                     "error": f"No refusal directions found! Target layers {target_layers} not found in activations. "
-                             f"Available harmful layers: {list(harmful_acts.keys())}, "
-                             f"Available harmless layers: {list(harmless_acts.keys())}. "
-                             "This may indicate a model architecture mismatch."
+                    f"Available harmful layers: {list(harmful_acts.keys())}, "
+                    f"Available harmless layers: {list(harmless_acts.keys())}. "
+                    "This may indicate a model architecture mismatch.",
                 }
 
             if missing_layers and progress_callback:
-                progress_callback(f"Warning: {len(missing_layers)} layers missing activations", 0.86)
+                progress_callback(
+                    f"Warning: {len(missing_layers)} layers missing activations", 0.86
+                )
 
             # =====================================================================
             # DIRECTION SELECTION: Evaluate candidate directions with dry-run
@@ -881,7 +919,10 @@ class Abliterator:
                     progress_callback("Validating candidate directions...", 0.91)
 
                 selected_direction_layer = self._select_best_direction(
-                    model, tokenizer, refusal_directions, layer_signals,
+                    model,
+                    tokenizer,
+                    refusal_directions,
+                    layer_signals,
                     harmful_prompts=harmful,
                     config=config,
                     device=device,
@@ -890,9 +931,7 @@ class Abliterator:
 
                 if selected_direction_layer is not None:
                     best_dir = refusal_directions[selected_direction_layer]
-                    refusal_directions = {
-                        layer: best_dir.clone() for layer in refusal_directions
-                    }
+                    refusal_directions = {layer: best_dir.clone() for layer in refusal_directions}
 
             if progress_callback:
                 progress_callback("Cleaning up...", 0.95)
@@ -906,7 +945,7 @@ class Abliterator:
 
             # Now move refusal directions to CPU (much smaller - just 19 vectors)
             for layer in list(refusal_directions.keys()):
-                if hasattr(refusal_directions[layer], 'cpu'):
+                if hasattr(refusal_directions[layer], "cpu"):
                     refusal_directions[layer] = refusal_directions[layer].cpu().clone()
 
             # Finally clean up model
@@ -947,6 +986,7 @@ class Abliterator:
         if config.capability_prompts_file:
             try:
                 from .prompts import load_prompts_from_file
+
                 prompts = load_prompts_from_file(config.capability_prompts_file)
             except Exception:
                 pass
@@ -1166,8 +1206,17 @@ class Abliterator:
 
         # Finnish indicators
         finnish_indicators = [
-            "poro", "finnish", "suomi", "fin-", "-fin", "finbert",
-            "turku", "helsinki", "nordic", "ahma", "viking"
+            "poro",
+            "finnish",
+            "suomi",
+            "fin-",
+            "-fin",
+            "finbert",
+            "turku",
+            "helsinki",
+            "nordic",
+            "ahma",
+            "viking",
         ]
 
         # Check model name/path
@@ -1180,7 +1229,8 @@ class Abliterator:
             config_path = Path(model_path) / "config.json"
             if config_path.exists():
                 import json
-                with open(config_path, 'r', encoding='utf-8') as f:
+
+                with open(config_path, "r", encoding="utf-8") as f:
                     config = json.load(f)
 
                 # Check for language in config
@@ -1227,21 +1277,21 @@ class Abliterator:
             test_type = test["type"]
 
             # Generate response
-            response = self._generate_response(
-                model, tokenizer, question, device, max_tokens=60
-            )
+            response = self._generate_response(model, tokenizer, question, device, max_tokens=60)
             response_lower = response.lower()
 
             # Check if any valid answer appears in response
             passed = any(ans.lower() in response_lower for ans in valid_answers)
 
-            results.append({
-                "question": question,
-                "response": response[:100],  # Truncate for logging
-                "valid_answers": valid_answers,
-                "passed": passed,
-                "type": test_type,
-            })
+            results.append(
+                {
+                    "question": question,
+                    "response": response[:100],  # Truncate for logging
+                    "valid_answers": valid_answers,
+                    "passed": passed,
+                    "type": test_type,
+                }
+            )
 
         # Calculate score
         passed_count = sum(1 for r in results if r["passed"])
@@ -1320,6 +1370,7 @@ class Abliterator:
                     if isinstance(output, tuple):
                         return (hidden,) + output[1:]
                     return hidden
+
                 return hook_fn
 
             hook = module.register_forward_hook(make_hook(direction, strength))
@@ -1415,7 +1466,7 @@ class Abliterator:
 
         self._ensure_pad_token(tokenizer)
         original_padding_side = tokenizer.padding_side
-        tokenizer.padding_side = 'left'
+        tokenizer.padding_side = "left"
 
         means: Dict[int, Any] = {}
         counts: Dict[int, int] = {}
@@ -1424,7 +1475,7 @@ class Abliterator:
         total_batches = (len(prompts) + batch_size - 1) // batch_size
 
         for batch_idx in range(0, len(prompts), batch_size):
-            batch = prompts[batch_idx:batch_idx + batch_size]
+            batch = prompts[batch_idx : batch_idx + batch_size]
             current_batch_num = batch_idx // batch_size + 1
 
             if progress_callback:
@@ -1435,7 +1486,7 @@ class Abliterator:
                 # CRITICAL: Apply chat template for instruct-tuned models!
                 # Without this, the model doesn't recognize the prompt as a user request
                 # and won't activate its refusal mechanism.
-                if use_chat_template and hasattr(tokenizer, 'apply_chat_template'):
+                if use_chat_template and hasattr(tokenizer, "apply_chat_template"):
                     formatted_batch = []
                     for prompt in batch:
                         messages = [{"role": "user", "content": prompt}]
@@ -1443,7 +1494,7 @@ class Abliterator:
                             formatted = tokenizer.apply_chat_template(
                                 messages,
                                 tokenize=False,
-                                add_generation_prompt=True  # Add assistant header to prime response
+                                add_generation_prompt=True,  # Add assistant header to prime response
                             )
                             # Add response prefix to prime the model state
                             # For harmful: "I cannot" primes refusal state
@@ -1460,11 +1511,7 @@ class Abliterator:
                     batch = formatted_batch
 
                 inputs = tokenizer(
-                    batch,
-                    return_tensors="pt",
-                    padding=True,
-                    truncation=True,
-                    max_length=512
+                    batch, return_tensors="pt", padding=True, truncation=True, max_length=512
                 )
 
                 # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
@@ -1555,11 +1602,7 @@ class Abliterator:
         for prompt in prompts:
             try:
                 inputs = tokenizer(
-                    prompt,
-                    return_tensors="pt",
-                    truncation=True,
-                    max_length=512,
-                    padding=True
+                    prompt, return_tensors="pt", truncation=True, max_length=512, padding=True
                 )
 
                 # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
@@ -1643,8 +1686,10 @@ class Abliterator:
                     n = min(len(harmful_samples), len(harmless_samples))
                     if n >= 2:
                         diffs = (
-                            harmful_samples[:n].float() - harmless_samples[:n].float()
-                        ).cpu().numpy()
+                            (harmful_samples[:n].float() - harmless_samples[:n].float())
+                            .cpu()
+                            .numpy()
+                        )
 
                 if diffs is not None:
                     # First right singular vector = dominant direction of the
@@ -1764,7 +1809,16 @@ class Abliterator:
         # Language-specific refusal tokens
         REFUSAL_TOKENS = {
             "en": ["I", "cannot", "Sorry", "sorry", "can't", "unable", "don't", "will not"],
-            "fi": ["En", "en", "voi", "Anteeksi", "anteeksi", "pysty", "valitettavasti", "Valitettavasti"],
+            "fi": [
+                "En",
+                "en",
+                "voi",
+                "Anteeksi",
+                "anteeksi",
+                "pysty",
+                "valitettavasti",
+                "Valitettavasti",
+            ],
             "de": ["Ich", "kann", "nicht", "Entschuldigung", "leider", "darf"],
             "fr": ["Je", "ne", "peux", "pas", "Désolé", "désolé", "impossible"],
             "es": ["No", "puedo", "Lo siento", "siento", "imposible", "lamento"],
@@ -1775,14 +1829,27 @@ class Abliterator:
 
         # Sample text from prompts for detection - split into words for accurate matching
         import re
+
         sample_text = " ".join(prompts[:10]).lower()
         # Extract words (alphanumeric + common unicode letters)
-        words = set(re.findall(r'\b[\w\u00e0-\u00ff]+\b', sample_text))
+        words = set(re.findall(r"\b[\w\u00e0-\u00ff]+\b", sample_text))
 
         # Language detection based on distinctive words (avoiding short common words)
         # Only use words 3+ chars to avoid false positives like "er", "og", "und"
         lang_indicators = {
-            "fi": ["mitä", "miten", "miksi", "onko", "voitko", "kerro", "kuinka", "minä", "sinä", "mita", "voiko"],
+            "fi": [
+                "mitä",
+                "miten",
+                "miksi",
+                "onko",
+                "voitko",
+                "kerro",
+                "kuinka",
+                "minä",
+                "sinä",
+                "mita",
+                "voiko",
+            ],
             "de": ["wie", "warum", "kannst", "bitte", "erkläre", "nicht", "erklare"],
             "fr": ["comment", "pourquoi", "expliquez", "pouvez", "vous"],
             "es": ["cómo", "puedes", "explica", "puede", "como"],
@@ -1868,7 +1935,7 @@ class Abliterator:
         device = next(model.parameters()).device
 
         # Sample prompts for efficiency
-        sample_prompts = harmful_prompts[:min(8, len(harmful_prompts))]
+        sample_prompts = harmful_prompts[: min(8, len(harmful_prompts))]
 
         for step in range(num_steps):
             optimizer.zero_grad()
@@ -1877,20 +1944,17 @@ class Abliterator:
             for prompt in sample_prompts:
                 try:
                     # Format prompt
-                    if hasattr(tokenizer, 'apply_chat_template'):
+                    if hasattr(tokenizer, "apply_chat_template"):
                         formatted = tokenizer.apply_chat_template(
                             [{"role": "user", "content": prompt}],
                             tokenize=False,
-                            add_generation_prompt=True
+                            add_generation_prompt=True,
                         )
                     else:
                         formatted = prompt
 
                     inputs = tokenizer(
-                        formatted,
-                        return_tensors="pt",
-                        truncation=True,
-                        max_length=256
+                        formatted, return_tensors="pt", truncation=True, max_length=256
                     ).to(device)
 
                     # Forward pass with hook to add direction
@@ -1905,7 +1969,8 @@ class Abliterator:
                         # module output can corrupt the autograd graph.
                         direction_scaled = (
                             direction.to(hidden.device, dtype=hidden.dtype)
-                            .unsqueeze(0).unsqueeze(0)
+                            .unsqueeze(0)
+                            .unsqueeze(0)
                         )
                         hidden = torch.cat(
                             [hidden[:, :-1, :], hidden[:, -1:, :] + direction_scaled],
@@ -1969,11 +2034,11 @@ class Abliterator:
     def _get_layer_module(self, model, layer_num: int):
         """Get the module for a specific layer number."""
         # Try common architectures
-        if hasattr(model, 'model') and hasattr(model.model, 'layers'):
+        if hasattr(model, "model") and hasattr(model.model, "layers"):
             layers = model.model.layers
-        elif hasattr(model, 'transformer') and hasattr(model.transformer, 'h'):
+        elif hasattr(model, "transformer") and hasattr(model.transformer, "h"):
             layers = model.transformer.h
-        elif hasattr(model, 'gpt_neox') and hasattr(model.gpt_neox, 'layers'):
+        elif hasattr(model, "gpt_neox") and hasattr(model.gpt_neox, "layers"):
             layers = model.gpt_neox.layers
         else:
             return None
@@ -2020,7 +2085,9 @@ class Abliterator:
         # =====================================================================
         model_language = self._detect_model_language(config.model_path)
         if progress_callback:
-            lang_name = {"fi": "Finnish", "en": "English", "multi": "Multilingual"}.get(model_language, "Unknown")
+            lang_name = {"fi": "Finnish", "en": "English", "multi": "Multilingual"}.get(
+                model_language, "Unknown"
+            )
             progress_callback(f"Detected language: {lang_name}", 0.82)
 
         # =====================================================================
@@ -2052,21 +2119,24 @@ class Abliterator:
             start_strength, min_strength = 1.00, 0.30
 
         # Use configured minimum if set
-        if hasattr(config, 'reasoning_min_strength'):
+        if hasattr(config, "reasoning_min_strength"):
             min_strength = max(min_strength, config.reasoning_min_strength)
 
         if progress_callback:
             model_type = "MoE" if is_moe else "Dense"
-            progress_callback(f"Starting strength: {start_strength:.2f} (model: ~{params_b:.1f}B {model_type})", 0.83)
+            progress_callback(
+                f"Starting strength: {start_strength:.2f} (model: ~{params_b:.1f}B {model_type})",
+                0.83,
+            )
 
         # =====================================================================
         # REASONING-VALIDATED STRENGTH SEARCH
         # Start with recommended strength, reduce if reasoning fails
         # =====================================================================
         current_strength = start_strength
-        strength_reduction = getattr(config, 'reasoning_strength_reduction', 0.15)
-        min_reasoning_score = getattr(config, 'reasoning_min_score', 0.6)
-        max_retries = getattr(config, 'reasoning_max_retries', 5)
+        strength_reduction = getattr(config, "reasoning_strength_reduction", 0.15)
+        min_reasoning_score = getattr(config, "reasoning_min_score", 0.6)
+        max_retries = getattr(config, "reasoning_max_retries", 5)
 
         history = []
         best_strength = current_strength
@@ -2076,14 +2146,19 @@ class Abliterator:
             if progress_callback:
                 progress_callback(
                     f"Auto-tune {iteration + 1}/{max_retries}: testing strength={current_strength:.2f}",
-                    0.84 + iteration * 0.025
+                    0.84 + iteration * 0.025,
                 )
 
             # Test with REASONING validation (not just refusal/coherence)
             test_result = self._test_abliteration_with_reasoning(
-                model, tokenizer, refusal_directions, current_strength,
-                device, model_language, progress_callback,
-                min_reasoning_score=min_reasoning_score
+                model,
+                tokenizer,
+                refusal_directions,
+                current_strength,
+                device,
+                model_language,
+                progress_callback,
+                min_reasoning_score=min_reasoning_score,
             )
 
             refusal_rate = test_result["refusal_rate"]
@@ -2091,21 +2166,23 @@ class Abliterator:
             harmless_kl = test_result.get("harmless_kl")
             is_valid = test_result["is_valid"]
 
-            history.append({
-                "iteration": iteration,
-                "strength": current_strength,
-                "refusal_rate": refusal_rate,
-                "reasoning_score": reasoning_score,
-                "harmless_kl": harmless_kl,
-                "is_valid": is_valid,
-            })
+            history.append(
+                {
+                    "iteration": iteration,
+                    "strength": current_strength,
+                    "refusal_rate": refusal_rate,
+                    "reasoning_score": reasoning_score,
+                    "harmless_kl": harmless_kl,
+                    "is_valid": is_valid,
+                }
+            )
 
             if progress_callback:
                 status = "OK" if is_valid else "FAIL"
                 kl_info = f", KL={harmless_kl:.3f}" if harmless_kl is not None else ""
                 progress_callback(
                     f"  -> refusal={refusal_rate:.0%}, reasoning={reasoning_score:.0%}{kl_info} [{status}]",
-                    0.84 + iteration * 0.025
+                    0.84 + iteration * 0.025,
                 )
 
             # Track best result
@@ -2119,7 +2196,7 @@ class Abliterator:
                 if progress_callback:
                     progress_callback(
                         f"Reasoning validated: {reasoning_score:.0%} (strength={current_strength:.2f})",
-                        0.90
+                        0.90,
                     )
                 return current_strength, history
 
@@ -2131,7 +2208,7 @@ class Abliterator:
                 if progress_callback:
                     progress_callback(
                         f"Min strength reached. Using best: {best_strength:.2f} (reasoning={best_reasoning_score:.0%})",
-                        0.90
+                        0.90,
                     )
                 return best_strength, history
 
@@ -2139,7 +2216,7 @@ class Abliterator:
         if progress_callback:
             progress_callback(
                 f"Max retries. Using best: {best_strength:.2f} (reasoning={best_reasoning_score:.0%})",
-                0.90
+                0.90,
             )
 
         return best_strength, history
@@ -2162,7 +2239,7 @@ class Abliterator:
         results = []
         try:
             for prompt in prompts:
-                if hasattr(tokenizer, 'apply_chat_template'):
+                if hasattr(tokenizer, "apply_chat_template"):
                     try:
                         formatted = tokenizer.apply_chat_template(
                             [{"role": "user", "content": prompt}],
@@ -2175,8 +2252,10 @@ class Abliterator:
                     formatted = prompt
 
                 inputs = tokenizer(
-                    formatted, return_tensors="pt",
-                    truncation=True, max_length=256,
+                    formatted,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=256,
                 )
                 inputs = {k: v.to(device) for k, v in inputs.items()}
 
@@ -2217,14 +2296,12 @@ class Abliterator:
         # Rank candidates: strongest signal first (fallback: middle layers,
         # where research shows the refusal direction usually lives)
         if layer_signals:
-            candidates = sorted(
-                layers, key=lambda l: layer_signals.get(l, 0.0), reverse=True
-            )
+            candidates = sorted(layers, key=lambda l: layer_signals.get(l, 0.0), reverse=True)
         else:
             mid = len(layers) // 2
             candidates = sorted(layers, key=lambda l: abs(l - layers[mid]))
 
-        candidates = candidates[:max(1, config.direction_selection_candidates)]
+        candidates = candidates[: max(1, config.direction_selection_candidates)]
         test_prompts = harmful_prompts[:4]
 
         best_layer = None
@@ -2236,7 +2313,12 @@ class Abliterator:
 
             try:
                 refusal_rate, is_coherent = self._test_abliteration_dry_run(
-                    model, tokenizer, cand_dirs, 1.0, test_prompts, device,
+                    model,
+                    tokenizer,
+                    cand_dirs,
+                    1.0,
+                    test_prompts,
+                    device,
                 )
             except Exception as e:
                 if progress_callback:
@@ -2314,6 +2396,7 @@ class Abliterator:
                     if isinstance(output, tuple):
                         return (hidden,) + output[1:]
                     return hidden
+
                 return hook_fn
 
             hook = module.register_forward_hook(make_hook(direction, strength))
@@ -2356,21 +2439,16 @@ class Abliterator:
 
         try:
             # Format prompt
-            if hasattr(tokenizer, 'apply_chat_template'):
+            if hasattr(tokenizer, "apply_chat_template"):
                 formatted = tokenizer.apply_chat_template(
                     [{"role": "user", "content": prompt}],
                     tokenize=False,
-                    add_generation_prompt=True
+                    add_generation_prompt=True,
                 )
             else:
                 formatted = prompt
 
-            inputs = tokenizer(
-                formatted,
-                return_tensors="pt",
-                truncation=True,
-                max_length=512
-            )
+            inputs = tokenizer(formatted, return_tensors="pt", truncation=True, max_length=512)
 
             # Move inputs to model's device (handles multi-GPU, CPU offload, etc.)
             inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -2383,7 +2461,9 @@ class Abliterator:
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
-            response = tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+            response = tokenizer.decode(
+                outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
+            )
             return response.strip()
 
         except Exception as e:
@@ -2392,12 +2472,26 @@ class Abliterator:
     def _is_refusal(self, response: str) -> bool:
         """Check if response is a refusal."""
         refusal_phrases = [
-            "i cannot", "i can't", "i am not able", "i'm not able",
-            "i will not", "i won't", "i refuse",
-            "sorry", "i apologize", "cannot assist", "can't assist",
-            "not able to help", "cannot help", "can't help",
-            "against my", "ethic", "illegal", "harmful",
-            "i'm sorry", "i am sorry",
+            "i cannot",
+            "i can't",
+            "i am not able",
+            "i'm not able",
+            "i will not",
+            "i won't",
+            "i refuse",
+            "sorry",
+            "i apologize",
+            "cannot assist",
+            "can't assist",
+            "not able to help",
+            "cannot help",
+            "can't help",
+            "against my",
+            "ethic",
+            "illegal",
+            "harmful",
+            "i'm sorry",
+            "i am sorry",
         ]
         response_lower = response.lower()
         return any(phrase in response_lower for phrase in refusal_phrases)
@@ -2482,13 +2576,11 @@ class Abliterator:
             AbliterationResult
         """
         import time
+
         start_time = time.time()
 
         if not self._torch or not self._safetensors:
-            return AbliterationResult(
-                success=False,
-                error="Required dependencies not available"
-            )
+            return AbliterationResult(success=False, error="Required dependencies not available")
 
         torch = self._torch
         from safetensors import safe_open
@@ -2524,7 +2616,7 @@ class Abliterator:
                     model_type = "MoE" if is_moe else "Dense"
                     progress_callback(
                         f"Auto-scaled strength: {base_strength:.2f} (model: ~{params_b:.1f}B {model_type})",
-                        0.0
+                        0.0,
                     )
 
         try:
@@ -2534,10 +2626,7 @@ class Abliterator:
             # Find safetensors files
             st_files = list(model_path.glob("*.safetensors"))
             if not st_files:
-                return AbliterationResult(
-                    success=False,
-                    error="No safetensors files found"
-                )
+                return AbliterationResult(success=False, error="No safetensors files found")
 
             modified_count = 0
             modified_layers = set()
@@ -2579,7 +2668,11 @@ class Abliterator:
                         layer_strengths[layer] = base_strength * scale_factor
 
                 if progress_callback:
-                    avg_strength = sum(layer_strengths.values()) / len(layer_strengths) if layer_strengths else base_strength
+                    avg_strength = (
+                        sum(layer_strengths.values()) / len(layer_strengths)
+                        if layer_strengths
+                        else base_strength
+                    )
                     strength_info = f"avg={avg_strength:.2f} (range: {min(layer_strengths.values()):.2f}-{max(layer_strengths.values()):.2f})"
                     if auto_scaled:
                         strength_info += " [auto-scaled]"
@@ -2596,13 +2689,14 @@ class Abliterator:
                 all_dirs = list(refusal_directions.values())
                 if all_dirs:
                     combined_refusal_dir = torch.stack(all_dirs).mean(dim=0)
-                    combined_refusal_dir = torch.nn.functional.normalize(combined_refusal_dir, dim=0)
+                    combined_refusal_dir = torch.nn.functional.normalize(
+                        combined_refusal_dir, dim=0
+                    )
 
             for i, st_file in enumerate(st_files):
                 if progress_callback:
                     progress_callback(
-                        f"Processing {st_file.name}...",
-                        0.1 + 0.8 * (i / len(st_files))
+                        f"Processing {st_file.name}...", 0.1 + 0.8 * (i / len(st_files))
                     )
 
                 modified_tensors = {}
@@ -2614,23 +2708,23 @@ class Abliterator:
                         # Check if this is a layer-specific weight that should be modified
                         layer_num = self._extract_layer_from_key(key)
                         should_modify_layer = (
-                            layer_num is not None and
-                            layer_num in refusal_directions and
-                            key.endswith(target_suffixes)
+                            layer_num is not None
+                            and layer_num in refusal_directions
+                            and key.endswith(target_suffixes)
                         )
 
                         # Check for embed_tokens (if enabled)
                         is_embed_tokens = (
-                            config.abliterate_embeddings and
-                            combined_refusal_dir is not None and
-                            "embed_tokens.weight" in key
+                            config.abliterate_embeddings
+                            and combined_refusal_dir is not None
+                            and "embed_tokens.weight" in key
                         )
 
                         # Check for lm_head (if enabled)
                         is_lm_head = (
-                            config.abliterate_lm_head and
-                            combined_refusal_dir is not None and
-                            "lm_head.weight" in key
+                            config.abliterate_lm_head
+                            and combined_refusal_dir is not None
+                            and "lm_head.weight" in key
                         )
 
                         if should_modify_layer:
@@ -2638,10 +2732,7 @@ class Abliterator:
                             # Use per-layer strength if dynamic scaling is enabled
                             effective_strength = layer_strengths.get(layer_num, config.strength)
                             tensor = self._apply_to_weight(
-                                tensor,
-                                refusal_dir,
-                                effective_strength,
-                                device=compute_device
+                                tensor, refusal_dir, effective_strength, device=compute_device
                             )
                             modified_count += 1
                             modified_layers.add(layer_num)
@@ -2649,20 +2740,14 @@ class Abliterator:
                         elif is_embed_tokens:
                             # Abliterate embedding layer with combined direction
                             tensor = self._apply_to_weight(
-                                tensor,
-                                combined_refusal_dir,
-                                config.strength,
-                                device=compute_device
+                                tensor, combined_refusal_dir, config.strength, device=compute_device
                             )
                             modified_count += 1
 
                         elif is_lm_head:
                             # Abliterate output layer with combined direction
                             tensor = self._apply_to_weight(
-                                tensor,
-                                combined_refusal_dir,
-                                config.strength,
-                                device=compute_device
+                                tensor, combined_refusal_dir, config.strength, device=compute_device
                             )
                             modified_count += 1
                             lm_head_modified = True
@@ -2683,7 +2768,7 @@ class Abliterator:
                 progress_callback(
                     "Huom: lm_head.weight ei loytynyt (tied embeddings?) - "
                     "kayta abliterate_embeddings-asetusta sen sijaan",
-                    0.94
+                    0.94,
                 )
 
             if progress_callback:
@@ -2704,14 +2789,14 @@ class Abliterator:
             # Copy ALL tokenizer files (different tokenizers need different files)
             # This comprehensive list covers: BPE, SentencePiece, WordPiece, Unigram, etc.
             tokenizer_files = [
-                "tokenizer.json",           # Fast tokenizer (most common)
-                "tokenizer_config.json",    # Tokenizer configuration
+                "tokenizer.json",  # Fast tokenizer (most common)
+                "tokenizer_config.json",  # Tokenizer configuration
                 "special_tokens_map.json",  # Special token mappings
-                "vocab.json",               # GPT-2, RoBERTa, etc.
-                "merges.txt",               # BPE merges (GPT-2, etc.)
-                "vocab.txt",                # WordPiece (BERT, etc.)
-                "added_tokens.json",        # Additional tokens
-                "tokenizer.model",          # SentencePiece model
+                "vocab.json",  # GPT-2, RoBERTa, etc.
+                "merges.txt",  # BPE merges (GPT-2, etc.)
+                "vocab.txt",  # WordPiece (BERT, etc.)
+                "added_tokens.json",  # Additional tokens
+                "tokenizer.model",  # SentencePiece model
             ]
             for tokenizer_file in tokenizer_files:
                 src = model_path / tokenizer_file
@@ -2745,16 +2830,22 @@ class Abliterator:
                 "timestamp": datetime.now().isoformat(),
                 "modified_weights": modified_count,
                 # Model info (if auto-scaled)
-                "model_info": {
-                    "estimated_params_b": model_info.get("estimated_params_b", 0) if model_info else 0,
-                    "is_moe": model_info.get("is_moe", False) if model_info else False,
-                    "architecture": model_info.get("architecture") if model_info else None,
-                } if model_info else None,
+                "model_info": (
+                    {
+                        "estimated_params_b": (
+                            model_info.get("estimated_params_b", 0) if model_info else 0
+                        ),
+                        "is_moe": model_info.get("is_moe", False) if model_info else False,
+                        "architecture": model_info.get("architecture") if model_info else None,
+                    }
+                    if model_info
+                    else None
+                ),
                 # Smart abliteration details
                 "layer_signals": {str(k): v for k, v in (layer_signals or {}).items()},
                 "layer_strengths": {str(k): v for k, v in layer_strengths.items()},
             }
-            with open(output_dir / "abliteration_info.json", "w", encoding='utf-8') as f:
+            with open(output_dir / "abliteration_info.json", "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)
 
             # Save the refusal directions (~0.5 MB) so strength can be
@@ -2764,12 +2855,9 @@ class Abliterator:
             torch.save(
                 {
                     "refusal_directions": {
-                        int(k): v.detach().cpu().float()
-                        for k, v in refusal_directions.items()
+                        int(k): v.detach().cpu().float() for k, v in refusal_directions.items()
                     },
-                    "layer_signals": {
-                        int(k): float(v) for k, v in (layer_signals or {}).items()
-                    },
+                    "layer_signals": {int(k): float(v) for k, v in (layer_signals or {}).items()},
                     "source_model": str(model_path),
                     "method": config.method,
                 },
@@ -2845,17 +2933,11 @@ class Abliterator:
         try:
             data = torch.load(str(directions_path), map_location="cpu")
         except Exception as e:
-            return AbliterationResult(
-                success=False, error=f"Could not load directions: {e}"
-            )
+            return AbliterationResult(success=False, error=f"Could not load directions: {e}")
 
-        refusal_directions = {
-            int(k): v for k, v in data.get("refusal_directions", {}).items()
-        }
+        refusal_directions = {int(k): v for k, v in data.get("refusal_directions", {}).items()}
         if not refusal_directions:
-            return AbliterationResult(
-                success=False, error="No refusal directions in file"
-            )
+            return AbliterationResult(success=False, error="No refusal directions in file")
 
         layer_signals = {
             int(k): float(v) for k, v in (data.get("layer_signals") or {}).items()
@@ -2866,7 +2948,7 @@ class Abliterator:
             return AbliterationResult(
                 success=False,
                 error=f"Source model not found: {model_path}. "
-                      "Anna lahdmallin polku source_model-parametrilla."
+                "Anna lahdmallin polku source_model-parametrilla.",
             )
 
         config = AbliterationConfig(
@@ -2879,14 +2961,17 @@ class Abliterator:
         )
 
         return self.apply_abliteration(
-            config, refusal_directions, progress_callback,
+            config,
+            refusal_directions,
+            progress_callback,
             layer_signals=layer_signals,
         )
 
     def _extract_layer_from_key(self, key: str) -> Optional[int]:
         """Extract layer number from weight key."""
         import re
-        match = re.search(r'layers\.(\d+)', key)
+
+        match = re.search(r"layers\.(\d+)", key)
         if match:
             return int(match.group(1))
         return None
@@ -2920,7 +3005,7 @@ class Abliterator:
 
         # Determine compute device - handle both string and torch.device
         # device can be "cuda", "cpu", torch.device("cuda:0"), etc.
-        device_str = str(device) if hasattr(device, '__str__') else device
+        device_str = str(device) if hasattr(device, "__str__") else device
         use_gpu = ("cuda" in device_str) and torch.cuda.is_available()
         compute_device = device if use_gpu else "cpu"
 
@@ -2968,7 +3053,7 @@ class Abliterator:
                 weight_gpu = weight_gpu - strength * proj
 
         # Move back to CPU with original dtype
-        result = weight_gpu.to('cpu', dtype=original_dtype, non_blocking=True)
+        result = weight_gpu.to("cpu", dtype=original_dtype, non_blocking=True)
 
         # Cleanup GPU memory
         del weight_gpu, refusal_gpu
@@ -2978,7 +3063,7 @@ class Abliterator:
     def full_abliteration(
         self,
         config: AbliterationConfig,
-        progress_callback: Optional[Callable[[str, float], None]] = None
+        progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> AbliterationResult:
         """
         Perform full abliteration: extract refusal direction and apply.
@@ -2994,13 +3079,12 @@ class Abliterator:
         deps = self._check_dependencies()
         if not deps["torch"]:
             return AbliterationResult(
-                success=False,
-                error="PyTorch not installed. Install with: pip install torch"
+                success=False, error="PyTorch not installed. Install with: pip install torch"
             )
         if not deps["transformers"]:
             return AbliterationResult(
                 success=False,
-                error="transformers not installed. Install with: pip install transformers"
+                error="transformers not installed. Install with: pip install transformers",
             )
 
         # Phase 1: Extract refusal direction
@@ -3019,8 +3103,7 @@ class Abliterator:
 
         if not extract_result["success"]:
             return AbliterationResult(
-                success=False,
-                error=f"Extraction failed: {extract_result.get('error', 'Unknown')}"
+                success=False, error=f"Extraction failed: {extract_result.get('error', 'Unknown')}"
             )
 
         # Variables to track auto-tuning results
@@ -3041,12 +3124,18 @@ class Abliterator:
             if auto_tuned_strength is not None:
                 # Create a modified config with the tuned strength
                 if progress_callback:
-                    progress_callback(f"Auto-tune complete: optimal strength = {auto_tuned_strength:.2f}", 0.5)
+                    progress_callback(
+                        f"Auto-tune complete: optimal strength = {auto_tuned_strength:.2f}", 0.5
+                    )
 
                 # Update config strength for apply phase
                 # CRITICAL: Disable auto_scale_strength since auto-tune already found optimal value
                 config = AbliterationConfig(
-                    **{k: v for k, v in config.__dict__.items() if k not in ('strength', 'auto_scale_strength')},
+                    **{
+                        k: v
+                        for k, v in config.__dict__.items()
+                        if k not in ("strength", "auto_scale_strength")
+                    },
                     strength=auto_tuned_strength,
                     auto_scale_strength=False,  # Don't let apply phase override our tuned strength!
                 )
@@ -3121,8 +3210,13 @@ class Abliterator:
 
             # Run auto-tuning
             optimal_strength, history = self._auto_tune_strength(
-                model, tokenizer, refusal_directions, config,
-                test_prompts, device, progress_callback
+                model,
+                tokenizer,
+                refusal_directions,
+                config,
+                test_prompts,
+                device,
+                progress_callback,
             )
 
             # Cleanup

@@ -754,11 +754,11 @@ def load_prompts_from_file(filepath: str) -> List[str]:
         raise FileNotFoundError(f"Prompt file not found: {filepath}")
 
     prompts = []
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             # Skip empty lines and comments
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 prompts.append(line)
 
     return prompts
@@ -1150,7 +1150,4 @@ def get_category_list(language: str = "en") -> List[tuple[str, str]]:
         List of tuples: (category_key, category_name)
     """
     name_key = f"name_{language}"
-    return [
-        (key, cat.get(name_key, key))
-        for key, cat in TEST_PROMPT_CATEGORIES.items()
-    ]
+    return [(key, cat.get(name_key, key)) for key, cat in TEST_PROMPT_CATEGORIES.items()]

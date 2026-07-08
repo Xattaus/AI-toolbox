@@ -67,53 +67,45 @@ class GGUFToolsCommands:
             gguf_dir = get_gguf_dir()
             gguf_files = list(gguf_dir.glob("*.gguf"))
             total_size = sum(f.stat().st_size for f in gguf_files)
-            console.print(f"[dim]GGUF-malleja: {len(gguf_files)} ({format_size(total_size)})[/dim]\n")
+            console.print(
+                f"[dim]GGUF-malleja: {len(gguf_files)} ({format_size(total_size)})[/dim]\n"
+            )
 
             choices = [
                 menu_separator("Konvertointi"),
                 questionary.Choice(
-                    title=format_menu_item("HuggingFace -> GGUF", "Lataa ja muunna"),
-                    value="hf"
+                    title=format_menu_item("HuggingFace -> GGUF", "Lataa ja muunna"), value="hf"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Paikallinen -> GGUF", "Muunna levyltä"),
-                    value="local"
+                    title=format_menu_item("Paikallinen -> GGUF", "Muunna levyltä"), value="local"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Kirjastosta -> GGUF", "Muunna kirjastosta"),
-                    value="library"
+                    value="library",
                 ),
                 menu_separator("Kvantisointi"),
                 questionary.Choice(
                     title=format_menu_item("Kvantisoi GGUF", "Pienennä GGUF-mallia"),
-                    value="quantize"
+                    value="quantize",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Konvertoi & Kvantisoi", "Yhdistetty prosessi"),
-                    value="convert_quantize"
+                    value="convert_quantize",
                 ),
                 menu_separator("Työkalut"),
                 questionary.Choice(
-                    title=format_menu_item("VRAM-laskuri", "Laske muistivaatimukset"),
-                    value="vram"
+                    title=format_menu_item("VRAM-laskuri", "Laske muistivaatimukset"), value="vram"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Kvantisointityypit", "Vertaile Q-tasoja"),
-                    value="quants"
+                    value="quants",
                 ),
                 menu_separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
-                "Valitse toiminto:",
-                choices=choices,
-                style=custom_style,
-                qmark="#",
-                pointer=">"
+                "Valitse toiminto:", choices=choices, style=custom_style, qmark="#", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -156,7 +148,9 @@ class GGUFToolsCommands:
         existing = self.downloader.check_exists(model_id)
         if existing:
             console.print(f"[green]Malli loytyi jo:[/green] {existing}")
-            if not questionary.confirm("Kayta olemassa olevaa?", default=True, style=custom_style).ask():
+            if not questionary.confirm(
+                "Kayta olemassa olevaa?", default=True, style=custom_style
+            ).ask():
                 return
             model_path = existing
         else:
@@ -174,7 +168,9 @@ class GGUFToolsCommands:
 
             # Add to library
             try:
-                entry = self.library.add_model(str(model_path), source="huggingface", source_id=model_id)
+                entry = self.library.add_model(
+                    str(model_path), source="huggingface", source_id=model_id
+                )
                 print_success(f"Lisatty kirjastoon: {entry.name}")
             except Exception as e:
                 print_warning(f"Kirjastolisays epäonnistui: {e}")
@@ -204,7 +200,7 @@ class GGUFToolsCommands:
         # Get convertible models
         convertible = self.library.get_convertible_models()
         merged = self.library.get_all_merged()
-        merged_convertible = [m for m in merged if m.format in ['safetensors', 'pytorch']]
+        merged_convertible = [m for m in merged if m.format in ["safetensors", "pytorch"]]
 
         if not convertible and not merged_convertible:
             print_warning("Kirjastossa ei ole muunnettavia malleja (SafeTensors/PyTorch)")
@@ -282,9 +278,7 @@ class GGUFToolsCommands:
         console.print()
 
         if not questionary.confirm(
-            "Muunna tämä malli GGUF-muotoon?",
-            default=True,
-            style=custom_style
+            "Muunna tämä malli GGUF-muotoon?", default=True, style=custom_style
         ).ask():
             return
 
@@ -332,15 +326,17 @@ class GGUFToolsCommands:
         console.print("\n[dim]Lasketaan mallin kokoa...[/dim]")
         estimates = self.converter.estimate_model_size(Path(model_path), quantization)
         if estimates.get("estimated_size_gb"):
-            console.print(Panel(
-                f"[white]Malli:[/white] {model_name}\n"
-                f"[white]Quantization:[/white] {quantization.upper()}\n"
-                f"[white]Parametreja:[/white] {estimates.get('total_params_billions', '?')}B\n"
-                f"[white]Arvioitu koko:[/white] {estimates.get('estimated_size_gb', '?')} GB\n"
-                f"[white]Pakkaussuhde:[/white] {estimates.get('compression_ratio', '?')}x",
-                title="[bold]Conversion Preview[/bold]",
-                border_style="yellow"
-            ))
+            console.print(
+                Panel(
+                    f"[white]Malli:[/white] {model_name}\n"
+                    f"[white]Quantization:[/white] {quantization.upper()}\n"
+                    f"[white]Parametreja:[/white] {estimates.get('total_params_billions', '?')}B\n"
+                    f"[white]Arvioitu koko:[/white] {estimates.get('estimated_size_gb', '?')} GB\n"
+                    f"[white]Pakkaussuhde:[/white] {estimates.get('compression_ratio', '?')}x",
+                    title="[bold]Conversion Preview[/bold]",
+                    border_style="yellow",
+                )
+            )
 
         if not questionary.confirm("Aloita muunnos?", default=True, style=custom_style).ask():
             return
@@ -386,14 +382,16 @@ class GGUFToolsCommands:
             output_path = result.get("output_path")
             file_size = result.get("file_size_gb", 0)
 
-            console.print(Panel(
-                f"[green]Muunnos valmis![/green]\n\n"
-                f"[white]Tiedosto:[/white] {output_path}\n"
-                f"[white]Koko:[/white] {file_size:.2f} GB\n"
-                f"[white]Quantization:[/white] {quantization.upper()}",
-                title="[bold green]Success[/bold green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[green]Muunnos valmis![/green]\n\n"
+                    f"[white]Tiedosto:[/white] {output_path}\n"
+                    f"[white]Koko:[/white] {file_size:.2f} GB\n"
+                    f"[white]Quantization:[/white] {quantization.upper()}",
+                    title="[bold green]Success[/bold green]",
+                    border_style="green",
+                )
+            )
 
             # Add automatically to library
             try:
@@ -407,11 +405,13 @@ class GGUFToolsCommands:
                 print_warning(f"Kirjastolisays epäonnistui: {e}")
         else:
             error = result.get("error", "Tuntematon virhe")
-            console.print(Panel(
-                f"[red]Muunnos epäonnistui[/red]\n\n{error}",
-                title="[bold red]Error[/bold red]",
-                border_style="red"
-            ))
+            console.print(
+                Panel(
+                    f"[red]Muunnos epäonnistui[/red]\n\n{error}",
+                    title="[bold red]Error[/bold red]",
+                    border_style="red",
+                )
+            )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -427,7 +427,7 @@ class GGUFToolsCommands:
         merged = self.library.get_all_merged()
         seen = {str(m.path) for m in convertible}
         for m in merged:
-            if m.format in ('safetensors', 'pytorch') and str(m.path) not in seen:
+            if m.format in ("safetensors", "pytorch") and str(m.path) not in seen:
                 convertible.append(m)
                 seen.add(str(m.path))
 
@@ -436,7 +436,9 @@ class GGUFToolsCommands:
         items = build_conversion_choices(convertible, downloaded)
 
         if not items:
-            print_warning("Kirjastossa ei ole muunnettavia malleja (SafeTensors/PyTorch) eika latauksia")
+            print_warning(
+                "Kirjastossa ei ole muunnettavia malleja (SafeTensors/PyTorch) eika latauksia"
+            )
             console.print("[dim]Lataa ensin malli Model Hub -valikosta[/dim]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
@@ -595,7 +597,7 @@ class GGUFToolsCommands:
                 print_warning("Anna kelvollinen numero")
 
         # Convert to Path
-        if hasattr(selected_item, 'path'):
+        if hasattr(selected_item, "path"):
             # It's a ModelEntry - show preview
             console.print()
             console.print(create_model_preview_card(selected_item, show_path=True))
@@ -642,12 +644,10 @@ class GGUFToolsCommands:
             if questionary.confirm(
                 "Haluatko ladata llama.cpp binaarit automaattisesti?",
                 default=True,
-                style=custom_style
+                style=custom_style,
             ).ask():
                 cuda = questionary.confirm(
-                    "Lataa CUDA-versio (GPU-kiihdytys)?",
-                    default=True,
-                    style=custom_style
+                    "Lataa CUDA-versio (GPU-kiihdytys)?", default=True, style=custom_style
                 ).ask()
 
                 if self.converter.download_llama_cpp_binaries(cuda=cuda):
@@ -671,9 +671,27 @@ class GGUFToolsCommands:
         # Helper to detect current quantization from filename
         def detect_quant(filename: str) -> str:
             name_lower = filename.lower()
-            quants = ["q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s", "q4_0", "q4_1",
-                      "q3_k_l", "q3_k_m", "q3_k_s", "q2_k", "iq4_xs", "iq3_m", "iq3_s", "iq2_xs",
-                      "f16", "f32", "bf16"]
+            quants = [
+                "q8_0",
+                "q6_k",
+                "q5_k_m",
+                "q5_k_s",
+                "q4_k_m",
+                "q4_k_s",
+                "q4_0",
+                "q4_1",
+                "q3_k_l",
+                "q3_k_m",
+                "q3_k_s",
+                "q2_k",
+                "iq4_xs",
+                "iq3_m",
+                "iq3_s",
+                "iq2_xs",
+                "f16",
+                "f32",
+                "bf16",
+            ]
             for q in quants:
                 if q in name_lower or q.replace("_", "-") in name_lower:
                     return q.upper()
@@ -683,24 +701,44 @@ class GGUFToolsCommands:
         input_path = selected
         stem = input_path.stem
         # Remove old quantization from name if present
-        for q in ["f16", "f32", "bf16", "q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s",
-                  "q4_0", "q4_1", "q3_k_l", "q3_k_m", "q3_k_s", "q2_k", "iq4_xs", "iq3_m", "iq2_xs"]:
-            stem = re.sub(rf'[-_]{q}$', '', stem, flags=re.IGNORECASE)
-            stem = re.sub(rf'[-_]{q}[-_]', '-', stem, flags=re.IGNORECASE)
+        for q in [
+            "f16",
+            "f32",
+            "bf16",
+            "q8_0",
+            "q6_k",
+            "q5_k_m",
+            "q5_k_s",
+            "q4_k_m",
+            "q4_k_s",
+            "q4_0",
+            "q4_1",
+            "q3_k_l",
+            "q3_k_m",
+            "q3_k_s",
+            "q2_k",
+            "iq4_xs",
+            "iq3_m",
+            "iq2_xs",
+        ]:
+            stem = re.sub(rf"[-_]{q}$", "", stem, flags=re.IGNORECASE)
+            stem = re.sub(rf"[-_]{q}[-_]", "-", stem, flags=re.IGNORECASE)
         output_path = input_path.parent / f"{stem}-{target_quant.lower()}.gguf"
 
         # Show summary
         input_size = format_size(input_path.stat().st_size)
         current_quant = detect_quant(input_path.name)
-        console.print(Panel(
-            f"[white]Lahde:[/white]      {input_path.name}\n"
-            f"[white]Koko:[/white]       {input_size}\n"
-            f"[white]Nykyinen:[/white]   {current_quant}\n"
-            f"[white]Kohde:[/white]      {target_quant}\n"
-            f"[white]Tuloste:[/white]    {output_path.name}",
-            title="[bold]Kvantisoinnin yhteenveto[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Lahde:[/white]      {input_path.name}\n"
+                f"[white]Koko:[/white]       {input_size}\n"
+                f"[white]Nykyinen:[/white]   {current_quant}\n"
+                f"[white]Kohde:[/white]      {target_quant}\n"
+                f"[white]Tuloste:[/white]    {output_path.name}",
+                title="[bold]Kvantisoinnin yhteenveto[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita kvantisointi?", default=True, style=custom_style).ask():
             return
@@ -714,21 +752,23 @@ class GGUFToolsCommands:
                 [str(quantize_exe), str(input_path), str(output_path), target_quant],
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
                 timeout=7200,  # 2 tunnin timeout - suuret mallit voivat kestää kauan
             )
 
             if output_path.exists() and output_path.stat().st_size > 0:
                 output_size = format_size(output_path.stat().st_size)
-                console.print(Panel(
-                    f"[green]Kvantisointi valmis![/green]\n\n"
-                    f"[white]Tiedosto:[/white]  {output_path.name}\n"
-                    f"[white]Koko:[/white]      {output_size}\n"
-                    f"[white]Sijainti:[/white]  {output_path}",
-                    title="[bold green]Success[/bold green]",
-                    border_style="green"
-                ))
+                console.print(
+                    Panel(
+                        f"[green]Kvantisointi valmis![/green]\n\n"
+                        f"[white]Tiedosto:[/white]  {output_path.name}\n"
+                        f"[white]Koko:[/white]      {output_size}\n"
+                        f"[white]Sijainti:[/white]  {output_path}",
+                        title="[bold green]Success[/bold green]",
+                        border_style="green",
+                    )
+                )
 
                 # Add to library
                 try:
@@ -756,9 +796,7 @@ class GGUFToolsCommands:
         print_mini_banner("VRAM-laskuri")
 
         params = questionary.text(
-            "Mallin parametrit (miljardeina, esim. 7, 13, 70):",
-            style=custom_style,
-            default="7"
+            "Mallin parametrit (miljardeina, esim. 7, 13, 70):", style=custom_style, default="7"
         ).ask()
 
         if not params:
@@ -795,16 +833,12 @@ class GGUFToolsCommands:
             ctx_4k = model_gb + 0.5
             ctx_8k = model_gb + 1.0
 
-            table.add_row(
-                name,
-                f"{model_gb:.1f} GB",
-                f"{ctx_4k:.1f} GB",
-                f"{ctx_8k:.1f} GB",
-                desc
-            )
+            table.add_row(name, f"{model_gb:.1f} GB", f"{ctx_4k:.1f} GB", f"{ctx_8k:.1f} GB", desc)
 
         console.print(table)
-        console.print("\n[dim]Huom: Todellinen VRAM-kaytto voi vaihdella toteutuksen ja kontekstipituuden mukaan.[/dim]")
+        console.print(
+            "\n[dim]Huom: Todellinen VRAM-kaytto voi vaihdella toteutuksen ja kontekstipituuden mukaan.[/dim]"
+        )
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     # ==================== QUANTIZATION TYPES ====================
@@ -817,7 +851,7 @@ class GGUFToolsCommands:
             title="Saatavilla olevat kvantisointityypit",
             box=box.ROUNDED,
             show_header=True,
-            header_style="bold cyan"
+            header_style="bold cyan",
         )
 
         table.add_column("Tyyppi", style="white", width=10)

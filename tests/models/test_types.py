@@ -29,9 +29,17 @@ def test_category_from_source_unknown_defaults_to_base():
 
 def test_model_entry_defaults():
     e = ModelEntry(
-        id="x", name="X", source="local", source_id=None, path="/p",
-        format="gguf", size_bytes=10, quantization=None,
-        added_date="2026-01-01", tags=[], metadata={},
+        id="x",
+        name="X",
+        source="local",
+        source_id=None,
+        path="/p",
+        format="gguf",
+        size_bytes=10,
+        quantization=None,
+        added_date="2026-01-01",
+        tags=[],
+        metadata={},
     )
     assert e.category == "base"
     assert e.parent_id is None

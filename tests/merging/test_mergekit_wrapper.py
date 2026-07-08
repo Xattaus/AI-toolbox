@@ -7,8 +7,12 @@ from ai_toolbox.merging.mergekit_wrapper import MergekitWrapper
 
 def _info(**over):
     base = dict(
-        name="M", hidden_size=4096, num_layers=32, vocab_size=32000,
-        max_position_embeddings=8192, rope_scaling_type=None,
+        name="M",
+        hidden_size=4096,
+        num_layers=32,
+        vocab_size=32000,
+        max_position_embeddings=8192,
+        rope_scaling_type=None,
     )
     base.update(over)
     return base
@@ -24,12 +28,17 @@ def test_read_model_config_missing(tmp_path):
 
 
 def test_read_model_config_parses(tmp_path):
-    (tmp_path / "config.json").write_text(json.dumps({
-        "architectures": ["LlamaForCausalLM"],
-        "hidden_size": 4096,
-        "num_hidden_layers": 32,
-        "vocab_size": 32000,
-    }), encoding="utf-8")
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "architectures": ["LlamaForCausalLM"],
+                "hidden_size": 4096,
+                "num_hidden_layers": 32,
+                "vocab_size": 32000,
+            }
+        ),
+        encoding="utf-8",
+    )
     result = MergekitWrapper().read_model_config(tmp_path)
     assert result["config_found"] is True
     assert result["architecture"] == "LlamaForCausalLM"
@@ -66,7 +75,7 @@ def test_compat_different_layers_is_incompatible():
 
 def test_compat_large_vocab_diff_breaks_dare_only():
     r = _check([_info(vocab_size=32000), _info(vocab_size=32200)])
-    assert r["compatible_slerp"] is True   # SLERP tolerates vocab differences
+    assert r["compatible_slerp"] is True  # SLERP tolerates vocab differences
     assert r["compatible_dare"] is False
     assert r["warnings"]
 

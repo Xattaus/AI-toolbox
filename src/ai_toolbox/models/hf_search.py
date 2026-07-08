@@ -28,8 +28,6 @@ from .hf_filters import (
     get_app_compatibility,
 )
 
-
-
 # =============================================================================
 # DATA CLASSES
 # =============================================================================
@@ -224,16 +222,11 @@ class HFSearchEngine:
             # If every selected app requires GGUF, narrow the API query to
             # gguf-tagged models so the page isn't dominated by incompatible hits
             if filters.apps and not filters.libraries:
-                if all(
-                    APPS.get(app, {}).get("requires") == ["gguf"]
-                    for app in filters.apps
-                ):
+                if all(APPS.get(app, {}).get("requires") == ["gguf"] for app in filters.apps):
                     filter_tags.append("gguf")
 
             if filter_tags:
-                api_kwargs["filter"] = (
-                    filter_tags[0] if len(filter_tags) == 1 else filter_tags
-                )
+                api_kwargs["filter"] = filter_tags[0] if len(filter_tags) == 1 else filter_tags
 
             # Use the list_models API
             models = self.api.list_models(**api_kwargs)
@@ -465,9 +458,7 @@ class HFSearchEngine:
             has_safetensors=has_safetensors,
         )
 
-    def _parse_model_card(
-        self, info: ModelInfo, limited: bool = False
-    ) -> ModelCardInfo:
+    def _parse_model_card(self, info: ModelInfo, limited: bool = False) -> ModelCardInfo:
         """Parse ModelInfo into ModelCardInfo."""
         card = ModelCardInfo(model_id=info.id)
 
@@ -529,13 +520,15 @@ class HFSearchEngine:
                     quality = QUANTIZATION_QUALITY.get(quant, 3.0) if quant else 3.0
                     vram_est = self._estimate_vram(sibling.size or 0)
 
-                    card.gguf_variants.append({
-                        "filename": sibling.rfilename,
-                        "size": sibling.size or 0,
-                        "quantization": quant,
-                        "quality": quality,
-                        "vram_estimate": vram_est,
-                    })
+                    card.gguf_variants.append(
+                        {
+                            "filename": sibling.rfilename,
+                            "size": sibling.size or 0,
+                            "quantization": quant,
+                            "quality": quality,
+                            "vram_estimate": vram_est,
+                        }
+                    )
 
         # Extract model size from safetensors metadata or name
         card.model_size = parse_model_size_from_name(info.id)
@@ -567,7 +560,7 @@ class HFSearchEngine:
     def _estimate_vram(self, file_size_bytes: int) -> float:
         """Estimate VRAM needed in GB."""
         # File size + ~30% overhead for KV cache
-        return (file_size_bytes * 1.3) / (1024 ** 3)
+        return (file_size_bytes * 1.3) / (1024**3)
 
     def _format_param_count(self, count: int) -> str:
         """Format parameter count as human-readable string."""
@@ -707,15 +700,17 @@ class ModelCardAnalyzer:
         comparisons = []
         for variant in variants:
             quality_stars = int(variant.quality_score)
-            comparisons.append({
-                "filename": variant.filename,
-                "quantization": variant.quantization or "Unknown",
-                "size_gb": variant.size_bytes / (1024 ** 3),
-                "vram_gb": variant.estimated_vram_gb,
-                "quality": variant.quality_score,
-                "quality_stars": "*" * quality_stars + "." * (5 - quality_stars),
-                "recommended": variant.quantization in ["Q4_K_M", "Q5_K_M"],
-            })
+            comparisons.append(
+                {
+                    "filename": variant.filename,
+                    "quantization": variant.quantization or "Unknown",
+                    "size_gb": variant.size_bytes / (1024**3),
+                    "vram_gb": variant.estimated_vram_gb,
+                    "quality": variant.quality_score,
+                    "quality_stars": "*" * quality_stars + "." * (5 - quality_stars),
+                    "recommended": variant.quantization in ["Q4_K_M", "Q5_K_M"],
+                }
+            )
 
         return comparisons
 

@@ -12,6 +12,7 @@ from enum import Enum
 
 class ModelFormat(Enum):
     """Supported model formats."""
+
     SAFETENSORS = "safetensors"
     PYTORCH = "pytorch"
     GGUF = "gguf"
@@ -19,22 +20,23 @@ class ModelFormat(Enum):
     UNKNOWN = "unknown"
 
     @classmethod
-    def from_extension(cls, ext: str) -> 'ModelFormat':
+    def from_extension(cls, ext: str) -> "ModelFormat":
         """Get format from file extension."""
-        ext = ext.lower().lstrip('.')
+        ext = ext.lower().lstrip(".")
         mapping = {
-            'safetensors': cls.SAFETENSORS,
-            'bin': cls.PYTORCH,
-            'pt': cls.PYTORCH,
-            'pth': cls.PYTORCH,
-            'gguf': cls.GGUF,
-            'ggml': cls.GGML,
+            "safetensors": cls.SAFETENSORS,
+            "bin": cls.PYTORCH,
+            "pt": cls.PYTORCH,
+            "pth": cls.PYTORCH,
+            "gguf": cls.GGUF,
+            "ggml": cls.GGML,
         }
         return mapping.get(ext, cls.UNKNOWN)
 
 
 class ModelSource(Enum):
     """Model source types."""
+
     HUGGINGFACE = "huggingface"
     LOCAL = "local"
     CONVERTED = "converted"
@@ -46,13 +48,14 @@ class ModelSource(Enum):
 
 class ModelCategory(Enum):
     """Model category for organization."""
-    BASE = "base"           # Base/foundation models (SafeTensors, GGUF)
-    ADAPTER = "adapter"     # LoRA adapters
-    MERGED = "merged"       # Merged models
-    OLLAMA = "ollama"       # Ollama models
+
+    BASE = "base"  # Base/foundation models (SafeTensors, GGUF)
+    ADAPTER = "adapter"  # LoRA adapters
+    MERGED = "merged"  # Merged models
+    OLLAMA = "ollama"  # Ollama models
 
     @classmethod
-    def from_source(cls, source: str) -> 'ModelCategory':
+    def from_source(cls, source: str) -> "ModelCategory":
         """Infer category from source type."""
         mapping = {
             "huggingface": cls.BASE,
@@ -69,6 +72,7 @@ class ModelCategory(Enum):
 @dataclass
 class ModelEntry:
     """Represents a model in the library."""
+
     # Basic info
     id: str
     name: str
@@ -103,6 +107,7 @@ class ModelEntry:
 @dataclass
 class ModelSearchResult:
     """Represents a model search result from HuggingFace."""
+
     model_id: str
     author: str
     downloads: int
@@ -115,6 +120,7 @@ class ModelSearchResult:
 @dataclass
 class ModelDetails:
     """Detailed information about a model."""
+
     model_id: str
     author: str
     sha: str
@@ -130,6 +136,7 @@ class ModelDetails:
 @dataclass
 class LoRAInfo:
     """Information about a LoRA adapter."""
+
     name: str
     path: str
     base_model: Optional[str]
@@ -142,11 +149,12 @@ class LoRAInfo:
 @dataclass
 class OllamaModelInfo:
     """Information about an Ollama model."""
-    name: str                           # Ollama model name
-    gguf_path: Optional[str] = None     # Source GGUF file path
+
+    name: str  # Ollama model name
+    gguf_path: Optional[str] = None  # Source GGUF file path
     modelfile_path: Optional[str] = None  # Stored Modelfile path
-    system_prompt: Optional[str] = None # System prompt used
-    template_name: Optional[str] = None # Template name (assistant, coder, etc.)
+    system_prompt: Optional[str] = None  # System prompt used
+    template_name: Optional[str] = None  # Template name (assistant, coder, etc.)
     parameters: Dict[str, Any] = field(default_factory=dict)  # temperature, context, etc.
     created_date: Optional[str] = None
 
@@ -154,8 +162,9 @@ class OllamaModelInfo:
 @dataclass
 class ModelTreeNode:
     """Node in the model relationship tree."""
+
     entry: ModelEntry
-    children: List['ModelTreeNode'] = field(default_factory=list)
+    children: List["ModelTreeNode"] = field(default_factory=list)
     depth: int = 0
 
     @property

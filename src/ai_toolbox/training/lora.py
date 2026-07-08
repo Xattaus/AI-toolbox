@@ -27,8 +27,6 @@ from ..core.ui import console
 
 from ..core.paths import get_paths
 
-
-
 # =============================================================================
 # UNSLOTH COMPATIBILITY SYSTEM
 # =============================================================================
@@ -138,6 +136,7 @@ class UnslothCompatibilityChecker:
         """Tarkista Unsloth-asennus."""
         try:
             import unsloth
+
             self._unsloth_available = True
             self._unsloth_version = getattr(unsloth, "__version__", "unknown")
         except ImportError:
@@ -147,8 +146,8 @@ class UnslothCompatibilityChecker:
     def check_full_compatibility(
         self,
         model_path: Optional[Path] = None,
-        lora_config: Optional['LoRAConfig'] = None,
-        training_config: Optional['TrainingConfig'] = None,
+        lora_config: Optional["LoRAConfig"] = None,
+        training_config: Optional["TrainingConfig"] = None,
         quantization: Optional[str] = None,
     ) -> UnslothCompatibilityResult:
         """
@@ -200,19 +199,17 @@ class UnslothCompatibilityChecker:
 
         # 7. Määritä kokonaistila
         result.compatible = (
-            result.unsloth_installed and
-            result.gpu_compatible and
-            result.os_compatible and
-            result.model_compatible and
-            result.settings_compatible and
-            result.resources_sufficient
+            result.unsloth_installed
+            and result.gpu_compatible
+            and result.os_compatible
+            and result.model_compatible
+            and result.settings_compatible
+            and result.resources_sufficient
         )
 
         # Suositeltu jos yhteensopiva JA ei vakavia varoituksia
         result.recommended = (
-            result.compatible and
-            len(result.warnings) <= 2 and
-            result.model_optimized
+            result.compatible and len(result.warnings) <= 2 and result.model_optimized
         )
 
         # Lisää suosituksia
@@ -292,31 +289,30 @@ class UnslothCompatibilityChecker:
             result.os_compatible = True
         elif result.os_name == "Windows":
             result.os_compatible = True
-            result.os_warning = (
-                "Windows-tuki on kokeellinen. "
-                "Linux on suositeltu Unslothille."
-            )
+            result.os_warning = "Windows-tuki on kokeellinen. " "Linux on suositeltu Unslothille."
             result.warnings.append(result.os_warning)
         elif result.os_name == "Darwin":  # macOS
             result.os_compatible = False
-            result.errors.append(
-                "macOS ei ole tuettu - Unsloth vaatii CUDA:n"
-            )
+            result.errors.append("macOS ei ole tuettu - Unsloth vaatii CUDA:n")
         else:
             result.os_compatible = False
             result.errors.append(f"Tuntematon käyttöjärjestelmä: {result.os_name}")
 
     def _check_model_compatibility(self, result: UnslothCompatibilityResult, model_path: Path):
         """Tarkista malliarkkitehtuurin yhteensopivuus."""
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
 
         if not config_file.exists():
             result.model_compatible = True  # Oleta yhteensopiva
-            result.warnings.append("Mallin config.json ei löytynyt - yhteensopivuutta ei voida varmistaa")
+            result.warnings.append(
+                "Mallin config.json ei löytynyt - yhteensopivuutta ei voida varmistaa"
+            )
             return
 
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config = json.load(f)
 
             model_type = config.get("model_type", "").lower()
@@ -348,8 +344,8 @@ class UnslothCompatibilityChecker:
     def _check_settings_compatibility(
         self,
         result: UnslothCompatibilityResult,
-        lora_config: Optional['LoRAConfig'],
-        training_config: Optional['TrainingConfig'],
+        lora_config: Optional["LoRAConfig"],
+        training_config: Optional["TrainingConfig"],
         quantization: Optional[str],
     ):
         """Tarkista asetusten yhteensopivuus Unslothin kanssa."""
@@ -359,7 +355,9 @@ class UnslothCompatibilityChecker:
         if lora_config:
             # Unsloth suosii tiettyjä rank-arvoja
             if lora_config.rank > 256:
-                issues.append(f"LoRA rank {lora_config.rank} on suuri - Unsloth toimii parhaiten rank <= 128")
+                issues.append(
+                    f"LoRA rank {lora_config.rank} on suuri - Unsloth toimii parhaiten rank <= 128"
+                )
 
             # Target modules - Unsloth käyttää omia optimoituja moduleita
             # Tämä on vain informatiivinen
@@ -386,18 +384,20 @@ class UnslothCompatibilityChecker:
         self,
         result: UnslothCompatibilityResult,
         model_path: Path,
-        lora_config: Optional['LoRAConfig'],
+        lora_config: Optional["LoRAConfig"],
         quantization: Optional[str],
     ):
         """Arvioi resurssitarpeet ja vertaa Unsloth vs PEFT."""
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
 
         # Oletus: 7B malli
         params_b = 7.0
 
         if config_file.exists():
             try:
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     config = json.load(f)
 
                 hidden_size = config.get("hidden_size", 4096)
@@ -432,7 +432,11 @@ class UnslothCompatibilityChecker:
 
         # Laske säästö
         if result.estimated_vram_peft > 0:
-            savings = (result.estimated_vram_peft - result.estimated_vram_unsloth) / result.estimated_vram_peft * 100
+            savings = (
+                (result.estimated_vram_peft - result.estimated_vram_unsloth)
+                / result.estimated_vram_peft
+                * 100
+            )
             result.vram_savings_percent = max(0, savings)
 
         # Tarkista riittääkö VRAM
@@ -477,6 +481,7 @@ class UnslothCompatibilityChecker:
 
 class DatasetFormat(Enum):
     """Tuetut dataset-formaatit."""
+
     JSONL = "jsonl"
     ALPACA = "alpaca"
     CHAT = "chat"
@@ -487,16 +492,20 @@ class DatasetFormat(Enum):
 @dataclass
 class LoRAConfig:
     """LoRA-konfiguraatio."""
+
     rank: int = 16
     alpha: int = 32
     dropout: float = 0.05
-    target_modules: List[str] = field(default_factory=lambda: ["q_proj", "v_proj", "k_proj", "o_proj"])
+    target_modules: List[str] = field(
+        default_factory=lambda: ["q_proj", "v_proj", "k_proj", "o_proj"]
+    )
     bias: str = "none"  # "none", "all", "lora_only"
 
 
 @dataclass
 class TrainingConfig:
     """Training-konfiguraatio."""
+
     # Perusasetukset
     epochs: int = 2
     batch_size: int = 4
@@ -531,6 +540,7 @@ class TrainingConfig:
 @dataclass
 class FullConfig:
     """Täydellinen training-konfiguraatio."""
+
     # Model
     model_path: str = ""
     model_name: str = ""
@@ -571,7 +581,7 @@ class FullConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FullConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> "FullConfig":
         """Luo dict:stä."""
         config = cls()
         config.model_path = data.get("model_path", "")
@@ -666,42 +676,49 @@ class LoRATrainer:
 
         try:
             import torch
+
             deps["torch"] = True
         except ImportError:
             pass
 
         try:
             import transformers
+
             deps["transformers"] = True
         except ImportError:
             pass
 
         try:
             import peft
+
             deps["peft"] = True
         except ImportError:
             pass
 
         try:
             import datasets
+
             deps["datasets"] = True
         except ImportError:
             pass
 
         try:
             import trl
+
             deps["trl"] = True
         except ImportError:
             pass
 
         try:
             import bitsandbytes
+
             deps["bitsandbytes"] = True
         except ImportError:
             pass
 
         try:
             import unsloth
+
             deps["unsloth"] = True
         except ImportError:
             pass
@@ -824,7 +841,6 @@ class LoRATrainer:
             "gpu_memory_gb": 0,
             "multi_gpu": False,
             "gpu_count": 0,
-
             # Tuetut ominaisuudet
             "supports_bf16": False,
             "supports_tf32": False,
@@ -832,7 +848,6 @@ class LoRATrainer:
             "supports_sdpa": False,
             "supports_fused_adamw": False,
             "supports_torch_compile": False,
-
             # Suositellut asetukset (täytetään alla)
             "recommended_dtype": "float32",
             "recommended_attn": "eager",
@@ -871,6 +886,7 @@ class LoRATrainer:
         # Flash Attention 2 - tarkista saatavuus
         try:
             from transformers.utils import is_flash_attn_2_available
+
             caps["supports_flash_attn"] = is_flash_attn_2_available()
         except ImportError:
             caps["supports_flash_attn"] = False
@@ -882,9 +898,9 @@ class LoRATrainer:
         try:
             import inspect
             from torch.optim import AdamW
+
             caps["supports_fused_adamw"] = (
-                "fused" in inspect.signature(AdamW).parameters
-                and caps["cuda_available"]
+                "fused" in inspect.signature(AdamW).parameters and caps["cuda_available"]
             )
         except Exception:
             caps["supports_fused_adamw"] = False
@@ -913,12 +929,15 @@ class LoRATrainer:
 
             # DataLoader workers - CPU ytimien mukaan, max 8
             import os
+
             cpu_count = os.cpu_count() or 4
             caps["recommended_workers"] = min(cpu_count // 2, 8)
 
         return caps
 
-    def _apply_gpu_optimizations(self, hw_caps: Dict[str, Any], progress_callback: Optional[Callable] = None) -> None:
+    def _apply_gpu_optimizations(
+        self, hw_caps: Dict[str, Any], progress_callback: Optional[Callable] = None
+    ) -> None:
         """
         Sovella GPU-optimoinnit tunnistetun laitteiston perusteella.
         """
@@ -948,10 +967,13 @@ class LoRATrainer:
                 opts.append("FusedAdamW")
 
             opts_str = ", ".join(opts) if opts else "basic"
-            progress_callback(f"GPU: {hw_caps['gpu_name']} ({hw_caps['gpu_capability']}) | {opts_str}")
+            progress_callback(
+                f"GPU: {hw_caps['gpu_name']} ({hw_caps['gpu_capability']}) | {opts_str}"
+            )
 
-    def install_dependencies(self, include_optional: bool = False,
-                            progress_callback: Optional[Callable] = None) -> bool:
+    def install_dependencies(
+        self, include_optional: bool = False, progress_callback: Optional[Callable] = None
+    ) -> bool:
         """Asenna riippuvuudet."""
         import subprocess
 
@@ -1011,9 +1033,9 @@ class LoRATrainer:
         if suffix in [".json", ".jsonl"]:
             # Lue ensimmäinen rivi
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     first_line = f.readline().strip()
-                    if first_line.startswith('['):
+                    if first_line.startswith("["):
                         # JSON array
                         data = json.loads(first_line + f.read())
                         sample = data[0] if data else {}
@@ -1068,7 +1090,7 @@ class LoRATrainer:
             samples = []
 
             if format_type == "csv":
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     for i, row in enumerate(reader):
                         samples.append(row)
@@ -1079,19 +1101,21 @@ class LoRATrainer:
                 if samples:
                     cols = set(samples[0].keys())
                     if not ("instruction" in cols or "text" in cols or "prompt" in cols):
-                        result["warnings"].append("Dataset ei sisällä tunnettuja sarakkeita (instruction/text/prompt)")
+                        result["warnings"].append(
+                            "Dataset ei sisällä tunnettuja sarakkeita (instruction/text/prompt)"
+                        )
 
             else:  # JSON/JSONL
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
 
-                    if content.startswith('['):
+                    if content.startswith("["):
                         # JSON array
                         data = json.loads(content)
                         samples = data[:100]
                     else:
                         # JSONL
-                        for i, line in enumerate(content.split('\n')):
+                        for i, line in enumerate(content.split("\n")):
                             if line.strip():
                                 samples.append(json.loads(line))
                             if i >= 100:
@@ -1102,19 +1126,25 @@ class LoRATrainer:
 
             # Laske kokonaismäärä
             if file_path.suffix.lower() in [".json", ".jsonl"]:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
-                    if content.startswith('['):
+                    if content.startswith("["):
                         result["num_samples"] = len(json.loads(content))
                     else:
-                        result["num_samples"] = sum(1 for line in content.split('\n') if line.strip())
+                        result["num_samples"] = sum(
+                            1 for line in content.split("\n") if line.strip()
+                        )
 
             # Varoitukset
             if result["num_samples"] < 100:
-                result["warnings"].append(f"Pieni dataset ({result['num_samples']} näytettä). Suositus: >500")
+                result["warnings"].append(
+                    f"Pieni dataset ({result['num_samples']} näytettä). Suositus: >500"
+                )
 
             if result["num_samples"] > 100000:
-                result["warnings"].append(f"Suuri dataset ({result['num_samples']} näytettä). Harkitse osaotantaa.")
+                result["warnings"].append(
+                    f"Suuri dataset ({result['num_samples']} näytettä). Harkitse osaotantaa."
+                )
 
             result["valid"] = True
 
@@ -1123,8 +1153,9 @@ class LoRATrainer:
 
         return result
 
-    def create_sample_dataset(self, output_path: Path, format_type: str = "alpaca",
-                             num_samples: int = 10) -> bool:
+    def create_sample_dataset(
+        self, output_path: Path, format_type: str = "alpaca", num_samples: int = 10
+    ) -> bool:
         """Luo esimerkkidataset."""
         samples = []
 
@@ -1133,17 +1164,17 @@ class LoRATrainer:
                 {
                     "instruction": "Selitä mitä tekoäly tarkoittaa.",
                     "input": "",
-                    "output": "Tekoäly (AI) on tietojenkäsittelyn ala, joka keskittyy luomaan järjestelmiä, jotka voivat suorittaa tehtäviä, jotka normaalisti vaatisivat ihmisälyä."
+                    "output": "Tekoäly (AI) on tietojenkäsittelyn ala, joka keskittyy luomaan järjestelmiä, jotka voivat suorittaa tehtäviä, jotka normaalisti vaatisivat ihmisälyä.",
                 },
                 {
                     "instruction": "Käännä seuraava lause englanniksi.",
                     "input": "Koira juoksee puistossa.",
-                    "output": "The dog is running in the park."
+                    "output": "The dog is running in the park.",
                 },
                 {
                     "instruction": "Kirjoita lyhyt runo aiheesta luonto.",
                     "input": "",
-                    "output": "Puut kuiskivat tuulessa,\nlinnut laulavat oksilla.\nAurinko paistaa kirkkaana,\nluonto herää uuteen päivään."
+                    "output": "Puut kuiskivat tuulessa,\nlinnut laulavat oksilla.\nAurinko paistaa kirkkaana,\nluonto herää uuteen päivään.",
                 },
             ] * (num_samples // 3 + 1)
             samples = samples[:num_samples]
@@ -1153,22 +1184,28 @@ class LoRATrainer:
                 {
                     "messages": [
                         {"role": "user", "content": "Mikä on Pythonin paras ominaisuus?"},
-                        {"role": "assistant", "content": "Pythonin paras ominaisuus on sen selkeä ja luettava syntaksi, joka tekee ohjelmoinnista helposti lähestyttävää."}
+                        {
+                            "role": "assistant",
+                            "content": "Pythonin paras ominaisuus on sen selkeä ja luettava syntaksi, joka tekee ohjelmoinnista helposti lähestyttävää.",
+                        },
                     ]
                 },
                 {
                     "messages": [
                         {"role": "user", "content": "Kerro vitsi."},
-                        {"role": "assistant", "content": "Miksi ohjelmoija käyttää tummaa teemaa? Koska valo houkuttelee bugeja!"}
+                        {
+                            "role": "assistant",
+                            "content": "Miksi ohjelmoija käyttää tummaa teemaa? Koska valo houkuttelee bugeja!",
+                        },
                     ]
                 },
             ] * (num_samples // 2 + 1)
             samples = samples[:num_samples]
 
         try:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 for sample in samples:
-                    f.write(json.dumps(sample, ensure_ascii=False) + '\n')
+                    f.write(json.dumps(sample, ensure_ascii=False) + "\n")
             return True
         except Exception:
             return False
@@ -1178,16 +1215,18 @@ class LoRATrainer:
         datasets = []
 
         for file_path in self.datasets_dir.iterdir():
-            if file_path.suffix.lower() in ['.json', '.jsonl', '.csv']:
+            if file_path.suffix.lower() in [".json", ".jsonl", ".csv"]:
                 format_type = self.detect_dataset_format(file_path)
                 size = file_path.stat().st_size
 
-                datasets.append({
-                    "path": file_path,
-                    "name": file_path.name,
-                    "format": format_type,
-                    "size_bytes": size,
-                })
+                datasets.append(
+                    {
+                        "path": file_path,
+                        "name": file_path.name,
+                        "format": format_type,
+                        "size_bytes": size,
+                    }
+                )
 
         return datasets
 
@@ -1195,13 +1234,15 @@ class LoRATrainer:
 
     def detect_model_type(self, model_path: Path) -> Optional[str]:
         """Tunnista mallin tyyppi config.json:sta."""
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
 
         if not config_file.exists():
             return None
 
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config = json.load(f)
 
             model_type = config.get("model_type", "").lower()
@@ -1228,12 +1269,14 @@ class LoRATrainer:
         model_type = self.detect_model_type(model_path)
 
         # Laske parametrit
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
         params_b = 7  # Oletus
 
         if config_file.exists():
             try:
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     config = json.load(f)
 
                 hidden_size = config.get("hidden_size", 4096)
@@ -1297,6 +1340,7 @@ class LoRATrainer:
 
     def _format_dataset(self, dataset, format_type: str, tokenizer):
         """Formatoi dataset training-muotoon."""
+
         def format_alpaca(example):
             """Alpaca-formaatti."""
             if example.get("input"):
@@ -1308,7 +1352,9 @@ class LoRATrainer:
         def format_chat(example):
             """Chat-formaatti."""
             messages = example.get("messages", [])
-            text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+            text = tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=False
+            )
             return {"text": text}
 
         def format_sharegpt(example):
@@ -1326,7 +1372,9 @@ class LoRATrainer:
 
             # Käytä chat templatea jos saatavilla
             try:
-                text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+                text = tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=False
+                )
             except Exception:
                 # Fallback: manuaalinen formatointi
                 text_parts = []
@@ -1406,7 +1454,9 @@ class LoRATrainer:
             should_use_unsloth = unsloth_result.compatible
 
             if not should_use_unsloth and progress_callback:
-                progress_callback(f"Unsloth ei yhteensopiva: {unsloth_result.errors[0] if unsloth_result.errors else 'tuntematon syy'}")
+                progress_callback(
+                    f"Unsloth ei yhteensopiva: {unsloth_result.errors[0] if unsloth_result.errors else 'tuntematon syy'}"
+                )
                 progress_callback("Fallback: käytetään tavallista PEFT")
         else:
             # use_unsloth = False
@@ -1422,7 +1472,8 @@ class LoRATrainer:
 
             try:
                 result = self._train_with_unsloth(
-                    config, progress_callback,
+                    config,
+                    progress_callback,
                     resume_from_checkpoint=resume_from_checkpoint,
                 )
                 if result["success"]:
@@ -1431,7 +1482,9 @@ class LoRATrainer:
                 else:
                     # Unsloth epäonnistui - kokeile fallbackia
                     if progress_callback:
-                        progress_callback(f"Unsloth epäonnistui: {result.get('error', 'tuntematon')}")
+                        progress_callback(
+                            f"Unsloth epäonnistui: {result.get('error', 'tuntematon')}"
+                        )
                         progress_callback("Fallback: kokeillaan tavallista PEFT...")
             except Exception as e:
                 if progress_callback:
@@ -1441,9 +1494,11 @@ class LoRATrainer:
             # Vapauta epäonnistuneen Unsloth-yrityksen GPU-muisti ennen kuin
             # PEFT lataa mallin uudelleen - muuten fallback voi kaatua OOM:iin
             import gc
+
             gc.collect()
             try:
                 import torch
+
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             except ImportError:
@@ -1456,7 +1511,8 @@ class LoRATrainer:
             progress_callback("Käytetään PEFT/transformers-koulutusta")
 
         result = self._train_with_peft(
-            config, progress_callback,
+            config,
+            progress_callback,
             resume_from_checkpoint=resume_from_checkpoint,
         )
         result["backend"] = "peft"
@@ -1517,10 +1573,19 @@ class LoRATrainer:
             # Lisää LoRA-adapterit Unslothin optimoidulla metodilla
             # Käytä config.lora.target_modules jos määritelty, muuten Unslothin oletukset
             unsloth_default_modules = [
-                "q_proj", "k_proj", "v_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj",
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj",
             ]
-            target_modules = config.lora.target_modules if config.lora.target_modules else unsloth_default_modules
+            target_modules = (
+                config.lora.target_modules
+                if config.lora.target_modules
+                else unsloth_default_modules
+            )
 
             model = FastLanguageModel.get_peft_model(
                 model,
@@ -1565,7 +1630,9 @@ class LoRATrainer:
                 eval_dataset = self._format_dataset(eval_dataset, config.dataset_format, tokenizer)
 
             # Output-kansio
-            output_dir = Path(config.output_dir) if config.output_dir else self.output_dir / config.run_name
+            output_dir = (
+                Path(config.output_dir) if config.output_dir else self.output_dir / config.run_name
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
 
             if progress_callback:
@@ -1628,7 +1695,7 @@ class LoRATrainer:
             config_path = output_dir / "training_config.json"
             training_info = config.to_dict()
             training_info["backend"] = "unsloth"
-            with open(config_path, 'w', encoding='utf-8') as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(training_info, f, indent=2, ensure_ascii=False)
 
             elapsed = time.time() - start_time
@@ -1708,7 +1775,7 @@ class LoRATrainer:
                     return {
                         "success": False,
                         "error": "Tokenizerilta puuttuu pad/eos/unk token - "
-                                 "batchaus ei toimi ilman pad-tokenia",
+                        "batchaus ei toimi ilman pad-tokenia",
                     }
 
             # 2. Lataa malli
@@ -1764,7 +1831,9 @@ class LoRATrainer:
             total_params = sum(p.numel() for p in model.parameters())
 
             if progress_callback:
-                progress_callback(f"Trainable: {trainable_params:,} / {total_params:,} ({100*trainable_params/total_params:.2f}%)")
+                progress_callback(
+                    f"Trainable: {trainable_params:,} / {total_params:,} ({100*trainable_params/total_params:.2f}%)"
+                )
 
             # 4. Lataa dataset
             if progress_callback:
@@ -1794,7 +1863,9 @@ class LoRATrainer:
             if progress_callback:
                 progress_callback("Konfiguroidaan training...")
 
-            output_dir = Path(config.output_dir) if config.output_dir else self.output_dir / config.run_name
+            output_dir = (
+                Path(config.output_dir) if config.output_dir else self.output_dir / config.run_name
+            )
             output_dir.mkdir(parents=True, exist_ok=True)
 
             sft_config = SFTConfig(
@@ -1824,7 +1895,9 @@ class LoRATrainer:
                 dataloader_num_workers=hw_caps["recommended_workers"],
                 # Gradient checkpointing optimointi
                 # use_reentrant=False on suositeltava PyTorch 2.0+ ja nopeampi
-                gradient_checkpointing_kwargs={"use_reentrant": False} if config.training.gradient_checkpointing else None,
+                gradient_checkpointing_kwargs=(
+                    {"use_reentrant": False} if config.training.gradient_checkpointing else None
+                ),
                 # SFTConfig-spesifiset parametrit
                 max_length=config.training.max_seq_length,
                 packing=config.training.packing,
@@ -1861,7 +1934,7 @@ class LoRATrainer:
 
             # Tallenna config
             config_path = output_dir / "training_config.json"
-            with open(config_path, 'w', encoding='utf-8') as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
 
             elapsed = time.time() - start_time
@@ -1889,21 +1962,25 @@ class LoRATrainer:
                 # Tarkista onko adapter
                 adapter_config = item / "adapter_config.json"
                 if adapter_config.exists():
-                    checkpoints.append({
-                        "path": item,
-                        "name": item.name,
-                        "type": "adapter",
-                        "created": datetime.fromtimestamp(item.stat().st_mtime),
-                    })
+                    checkpoints.append(
+                        {
+                            "path": item,
+                            "name": item.name,
+                            "type": "adapter",
+                            "created": datetime.fromtimestamp(item.stat().st_mtime),
+                        }
+                    )
 
                 # Tarkista onko checkpoint
                 elif (item / "adapter").exists():
-                    checkpoints.append({
-                        "path": item,
-                        "name": item.name,
-                        "type": "training_output",
-                        "created": datetime.fromtimestamp(item.stat().st_mtime),
-                    })
+                    checkpoints.append(
+                        {
+                            "path": item,
+                            "name": item.name,
+                            "type": "training_output",
+                            "created": datetime.fromtimestamp(item.stat().st_mtime),
+                        }
+                    )
 
         return sorted(checkpoints, key=lambda x: x["created"], reverse=True)
 
@@ -1925,14 +2002,14 @@ class LoRATrainer:
             return None
 
         best_checkpoint = None
-        best_loss = float('inf')
+        best_loss = float("inf")
 
         for cp in checkpoints:
             # Try to find trainer_state.json for eval metrics
             trainer_state = cp / "trainer_state.json"
             if trainer_state.exists():
                 try:
-                    with open(trainer_state, 'r') as f:
+                    with open(trainer_state, "r") as f:
                         state = json.load(f)
 
                     # Find best eval_loss in log history
@@ -1948,7 +2025,7 @@ class LoRATrainer:
         if best_checkpoint is None and checkpoints:
             best_checkpoint = max(
                 checkpoints,
-                key=lambda p: int(p.name.split("-")[1]) if p.name.startswith("checkpoint-") else 0
+                key=lambda p: int(p.name.split("-")[1]) if p.name.startswith("checkpoint-") else 0,
             )
 
         return best_checkpoint
@@ -1980,7 +2057,7 @@ class LoRATrainer:
                 "deleted_count": 0,
                 "saved_bytes": 0,
                 "kept_checkpoints": [cp.name for cp in checkpoints],
-                "message": "No cleanup needed (2 or fewer checkpoints)"
+                "message": "No cleanup needed (2 or fewer checkpoints)",
             }
 
         # Find checkpoints to keep
@@ -1996,7 +2073,7 @@ class LoRATrainer:
         if keep_latest:
             latest_cp = max(
                 checkpoints,
-                key=lambda p: int(p.name.split("-")[1]) if p.name.startswith("checkpoint-") else 0
+                key=lambda p: int(p.name.split("-")[1]) if p.name.startswith("checkpoint-") else 0,
             )
             checkpoints_to_keep.add(latest_cp)
             if progress_callback:
@@ -2030,7 +2107,7 @@ class LoRATrainer:
             "saved_mb": round(saved_bytes / (1024**2), 1),
             "saved_gb": round(saved_bytes / (1024**3), 2),
             "kept_checkpoints": [cp.name for cp in checkpoints_to_keep],
-            "message": f"Cleaned up {deleted_count} checkpoint(s), saved {saved_bytes / (1024**3):.2f} GB"
+            "message": f"Cleaned up {deleted_count} checkpoint(s), saved {saved_bytes / (1024**3):.2f} GB",
         }
 
     def auto_cleanup_after_training(
@@ -2066,10 +2143,7 @@ class LoRATrainer:
             progress_callback("Cleaning up checkpoints...")
 
         cleanup_result = self.cleanup_checkpoints(
-            run_dir,
-            keep_best=True,
-            keep_latest=True,
-            progress_callback=progress_callback
+            run_dir, keep_best=True, keep_latest=True, progress_callback=progress_callback
         )
         result["cleanup"] = cleanup_result
 
@@ -2106,8 +2180,9 @@ class LoRATrainer:
 
     # ==================== INFERENCE / TESTING ====================
 
-    def test_adapter(self, base_model_path: Path, adapter_path: Path,
-                    prompt: str, max_new_tokens: int = 256) -> Dict[str, Any]:
+    def test_adapter(
+        self, base_model_path: Path, adapter_path: Path, prompt: str, max_new_tokens: int = 256
+    ) -> Dict[str, Any]:
         """Testaa adapteria."""
         if not self.get_status()["ready"]:
             return {"success": False, "error": "Riippuvuudet puuttuvat"}
@@ -2151,8 +2226,13 @@ class LoRATrainer:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def merge_adapter(self, base_model_path: Path, adapter_path: Path,
-                     output_path: Path, progress_callback: Optional[Callable] = None) -> Dict[str, Any]:
+    def merge_adapter(
+        self,
+        base_model_path: Path,
+        adapter_path: Path,
+        output_path: Path,
+        progress_callback: Optional[Callable] = None,
+    ) -> Dict[str, Any]:
         """Yhdistä adapter base-malliin."""
         if not self.get_status()["ready"]:
             return {"success": False, "error": "Riippuvuudet puuttuvat"}
@@ -2214,7 +2294,7 @@ class LoRATrainer:
     def save_config(self, config: FullConfig, name: str) -> Path:
         """Tallenna konfiguraatio."""
         config_path = self.configs_dir / f"{name}.json"
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
         return config_path
 
@@ -2229,7 +2309,7 @@ class LoRATrainer:
             return None
 
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 data = json.load(f)
             return FullConfig.from_dict(data)
         except Exception:
@@ -2240,14 +2320,16 @@ class LoRATrainer:
         configs = []
         for config_file in self.configs_dir.glob("*.json"):
             try:
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     data = json.load(f)
-                configs.append({
-                    "path": config_file,
-                    "name": config_file.stem,
-                    "model": data.get("model_name", "Unknown"),
-                    "dataset": Path(data.get("dataset_path", "")).name,
-                })
+                configs.append(
+                    {
+                        "path": config_file,
+                        "name": config_file.stem,
+                        "model": data.get("model_name", "Unknown"),
+                        "dataset": Path(data.get("dataset_path", "")).name,
+                    }
+                )
             except Exception:
                 pass
         return configs

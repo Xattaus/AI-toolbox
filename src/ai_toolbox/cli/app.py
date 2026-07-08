@@ -53,15 +53,15 @@ class AIToolbox:
         self.abliterator = Abliterator()
 
         # Unified command handlers (new structure)
-        self.model_hub_cmd = ModelHubCommands(
-            self.library, self.downloader, self.converter
-        )
-        self.gguf_tools_cmd = GGUFToolsCommands(
-            self.library, self.converter, self.downloader
-        )
+        self.model_hub_cmd = ModelHubCommands(self.library, self.downloader, self.converter)
+        self.gguf_tools_cmd = GGUFToolsCommands(self.library, self.converter, self.downloader)
         self.training_center_cmd = TrainingCenterCommands(
-            self.trainer, self.dataset_prep, self.merger,
-            self.abliterator, self.library, self.downloader
+            self.trainer,
+            self.dataset_prep,
+            self.merger,
+            self.abliterator,
+            self.library,
+            self.downloader,
         )
         self.benchmark_cmd = BenchmarkCommands(self.benchmark, self.library)
         self.settings_cmd = SettingsCommands(self.downloader, self.library)
@@ -104,51 +104,42 @@ class AIToolbox:
             menu_separator("Keskustelu"),
             questionary.Choice(
                 title=format_menu_item("Tool Master", "AI-chat: kysy malleista ja työkaluista"),
-                value="chat"
+                value="chat",
             ),
             questionary.Choice(
                 title=format_menu_item("Claude Assistant", "Käynnistä Claude CLI kehitykseen"),
-                value="assistant"
+                value="assistant",
             ),
             menu_separator("Mallien hallinta"),
             questionary.Choice(
                 title=format_menu_item("Model Hub", "Lataa, selaa ja hallitse malleja"),
-                value="model_hub"
+                value="model_hub",
             ),
             questionary.Choice(
                 title=format_menu_item("GGUF Tools", "Muunna, kvantisoi ja laske VRAM"),
-                value="gguf_tools"
+                value="gguf_tools",
             ),
             questionary.Choice(
                 title=format_menu_item("Ollama Manager", "Luo ja hallitse Ollama-malleja"),
-                value="ollama"
+                value="ollama",
             ),
             menu_separator("Kehittyneet työkalut"),
             questionary.Choice(
                 title=format_menu_item("Training Center", "LoRA, datasetit, yhdistäminen"),
-                value="training_center"
+                value="training_center",
             ),
             questionary.Choice(
-                title=format_menu_item("Benchmark Suite", "Suorituskykytestaus"),
-                value="benchmark"
+                title=format_menu_item("Benchmark Suite", "Suorituskykytestaus"), value="benchmark"
             ),
             menu_separator(),
             questionary.Choice(
-                title=format_menu_item("Asetukset", "Polut ja konfiguraatio"),
-                value="settings"
+                title=format_menu_item("Asetukset", "Polut ja konfiguraatio"), value="settings"
             ),
-            questionary.Choice(
-                title=format_menu_item("<- Poistu", ""),
-                value="exit"
-            ),
+            questionary.Choice(title=format_menu_item("<- Poistu", ""), value="exit"),
         ]
 
         choice = questionary.select(
-            "Valitse toiminto:",
-            choices=choices,
-            style=MENU_STYLE,
-            qmark="#",
-            pointer=">"
+            "Valitse toiminto:", choices=choices, style=MENU_STYLE, qmark="#", pointer=">"
         ).ask()
 
         if choice is None or choice == "exit":
@@ -172,11 +163,7 @@ class AIToolbox:
 
     def _confirm_exit(self) -> bool:
         """Confirm exit from the application."""
-        return questionary.confirm(
-            "Poistu AI Toolboxista?",
-            style=MENU_STYLE,
-            default=True
-        ).ask()
+        return questionary.confirm("Poistu AI Toolboxista?", style=MENU_STYLE, default=True).ask()
 
 
 def main():

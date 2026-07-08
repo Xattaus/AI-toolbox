@@ -88,10 +88,18 @@ class TrainingCenterCommands:
             merger_color = "green" if merger_status["ready"] else "yellow"
             abliter_color = "green" if abliter_status["ready"] else "yellow"
 
-            status_parts.append(f"[dim]LoRA:[/dim] [{lora_color}]{'OK' if lora_status['ready'] else '—'}[/{lora_color}]")
-            status_parts.append(f"[dim]Merger:[/dim] [{merger_color}]{'OK' if merger_status['ready'] else '—'}[/{merger_color}]")
-            status_parts.append(f"[dim]Abliter:[/dim] [{abliter_color}]{'OK' if abliter_status['ready'] else '—'}[/{abliter_color}]")
-            status_parts.append(f"[dim]Datasets:[/dim] [cyan]{dataset_status['datasets_count']}[/cyan]")
+            status_parts.append(
+                f"[dim]LoRA:[/dim] [{lora_color}]{'OK' if lora_status['ready'] else '—'}[/{lora_color}]"
+            )
+            status_parts.append(
+                f"[dim]Merger:[/dim] [{merger_color}]{'OK' if merger_status['ready'] else '—'}[/{merger_color}]"
+            )
+            status_parts.append(
+                f"[dim]Abliter:[/dim] [{abliter_color}]{'OK' if abliter_status['ready'] else '—'}[/{abliter_color}]"
+            )
+            status_parts.append(
+                f"[dim]Datasets:[/dim] [cyan]{dataset_status['datasets_count']}[/cyan]"
+            )
 
             console.print("  " + "  |  ".join(status_parts) + "\n")
 
@@ -99,56 +107,53 @@ class TrainingCenterCommands:
                 menu_separator("LoRA Training"),
                 questionary.Choice(
                     title=format_menu_item("Quick Train", "Pikakoulutus oletusasetuksilla"),
-                    value="lora_quick"
+                    value="lora_quick",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Advanced Train", "Taydella parametrikontrollilla"),
-                    value="lora_advanced"
+                    value="lora_advanced",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Test Adapter", "Testaa koulutettu adapteri"),
-                    value="lora_test"
+                    value="lora_test",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Merge Adapter", "Yhdista adapteri base-malliin"),
-                    value="lora_merge"
+                    value="lora_merge",
                 ),
                 menu_separator("Dataset Tools"),
                 questionary.Choice(
                     title=format_menu_item("Inspect", "Tarkasta datasetin rakenne"),
-                    value="dataset_inspect"
+                    value="dataset_inspect",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Convert", "Muunna formaattien valilla"),
-                    value="dataset_convert"
+                    value="dataset_convert",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Clean & Filter", "Siivoa, suodata, deduplikoi"),
-                    value="dataset_clean"
+                    value="dataset_clean",
                 ),
                 questionary.Choice(
                     title=format_menu_item("More Tools...", "Lisaa dataset-tyokaluja"),
-                    value="dataset_more"
+                    value="dataset_more",
                 ),
                 menu_separator("Model Merging"),
                 questionary.Choice(
                     title=format_menu_item("Mergekit Wizard", "Kaikki merge-tyokalut"),
-                    value="mergekit_wizard"
+                    value="mergekit_wizard",
                 ),
                 menu_separator("Abliteration"),
                 questionary.Choice(
                     title=format_menu_item("Remove Censorship", "Poista kieltaytymiskaytos"),
-                    value="abliterate"
+                    value="abliterate",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Test Model", "Testaa abliteroitu malli"),
-                    value="abliter_test"
+                    value="abliter_test",
                 ),
                 menu_separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
@@ -157,7 +162,7 @@ class TrainingCenterCommands:
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse, Enter vahvista)"
+                instruction="(↑↓ valitse, Enter vahvista)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -216,22 +221,17 @@ class TrainingCenterCommands:
             choices = [
                 questionary.Separator("--- Cleaning ---"),
                 questionary.Choice(
-                    title=format_menu_item("Clean Dataset", "Siivoa ja normalisoi"),
-                    value="clean"
+                    title=format_menu_item("Clean Dataset", "Siivoa ja normalisoi"), value="clean"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Deduplicate", "Poista duplikaatit"),
-                    value="dedupe"
+                    title=format_menu_item("Deduplicate", "Poista duplikaatit"), value="dedupe"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Filter by Length", "Suodata pituuden mukaan"),
-                    value="filter"
+                    value="filter",
                 ),
                 questionary.Separator("---------------------------"),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
@@ -240,7 +240,7 @@ class TrainingCenterCommands:
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse)"
+                instruction="(↑↓ valitse)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -261,25 +261,20 @@ class TrainingCenterCommands:
                 questionary.Separator("--- Operations ---"),
                 questionary.Choice(
                     title=format_menu_item("Split Dataset", "Jaa train/test/val osiin"),
-                    value="split"
+                    value="split",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Count Tokens", "Laske tokenien maara"),
-                    value="tokens"
+                    title=format_menu_item("Count Tokens", "Laske tokenien maara"), value="tokens"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Merge Datasets", "Yhdista useita datasetteja"),
-                    value="merge"
+                    value="merge",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Browse", "Selaa kaikki datasetit"),
-                    value="browse"
+                    title=format_menu_item("Browse", "Selaa kaikki datasetit"), value="browse"
                 ),
                 questionary.Separator("---------------------------"),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
@@ -288,7 +283,7 @@ class TrainingCenterCommands:
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse)"
+                instruction="(↑↓ valitse)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -304,17 +299,17 @@ class TrainingCenterCommands:
 
     def _show_install_message(self, tool_name: str, install_func):
         """Show install prompt for missing dependencies."""
-        console.print(Panel(
-            f"[yellow]{tool_name} ei ole valmis.[/yellow]\n\n"
-            f"Puuttuvat riippuvuudet on asennettava ensin.",
-            title="[bold yellow]Riippuvuudet puuttuvat[/bold yellow]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[yellow]{tool_name} ei ole valmis.[/yellow]\n\n"
+                f"Puuttuvat riippuvuudet on asennettava ensin.",
+                title="[bold yellow]Riippuvuudet puuttuvat[/bold yellow]",
+                border_style="yellow",
+            )
+        )
 
         if questionary.confirm(
-            f"Asenna {tool_name} -riippuvuudet nyt?",
-            default=True,
-            style=custom_style
+            f"Asenna {tool_name} -riippuvuudet nyt?", default=True, style=custom_style
         ).ask():
             install_func()
         else:

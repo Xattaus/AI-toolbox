@@ -81,46 +81,36 @@ class BenchmarkCommands:
                 menu_separator("Testit"),
                 questionary.Choice(
                     title=format_menu_item("Quick Benchmark", "Nopea yhden mallin testi"),
-                    value="quick"
+                    value="quick",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Compare Models", "Vertaile useita malleja"),
-                    value="compare"
+                    value="compare",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Throughput Test", "Mittaa tokens/second"),
-                    value="throughput"
+                    value="throughput",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Memory Profile", "Mittaa muistinkäyttö"),
-                    value="memory"
+                    title=format_menu_item("Memory Profile", "Mittaa muistinkäyttö"), value="memory"
                 ),
                 menu_separator("Tulokset"),
                 questionary.Choice(
-                    title=format_menu_item("View Results", "Näytä aiemmat tulokset"),
-                    value="view"
+                    title=format_menu_item("View Results", "Näytä aiemmat tulokset"), value="view"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Export Results", "Vie CSV/JSON"),
-                    value="export"
+                    title=format_menu_item("Export Results", "Vie CSV/JSON"), value="export"
                 ),
                 questionary.Choice(
                     title=format_menu_item("System Info", "Näytä järjestelmätiedot"),
-                    value="sysinfo"
+                    value="sysinfo",
                 ),
                 menu_separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
-                "Valitse toiminto:",
-                choices=choices,
-                style=custom_style,
-                qmark="#",
-                pointer=">"
+                "Valitse toiminto:", choices=choices, style=custom_style, qmark="#", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -146,7 +136,9 @@ class BenchmarkCommands:
 
         if not gguf_models:
             print_warning("Ei GGUF-malleja kirjastossa.")
-            console.print("[dim]Lisaa malleja Model Library -> Refresh Library tai GGUF Converter[/dim]")
+            console.print(
+                "[dim]Lisaa malleja Model Library -> Refresh Library tai GGUF Converter[/dim]"
+            )
             console.print(f"[dim]GGUF-kansio: {get_paths().gguf_dir}[/dim]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return None
@@ -270,11 +262,13 @@ class BenchmarkCommands:
 
             # Show response
             if result.response_preview:
-                console.print(Panel(
-                    result.response_preview,
-                    title="[bold]Mallin vastaus[/bold]",
-                    border_style="dim"
-                ))
+                console.print(
+                    Panel(
+                        result.response_preview,
+                        title="[bold]Mallin vastaus[/bold]",
+                        border_style="dim",
+                    )
+                )
         else:
             print_error("Benchmark epäonnistui")
 
@@ -406,7 +400,9 @@ class BenchmarkCommands:
         def progress_cb(msg):
             console.print(f"  [dim]{msg}[/dim]")
 
-        results = self.benchmark.run_throughput_test(str(model_path), sizes, progress_callback=progress_cb)
+        results = self.benchmark.run_throughput_test(
+            str(model_path), sizes, progress_callback=progress_cb
+        )
 
         if results:
             # Show results
@@ -458,17 +454,19 @@ class BenchmarkCommands:
         if "error" in result:
             print_error(f"Profilointi epäonnistui: {result['error']}")
         else:
-            console.print(Panel(
-                f"[bold white]Malli:[/bold white] {result['model_name']}\n\n"
-                f"[white]Muisti ennen:[/white] {result['memory_before_mb']:.0f} MB\n"
-                f"[white]Muisti latauksen jalkeen:[/white] {result['memory_after_load_mb']:.0f} MB\n"
-                f"[white]Muisti inferenssin jalkeen:[/white] {result['memory_after_inference_mb']:.0f} MB\n"
-                f"[white]Muisti vapautuksen jalkeen:[/white] {result['memory_after_unload_mb']:.0f} MB\n\n"
-                f"[bold green]Mallin muistinkaytto: {result['model_memory_mb']:.0f} MB[/bold green]\n"
-                f"[dim]Inferenssin overhead: {result['inference_overhead_mb']:.0f} MB[/dim]",
-                title="[bold]Memory Profile[/bold]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[bold white]Malli:[/bold white] {result['model_name']}\n\n"
+                    f"[white]Muisti ennen:[/white] {result['memory_before_mb']:.0f} MB\n"
+                    f"[white]Muisti latauksen jalkeen:[/white] {result['memory_after_load_mb']:.0f} MB\n"
+                    f"[white]Muisti inferenssin jalkeen:[/white] {result['memory_after_inference_mb']:.0f} MB\n"
+                    f"[white]Muisti vapautuksen jalkeen:[/white] {result['memory_after_unload_mb']:.0f} MB\n\n"
+                    f"[bold green]Mallin muistinkaytto: {result['model_memory_mb']:.0f} MB[/bold green]\n"
+                    f"[dim]Inferenssin overhead: {result['inference_overhead_mb']:.0f} MB[/dim]",
+                    title="[bold]Memory Profile[/bold]",
+                    border_style="green",
+                )
+            )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -496,7 +494,11 @@ class BenchmarkCommands:
         for r in results[-15:]:
             # Suojattu timestamp-parsing
             try:
-                timestamp = r.timestamp.split("T")[0] if r.timestamp and "T" in r.timestamp else (r.timestamp[:10] if r.timestamp else "-")
+                timestamp = (
+                    r.timestamp.split("T")[0]
+                    if r.timestamp and "T" in r.timestamp
+                    else (r.timestamp[:10] if r.timestamp else "-")
+                )
             except (TypeError, IndexError, AttributeError):
                 timestamp = "-"
             table.add_row(
@@ -524,7 +526,9 @@ class BenchmarkCommands:
         if action == "export":
             self._export_benchmark_results()
         elif action == "clear":
-            if questionary.confirm("Haluatko varmasti tyhjentaa kaikki tulokset?", default=False, style=custom_style).ask():
+            if questionary.confirm(
+                "Haluatko varmasti tyhjentaa kaikki tulokset?", default=False, style=custom_style
+            ).ask():
                 if self.benchmark.clear_results():
                     print_success("Tulokset tyhjennetty!")
                 else:
@@ -587,7 +591,7 @@ class BenchmarkCommands:
         info = self.benchmark.get_system_info()
 
         gpu_info = ""
-        if info.get('gpu_available'):
+        if info.get("gpu_available"):
             gpu_info = (
                 f"  Saatavilla: Kylla\n"
                 f"  Nimi: {info.get('gpu_name', 'N/A')}\n"
@@ -596,18 +600,20 @@ class BenchmarkCommands:
         else:
             gpu_info = "  Saatavilla: Ei\n"
 
-        console.print(Panel(
-            f"[bold white]CPU[/bold white]\n"
-            f"  Ytimet (looginen): {info['cpu_count']}\n"
-            f"  Ytimet (fyysinen): {info['cpu_count_physical']}\n\n"
-            f"[bold white]RAM[/bold white]\n"
-            f"  Yhteensa: {info['total_ram_gb']:.1f} GB\n"
-            f"  Kaytettavissa: {info['available_ram_gb']:.1f} GB\n"
-            f"  Kaytossa: {info['used_ram_gb']:.1f} GB ({info['ram_percent']:.0f}%)\n\n"
-            f"[bold white]GPU[/bold white]\n"
-            f"{gpu_info}",
-            title="[bold]System Information[/bold]",
-            border_style="cyan"
-        ))
+        console.print(
+            Panel(
+                f"[bold white]CPU[/bold white]\n"
+                f"  Ytimet (looginen): {info['cpu_count']}\n"
+                f"  Ytimet (fyysinen): {info['cpu_count_physical']}\n\n"
+                f"[bold white]RAM[/bold white]\n"
+                f"  Yhteensa: {info['total_ram_gb']:.1f} GB\n"
+                f"  Kaytettavissa: {info['available_ram_gb']:.1f} GB\n"
+                f"  Kaytossa: {info['used_ram_gb']:.1f} GB ({info['ram_percent']:.0f}%)\n\n"
+                f"[bold white]GPU[/bold white]\n"
+                f"{gpu_info}",
+                title="[bold]System Information[/bold]",
+                border_style="cyan",
+            )
+        )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()

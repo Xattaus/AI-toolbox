@@ -20,7 +20,6 @@ from .quantization import QuantizationType, QUANTIZATION_INFO
 from .llama_cpp import LlamaCppManager
 
 
-
 class GGUFConverter:
     """Converts HuggingFace models to GGUF format."""
 
@@ -79,8 +78,8 @@ class GGUFConverter:
     def _is_valid_gguf(path: Path) -> bool:
         """Check that a file starts with the GGUF magic bytes."""
         try:
-            with open(path, 'rb') as f:
-                return f.read(4) == b'GGUF'
+            with open(path, "rb") as f:
+                return f.read(4) == b"GGUF"
         except OSError:
             return False
 
@@ -95,7 +94,9 @@ class GGUFConverter:
             "cpu_count_physical": psutil.cpu_count(logical=False),
         }
 
-    def estimate_model_size(self, model_path: Path, quantization: str = "q4_k_m") -> Dict[str, float]:
+    def estimate_model_size(
+        self, model_path: Path, quantization: str = "q4_k_m"
+    ) -> Dict[str, float]:
         """Estimate the output model size for a given quantization."""
         model_path = Path(model_path)
         config_path = model_path / "config.json"
@@ -112,10 +113,7 @@ class GGUFConverter:
         vocab_size = config.get("vocab_size", 32000)
         intermediate_size = config.get("intermediate_size", hidden_size * 4)
 
-        params_per_layer = (
-            4 * hidden_size * hidden_size +
-            2 * hidden_size * intermediate_size
-        )
+        params_per_layer = 4 * hidden_size * hidden_size + 2 * hidden_size * intermediate_size
         embedding_params = vocab_size * hidden_size * 2
         total_params = num_layers * params_per_layer + embedding_params
 
@@ -137,7 +135,9 @@ class GGUFConverter:
             "estimated_size_gb": round(quantized_size_gb, 2),
             "original_size_gb": round(original_size_gb, 2),
             "total_params_billions": round(total_params / 1e9, 2),
-            "compression_ratio": round(original_size_gb / quantized_size_gb, 2) if quantized_size_gb > 0 else 0,
+            "compression_ratio": (
+                round(original_size_gb / quantized_size_gb, 2) if quantized_size_gb > 0 else 0
+            ),
         }
 
     def convert_to_gguf(
@@ -191,22 +191,26 @@ class GGUFConverter:
             except OSError as e:
                 return {"success": False, "error": f"Could not remove stale output {out_path}: {e}"}
 
-        console.print(Panel(
-            f"[bold cyan]Converting model to GGUF[/bold cyan]\n\n"
-            f"[white]Source:[/white] {model_path}\n"
-            f"[white]Output:[/white] {out_path}\n"
-            f"[white]Type:[/white] {output_type}",
-            title="GGUF Conversion",
-            border_style="cyan"
-        ))
+        console.print(
+            Panel(
+                f"[bold cyan]Converting model to GGUF[/bold cyan]\n\n"
+                f"[white]Source:[/white] {model_path}\n"
+                f"[white]Output:[/white] {out_path}\n"
+                f"[white]Type:[/white] {output_type}",
+                title="GGUF Conversion",
+                border_style="cyan",
+            )
+        )
 
         # Build the conversion command
         cmd = [
             sys.executable,
             str(self._convert_script),
             str(model_path),
-            "--outfile", str(out_path),
-            "--outtype", output_type,
+            "--outfile",
+            str(out_path),
+            "--outtype",
+            output_type,
         ]
 
         if vocab_type:
@@ -231,11 +235,11 @@ class GGUFConverter:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
             )
 
-            for line in iter(process.stdout.readline, ''):
+            for line in iter(process.stdout.readline, ""):
                 output_lines.append(line)
                 stripped = line.strip()
                 if stripped:
@@ -243,7 +247,7 @@ class GGUFConverter:
                         stripped = stripped[:77] + "..."
                     try:
                         safe_line = stripped.replace("[", "\\[")
-                        safe_line = safe_line.encode('ascii', 'replace').decode('ascii')
+                        safe_line = safe_line.encode("ascii", "replace").decode("ascii")
                         console.print(f"  [dim]{safe_line}[/dim]")
                     except Exception:
                         pass
@@ -265,12 +269,15 @@ class GGUFConverter:
         # which leaves return_code as None - is a failure. The output file may
         # be missing or truncated, so never report it as success.
         if return_code != 0:
-            error_output = '\n'.join(output_lines[-20:])
+            error_output = "\n".join(output_lines[-20:])
             if run_error:
                 error_output += f"\nProcess error: {run_error}"
             if out_path.exists():
                 error_output += f"\n\nHuom: keskeneräinen tiedosto voi olla levyllä: {out_path}"
-            return {"success": False, "error": f"Conversion failed (code {return_code}):\n{error_output}"}
+            return {
+                "success": False,
+                "error": f"Conversion failed (code {return_code}):\n{error_output}",
+            }
 
         if out_path.exists() and out_path.stat().st_size > 0:
             if not self._is_valid_gguf(out_path):
@@ -325,7 +332,7 @@ class GGUFConverter:
             return {
                 "success": False,
                 "error": "llama-quantize binary not found. Please build llama.cpp first.",
-                "hint": "Run: cd ~/.ai-toolbox/llama.cpp && make llama-quantize"
+                "hint": "Run: cd ~/.ai-toolbox/llama.cpp && make llama-quantize",
             }
 
         input_path = Path(input_path)
@@ -347,15 +354,17 @@ class GGUFConverter:
         except ValueError:
             description = "Custom quantization"
 
-        console.print(Panel(
-            f"[bold cyan]Quantizing GGUF model[/bold cyan]\n\n"
-            f"[white]Input:[/white] {input_path}\n"
-            f"[white]Output:[/white] {out_path}\n"
-            f"[white]Quantization:[/white] {quantization}\n"
-            f"[white]Description:[/white] {description}",
-            title="GGUF Quantization",
-            border_style="magenta"
-        ))
+        console.print(
+            Panel(
+                f"[bold cyan]Quantizing GGUF model[/bold cyan]\n\n"
+                f"[white]Input:[/white] {input_path}\n"
+                f"[white]Output:[/white] {out_path}\n"
+                f"[white]Quantization:[/white] {quantization}\n"
+                f"[white]Description:[/white] {description}",
+                title="GGUF Quantization",
+                border_style="magenta",
+            )
+        )
 
         # Build quantization command
         # llama-quantize usage: llama-quantize input.gguf output.gguf TYPE [nthreads]
@@ -378,18 +387,18 @@ class GGUFConverter:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
             )
 
-            for line in iter(process.stdout.readline, ''):
+            for line in iter(process.stdout.readline, ""):
                 output_lines.append(line)
                 stripped = line.strip()
                 if stripped:
                     try:
                         if len(stripped) > 70:
                             stripped = stripped[:67] + "..."
-                        safe_line = stripped.encode('ascii', 'replace').decode('ascii')
+                        safe_line = stripped.encode("ascii", "replace").decode("ascii")
                         console.print(f"  [dim]{safe_line}[/dim]")
                     except Exception:
                         pass
@@ -409,10 +418,13 @@ class GGUFConverter:
 
         # Non-zero exit code = quantizer aborted; the output may be truncated
         if return_code is not None and return_code != 0:
-            error_output = '\n'.join(output_lines[-20:])
+            error_output = "\n".join(output_lines[-20:])
             if out_path.exists():
                 error_output += f"\n\nHuom: keskeneräinen tiedosto voi olla levyllä: {out_path}"
-            return {"success": False, "error": f"Quantization failed (code {return_code}):\n{error_output}"}
+            return {
+                "success": False,
+                "error": f"Quantization failed (code {return_code}):\n{error_output}",
+            }
 
         if out_path.exists() and out_path.stat().st_size > 0:
             if not self._is_valid_gguf(out_path):
@@ -509,18 +521,18 @@ class GGUFConverter:
         """Get list of available quantization types."""
         result = []
         for quant_type, info in QUANTIZATION_INFO.items():
-            result.append({
-                "type": quant_type.value,
-                "bits_per_weight": info.bits_per_weight,
-                "quality": info.quality,
-                "description": info.description,
-            })
+            result.append(
+                {
+                    "type": quant_type.value,
+                    "bits_per_weight": info.bits_per_weight,
+                    "quality": info.quality,
+                    "description": info.description,
+                }
+            )
         return result
 
     def recommend_quantization(
-        self,
-        model_params_billions: float,
-        available_ram_gb: Optional[float] = None
+        self, model_params_billions: float, available_ram_gb: Optional[float] = None
     ) -> list:
         """Recommend quantization types based on model size and available RAM."""
         if available_ram_gb is None:
@@ -533,14 +545,16 @@ class GGUFConverter:
             required_ram = estimated_size_gb + 2
 
             if required_ram <= available_ram_gb * 0.8:
-                recommendations.append({
-                    "type": quant_type.value,
-                    "bits_per_weight": info.bits_per_weight,
-                    "quality": info.quality,
-                    "estimated_size_gb": round(estimated_size_gb, 2),
-                    "required_ram_gb": round(required_ram, 2),
-                    "fits_in_ram": True,
-                })
+                recommendations.append(
+                    {
+                        "type": quant_type.value,
+                        "bits_per_weight": info.bits_per_weight,
+                        "quality": info.quality,
+                        "estimated_size_gb": round(estimated_size_gb, 2),
+                        "required_ram_gb": round(required_ram, 2),
+                        "fits_in_ram": True,
+                    }
+                )
 
         recommendations.sort(key=lambda x: x["bits_per_weight"], reverse=True)
 

@@ -23,8 +23,6 @@ from ..core.paths import get_paths, get_models_dir, get_library_file
 from ..core.ui import format_size
 from .types import ModelEntry, ModelTreeNode, ModelCategory
 
-
-
 # Category icons for display
 CATEGORY_ICONS = {
     "base": "🏠",
@@ -47,17 +45,37 @@ _DISPLAY_ARCH_TOKENS = {"llama", "meta"}
 # that actually distinguish two variants of the same base model (Instruct vs
 # SFT, chat vs base, etc.).
 _DISPLAY_DESCRIPTORS = {
-    "instruct": "Instr", "instr": "Instr", "it": "Instr",
-    "sft": "SFT", "dpo": "DPO", "rlhf": "RLHF",
-    "base": "Base", "chat": "Chat",
+    "instruct": "Instr",
+    "instr": "Instr",
+    "it": "Instr",
+    "sft": "SFT",
+    "dpo": "DPO",
+    "rlhf": "RLHF",
+    "base": "Base",
+    "chat": "Chat",
 }
 
 _DISPLAY_ORG_PREFIXES = (
-    "LumiOpen_", "aifeifei798_", "meta-llama_", "mistralai_",
-    "Qwen_", "deepseek-ai_", "NousResearch_", "teknium_",
-    "Open-Orca_", "WizardLM_", "lmsys_", "THUDM_",
-    "tiiuae_", "bigscience_", "EleutherAI_", "microsoft_",
-    "google_", "facebook_", "stabilityai_", "databricks_",
+    "LumiOpen_",
+    "aifeifei798_",
+    "meta-llama_",
+    "mistralai_",
+    "Qwen_",
+    "deepseek-ai_",
+    "NousResearch_",
+    "teknium_",
+    "Open-Orca_",
+    "WizardLM_",
+    "lmsys_",
+    "THUDM_",
+    "tiiuae_",
+    "bigscience_",
+    "EleutherAI_",
+    "microsoft_",
+    "google_",
+    "facebook_",
+    "stabilityai_",
+    "databricks_",
 )
 
 
@@ -73,18 +91,18 @@ def _descriptive_identity(name: str) -> str:
     # Strip a leading organization prefix (case-insensitive).
     for prefix in _DISPLAY_ORG_PREFIXES:
         if name.lower().startswith(prefix.lower()):
-            name = name[len(prefix):]
+            name = name[len(prefix) :]
             break
 
     out: List[str] = []
     prev_low = ""
-    for token in re.split(r'[-_]', name):
+    for token in re.split(r"[-_]", name):
         if not token:
             continue
         low = token.lower()
 
         # Size tags like "8B" / "1.5B" carry no distinguishing value.
-        if re.fullmatch(r'\d+(\.\d+)?b', low):
+        if re.fullmatch(r"\d+(\.\d+)?b", low):
             prev_low = low
             continue
         # Architecture / format noise.
@@ -93,7 +111,7 @@ def _descriptive_identity(name: str) -> str:
             continue
         # A bare number right after an architecture word is an arch version
         # (e.g. Llama-3.1) -> drop. After a family word (Poro-2) -> keep.
-        if re.fullmatch(r'\d+(\.\d+)?', low) and prev_low in _DISPLAY_ARCH_TOKENS:
+        if re.fullmatch(r"\d+(\.\d+)?", low) and prev_low in _DISPLAY_ARCH_TOKENS:
             prev_low = low
             continue
 
@@ -121,11 +139,7 @@ def _descriptive_identity(name: str) -> str:
     return result
 
 
-def format_display_name(
-    full_name: str,
-    max_length: int = 40,
-    include_quant: bool = False
-) -> str:
+def format_display_name(full_name: str, max_length: int = 40, include_quant: bool = False) -> str:
     """
     Create a clean, readable display name from a full model name.
 
@@ -154,25 +168,52 @@ def format_display_name(
     detected_quant = ""
 
     # Pattern 1: Bracketed format " [Q8_0]" or "[Q8_0]"
-    bracket_match = re.search(r'\s*\[([QFqf]\d+[_]?\d*[KkMmSsLl]*)\]$', name)
+    bracket_match = re.search(r"\s*\[([QFqf]\d+[_]?\d*[KkMmSsLl]*)\]$", name)
     if bracket_match:
         detected_quant = bracket_match.group(1).upper()
-        name = name[:bracket_match.start()]
+        name = name[: bracket_match.start()]
 
     # Pattern 2: Suffix format "-q8_0" or "_q8_0"
     if not detected_quant:
         quant_patterns = [
-            "-q8_0", "-q6_k", "-q5_k_m", "-q5_k_s", "-q4_k_m", "-q4_k_s",
-            "-q4_0", "-q3_k_m", "-q3_k_s", "-q2_k", "-f16", "-f32",
-            "_q8_0", "_q6_k", "_q5_k_m", "_q5_k_s", "_q4_k_m", "_q4_k_s",
-            "_q4_0", "_q3_k_m", "_q3_k_s", "_q2_k", "_f16", "_f32",
-            "-iq4_nl", "-iq4_xs", "-iq3_s", "-iq3_m", "-iq3_xs",
-            "-iq2_s", "-iq2_xs", "-iq1_s", "-iq1_m",
+            "-q8_0",
+            "-q6_k",
+            "-q5_k_m",
+            "-q5_k_s",
+            "-q4_k_m",
+            "-q4_k_s",
+            "-q4_0",
+            "-q3_k_m",
+            "-q3_k_s",
+            "-q2_k",
+            "-f16",
+            "-f32",
+            "_q8_0",
+            "_q6_k",
+            "_q5_k_m",
+            "_q5_k_s",
+            "_q4_k_m",
+            "_q4_k_s",
+            "_q4_0",
+            "_q3_k_m",
+            "_q3_k_s",
+            "_q2_k",
+            "_f16",
+            "_f32",
+            "-iq4_nl",
+            "-iq4_xs",
+            "-iq3_s",
+            "-iq3_m",
+            "-iq3_xs",
+            "-iq2_s",
+            "-iq2_xs",
+            "-iq1_s",
+            "-iq1_m",
         ]
         for pattern in quant_patterns:
             if name.lower().endswith(pattern):
                 detected_quant = pattern[1:].upper()
-                name = name[:-len(pattern)]
+                name = name[: -len(pattern)]
                 break
 
     # Add quant suffix only if requested
@@ -202,20 +243,37 @@ def format_display_name(
         if name_lower.startswith(prefix):
             method = method_name
             # Extract model parts after prefix
-            rest = name[len(prefix):]
+            rest = name[len(prefix) :]
 
             # Handle various separators: _, -, +, " + "
             # First normalize "+" with spaces
-            rest = re.sub(r'\s*\+\s*', '_', rest)
+            rest = re.sub(r"\s*\+\s*", "_", rest)
 
             # Split by common separators
-            parts = re.split(r'[-_]', rest)
+            parts = re.split(r"[-_]", rest)
 
             # Filter and extract identities
             skip_words = {
-                'and', 'more', 'abliterated', 'abliter', 'uncensored',
-                'instruct', 'chat', 'base', 'sft', 'hf', 'llama',
-                '8b', '7b', '13b', '14b', '32b', '70b', '3', '3.1', '2'
+                "and",
+                "more",
+                "abliterated",
+                "abliter",
+                "uncensored",
+                "instruct",
+                "chat",
+                "base",
+                "sft",
+                "hf",
+                "llama",
+                "8b",
+                "7b",
+                "13b",
+                "14b",
+                "32b",
+                "70b",
+                "3",
+                "3.1",
+                "2",
             }
 
             identities = []
@@ -230,7 +288,11 @@ def format_display_name(
 
                 ident = extract_model_identity(part_clean)
                 # Only add if meaningful and not duplicate
-                if ident and len(ident) >= 2 and ident.lower() not in [i.lower() for i in identities]:
+                if (
+                    ident
+                    and len(ident) >= 2
+                    and ident.lower() not in [i.lower() for i in identities]
+                ):
                     identities.append(ident)
 
             if identities:
@@ -250,7 +312,7 @@ def format_display_name(
 
     # Truncate if needed
     if len(final_name) > max_length:
-        final_name = final_name[:max_length - 3] + "..."
+        final_name = final_name[: max_length - 3] + "..."
 
     return final_name
 
@@ -288,62 +350,133 @@ def extract_model_identity(full_name: str) -> str:
 
     # Remove common organization prefixes (at start of name)
     org_prefixes = [
-        "LumiOpen_", "aifeifei798_", "meta-llama_", "mistralai_",
-        "Qwen_", "deepseek-ai_", "NousResearch_", "teknium_",
-        "Open-Orca_", "WizardLM_", "lmsys_", "THUDM_",
-        "tiiuae_", "bigscience_", "EleutherAI_", "microsoft_",
-        "google_", "facebook_", "stabilityai_", "databricks_",
+        "LumiOpen_",
+        "aifeifei798_",
+        "meta-llama_",
+        "mistralai_",
+        "Qwen_",
+        "deepseek-ai_",
+        "NousResearch_",
+        "teknium_",
+        "Open-Orca_",
+        "WizardLM_",
+        "lmsys_",
+        "THUDM_",
+        "tiiuae_",
+        "bigscience_",
+        "EleutherAI_",
+        "microsoft_",
+        "google_",
+        "facebook_",
+        "stabilityai_",
+        "databricks_",
     ]
     for prefix in org_prefixes:
         if name.startswith(prefix):
-            name = name[len(prefix):]
+            name = name[len(prefix) :]
             break
 
     # Remove common suffixes (order matters - longer first)
     suffixes_to_remove = [
         # Quantization
-        "-abliterated", "_abliterated", "-abliter", "_abliter",
-        "-Uncensored", "_Uncensored", "-uncensored", "_uncensored",
+        "-abliterated",
+        "_abliterated",
+        "-abliter",
+        "_abliter",
+        "-Uncensored",
+        "_Uncensored",
+        "-uncensored",
+        "_uncensored",
         # Size indicators
-        "-8B", "-7B", "-13B", "-14B", "-32B", "-70B", "-72B",
-        "-1B", "-3B", "-0.5B", "-1.5B", "-2B", "-4B",
-        "_8B", "_7B", "_13B", "_14B", "_32B", "_70B", "_72B",
+        "-8B",
+        "-7B",
+        "-13B",
+        "-14B",
+        "-32B",
+        "-70B",
+        "-72B",
+        "-1B",
+        "-3B",
+        "-0.5B",
+        "-1.5B",
+        "-2B",
+        "-4B",
+        "_8B",
+        "_7B",
+        "_13B",
+        "_14B",
+        "_32B",
+        "_70B",
+        "_72B",
         # Training type
-        "-Instruct", "-Chat", "-Base", "-SFT", "-RLHF", "-DPO",
-        "_Instruct", "_Chat", "_Base", "_SFT", "_RLHF", "_DPO",
-        "-instruct", "-chat", "-base", "-sft",
+        "-Instruct",
+        "-Chat",
+        "-Base",
+        "-SFT",
+        "-RLHF",
+        "-DPO",
+        "_Instruct",
+        "_Chat",
+        "_Base",
+        "_SFT",
+        "_RLHF",
+        "_DPO",
+        "-instruct",
+        "-chat",
+        "-base",
+        "-sft",
         # Version indicators
-        "-hf", "_hf", "-HF", "_HF",
-        "-v0.1", "-v0.2", "-v0.3", "-v1", "-v2", "-v3",
-        "-1.0", "-1.1", "-1.2", "-2.0", "-3.0", "-3.1", "-3.2",
+        "-hf",
+        "_hf",
+        "-HF",
+        "_HF",
+        "-v0.1",
+        "-v0.2",
+        "-v0.3",
+        "-v1",
+        "-v2",
+        "-v3",
+        "-1.0",
+        "-1.1",
+        "-1.2",
+        "-2.0",
+        "-3.0",
+        "-3.1",
+        "-3.2",
         # Llama architecture indicators (keep but will handle specially)
-        "-Llama-3.1", "-Llama-3", "-Llama-2", "-Llama",
-        "_Llama-3.1", "_Llama-3", "_Llama-2", "_Llama",
+        "-Llama-3.1",
+        "-Llama-3",
+        "-Llama-2",
+        "-Llama",
+        "_Llama-3.1",
+        "_Llama-3",
+        "_Llama-2",
+        "_Llama",
     ]
 
     for suffix in suffixes_to_remove:
         if suffix.lower() in name.lower():
             idx = name.lower().find(suffix.lower())
-            name = name[:idx] + name[idx + len(suffix):]
+            name = name[:idx] + name[idx + len(suffix) :]
 
     # Remove trailing version numbers like "-1", "-2", "-1.2" at end of name
-    name = re.sub(r'-\d+\.?\d*$', '', name)
+    name = re.sub(r"-\d+\.?\d*$", "", name)
 
     # Handle special known model names to extract the key identity
     # These are patterns where the unique name is embedded
     special_patterns = [
         # Pattern: "Something-Llama-..." -> "Something"
-        (r'^([A-Za-z0-9]+)-Llama', r'\1'),
+        (r"^([A-Za-z0-9]+)-Llama", r"\1"),
         # Pattern: "Llama-Something-..." -> "Something" (if Something is not a version)
-        (r'^Llama-([A-Za-z][A-Za-z0-9]*)', r'\1'),
+        (r"^Llama-([A-Za-z][A-Za-z0-9]*)", r"\1"),
         # Pattern: "Something-Mistral-..." -> "Something"
-        (r'^([A-Za-z0-9]+)-Mistral', r'\1'),
+        (r"^([A-Za-z0-9]+)-Mistral", r"\1"),
         # Pattern: "Qwen2.5" or "Qwen2" -> keep as is
-        (r'^(Qwen\d+\.?\d*)', r'\1'),
+        (r"^(Qwen\d+\.?\d*)", r"\1"),
         # Pattern: "DeepSeek-R1" -> keep as is
-        (r'^(DeepSeek-R\d+)', r'\1'),
+        (r"^(DeepSeek-R\d+)", r"\1"),
         # Pattern: "Mistral-..." -> "Mistral"
-        (r'^(Mistral)', r'\1'),
+        (r"^(Mistral)", r"\1"),
     ]
 
     for pattern, replacement in special_patterns:
@@ -358,7 +491,7 @@ def extract_model_identity(full_name: str) -> str:
     # If still too long or contains numbers at end, try to simplify
     if len(name) > 15:
         # Remove trailing numbers and dashes
-        name = re.sub(r'[-_]?\d+[-_]?\d*$', '', name)
+        name = re.sub(r"[-_]?\d+[-_]?\d*$", "", name)
 
     # Final cleanup - capitalize first letter
     if name and name[0].islower():
@@ -376,10 +509,7 @@ def extract_model_identity(full_name: str) -> str:
 
 
 def generate_merge_name(
-    method: str,
-    model_names: list,
-    base_model_name: str = None,
-    short: bool = True
+    method: str, model_names: list, base_model_name: str = None, short: bool = True
 ) -> str:
     """
     Generate a clean default name for a merged model.
@@ -436,7 +566,7 @@ def generate_merge_name(
         return f"{method_prefix}_Merge"
 
 
-def get_sort_key(model: 'ModelEntry', sort_by: str = "date"):
+def get_sort_key(model: "ModelEntry", sort_by: str = "date"):
     """
     Get sort key for a model based on sort criteria.
 
@@ -456,10 +586,19 @@ def get_sort_key(model: 'ModelEntry', sort_by: str = "date"):
     elif sort_by == "quant":
         # Sort by quantization level (larger = better quality)
         quant_order = {
-            "F32": 100, "F16": 90, "BF16": 85,
-            "Q8_0": 80, "Q6_K": 70, "Q5_K_M": 65, "Q5_K_S": 60,
-            "Q4_K_M": 55, "Q4_K_S": 50, "Q4_0": 45,
-            "Q3_K_M": 40, "Q3_K_S": 35, "Q2_K": 30,
+            "F32": 100,
+            "F16": 90,
+            "BF16": 85,
+            "Q8_0": 80,
+            "Q6_K": 70,
+            "Q5_K_M": 65,
+            "Q5_K_S": 60,
+            "Q4_K_M": 55,
+            "Q4_K_S": 50,
+            "Q4_0": 45,
+            "Q3_K_M": 40,
+            "Q3_K_S": 35,
+            "Q2_K": 30,
         }
         return quant_order.get(model.quantization, 0) if model.quantization else 0
     elif sort_by == "format":
@@ -498,16 +637,18 @@ class ModelLibrary:
         """Load the library index from disk (falls back to .bak if corrupt)."""
         self._models = {}
 
-        for candidate in (self.index_file, self.index_file.with_suffix('.json.bak')):
+        for candidate in (self.index_file, self.index_file.with_suffix(".json.bak")):
             if not candidate.exists():
                 continue
             try:
-                with open(candidate, 'r', encoding='utf-8') as f:
+                with open(candidate, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                for model_id, model_data in data.get('models', {}).items():
+                for model_id, model_data in data.get("models", {}).items():
                     self._models[model_id] = ModelEntry(**model_data)
                 if candidate != self.index_file:
-                    console.print("[yellow]Kirjastoindeksi palautettu varmuuskopiosta (.bak)[/yellow]")
+                    console.print(
+                        "[yellow]Kirjastoindeksi palautettu varmuuskopiosta (.bak)[/yellow]"
+                    )
                 return
             except (json.JSONDecodeError, TypeError) as e:
                 console.print(f"[yellow]Warning: Could not load {candidate.name}: {e}[/yellow]")
@@ -521,15 +662,15 @@ class ModelLibrary:
         kept as library.json.bak for recovery.
         """
         data = {
-            'version': '1.0',
-            'updated': datetime.now().isoformat(),
-            'models': {mid: asdict(model) for mid, model in self._models.items()}
+            "version": "1.0",
+            "updated": datetime.now().isoformat(),
+            "models": {mid: asdict(model) for mid, model in self._models.items()},
         }
 
-        temp_file = self.index_file.with_suffix('.json.tmp')
-        backup_file = self.index_file.with_suffix('.json.bak')
+        temp_file = self.index_file.with_suffix(".json.tmp")
+        backup_file = self.index_file.with_suffix(".json.bak")
         try:
-            with open(temp_file, 'w', encoding='utf-8') as f:
+            with open(temp_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             if self.index_file.exists():
                 shutil.copy2(self.index_file, backup_file)
@@ -548,7 +689,7 @@ class ModelLibrary:
 
     def _generate_id(self, name: str) -> str:
         """Generate a unique ID for a model."""
-        base_id = name.lower().replace('/', '_').replace(' ', '_')
+        base_id = name.lower().replace("/", "_").replace(" ", "_")
         counter = 1
         model_id = base_id
         while model_id in self._models:
@@ -560,36 +701,56 @@ class ModelLibrary:
         """Detect the format of a model."""
         if path.is_file():
             suffix = path.suffix.lower()
-            if suffix == '.gguf':
-                return 'gguf'
-            elif suffix == '.ggml':
-                return 'ggml'
-            elif suffix == '.safetensors':
-                return 'safetensors'
-            elif suffix in ['.bin', '.pt', '.pth']:
-                return 'pytorch'
+            if suffix == ".gguf":
+                return "gguf"
+            elif suffix == ".ggml":
+                return "ggml"
+            elif suffix == ".safetensors":
+                return "safetensors"
+            elif suffix in [".bin", ".pt", ".pth"]:
+                return "pytorch"
         elif path.is_dir():
-            if (path / 'model.safetensors').exists() or list(path.glob('*.safetensors')):
-                return 'safetensors'
-            elif (path / 'pytorch_model.bin').exists() or list(path.glob('*.bin')):
-                return 'pytorch'
-            elif list(path.glob('*.gguf')):
-                return 'gguf'
-        return 'unknown'
+            if (path / "model.safetensors").exists() or list(path.glob("*.safetensors")):
+                return "safetensors"
+            elif (path / "pytorch_model.bin").exists() or list(path.glob("*.bin")):
+                return "pytorch"
+            elif list(path.glob("*.gguf")):
+                return "gguf"
+        return "unknown"
 
     def _detect_quantization(self, path: Path) -> Optional[str]:
         """Detect quantization from filename."""
         name = path.stem.lower()
         quant_types = [
-            'f32', 'f16', 'bf16',
-            'q8_0', 'q6_k', 'q5_k_m', 'q5_k_s', 'q5_0', 'q5_1',
-            'q4_k_m', 'q4_k_s', 'q4_0', 'q4_1',
-            'q3_k_l', 'q3_k_m', 'q3_k_s', 'q2_k',
-            'iq4_nl', 'iq4_xs', 'iq3_s', 'iq3_m', 'iq3_xs',
-            'iq2_s', 'iq2_xs', 'iq1_s', 'iq1_m'
+            "f32",
+            "f16",
+            "bf16",
+            "q8_0",
+            "q6_k",
+            "q5_k_m",
+            "q5_k_s",
+            "q5_0",
+            "q5_1",
+            "q4_k_m",
+            "q4_k_s",
+            "q4_0",
+            "q4_1",
+            "q3_k_l",
+            "q3_k_m",
+            "q3_k_s",
+            "q2_k",
+            "iq4_nl",
+            "iq4_xs",
+            "iq3_s",
+            "iq3_m",
+            "iq3_xs",
+            "iq2_s",
+            "iq2_xs",
+            "iq1_s",
+            "iq1_m",
         ]
         for qt in quant_types:
-            if qt in name or qt.replace('_', '-') in name:
+            if qt in name or qt.replace("_", "-") in name:
                 return qt.upper()
         return None
 
@@ -599,7 +760,7 @@ class ModelLibrary:
             return path.stat().st_size
         elif path.is_dir():
             total = 0
-            for f in path.rglob('*'):
+            for f in path.rglob("*"):
                 if f.is_file():
                     total += f.stat().st_size
             return total
@@ -780,11 +941,11 @@ class ModelLibrary:
 
     def get_gguf_models(self) -> List[ModelEntry]:
         """Get all GGUF format models."""
-        return self.list_models(format_filter='gguf')
+        return self.list_models(format_filter="gguf")
 
     def get_hf_models(self) -> List[ModelEntry]:
         """Get all HuggingFace source models."""
-        return [m for m in self._models.values() if m.source == 'huggingface']
+        return [m for m in self._models.values() if m.source == "huggingface"]
 
     def scan_directory(self, directory: str, add_found: bool = False) -> List[Dict[str, Any]]:
         """
@@ -806,7 +967,7 @@ class ModelLibrary:
 
         # First pass: Find model DIRECTORIES (HuggingFace format with config.json)
         model_dirs = set()
-        for config_file in scan_path.rglob('config.json'):
+        for config_file in scan_path.rglob("config.json"):
             model_dir = config_file.parent
             # Skip if this is a nested config (like in a tokenizer subfolder)
             if model_dir.parent in model_dirs:
@@ -814,12 +975,12 @@ class ModelLibrary:
             model_dirs.add(model_dir)
 
             info = {
-                'path': str(model_dir),
-                'name': model_dir.name,
-                'format': self._detect_format(model_dir),
-                'size': self._calculate_size(model_dir),
-                'quantization': None,
-                'is_directory': True,
+                "path": str(model_dir),
+                "name": model_dir.name,
+                "format": self._detect_format(model_dir),
+                "size": self._calculate_size(model_dir),
+                "quantization": None,
+                "is_directory": True,
             }
             found.append(info)
 
@@ -828,18 +989,18 @@ class ModelLibrary:
                 seen_paths.add(str(model_dir))
 
         # Second pass: Find standalone GGUF files (not inside model directories)
-        for gguf_file in scan_path.rglob('*.gguf'):
+        for gguf_file in scan_path.rglob("*.gguf"):
             # Skip if this GGUF is inside a model directory
             if any(gguf_file.is_relative_to(md) for md in model_dirs):
                 continue
 
             info = {
-                'path': str(gguf_file),
-                'name': gguf_file.stem,
-                'format': 'gguf',
-                'size': self._calculate_size(gguf_file),
-                'quantization': self._detect_quantization(gguf_file),
-                'is_directory': False,
+                "path": str(gguf_file),
+                "name": gguf_file.stem,
+                "format": "gguf",
+                "size": self._calculate_size(gguf_file),
+                "quantization": self._detect_quantization(gguf_file),
+                "is_directory": False,
             }
             found.append(info)
 
@@ -897,11 +1058,11 @@ class ModelLibrary:
             source_counts[model.source] = source_counts.get(model.source, 0) + 1
 
         return {
-            'total_models': len(models),
-            'total_size_bytes': total_size,
-            'total_size_gb': round(total_size / (1024**3), 2),
-            'format_counts': format_counts,
-            'source_counts': source_counts,
+            "total_models": len(models),
+            "total_size_bytes": total_size,
+            "total_size_gb": round(total_size / (1024**3), 2),
+            "format_counts": format_counts,
+            "source_counts": source_counts,
         }
 
     def print_library(self, limit: int = 20):
@@ -916,7 +1077,7 @@ class ModelLibrary:
             title=f"Model Library ({len(self._models)} models)",
             box=box.ROUNDED,
             show_header=True,
-            header_style="bold cyan"
+            header_style="bold cyan",
         )
 
         table.add_column("#", style="dim", width=4)
@@ -935,7 +1096,7 @@ class ModelLibrary:
                 model.format.upper(),
                 quant,
                 size_str,
-                model.source
+                model.source,
             )
 
         console.print(table)
@@ -1043,12 +1204,9 @@ class ModelLibrary:
         # Build tree recursively
         def build_node(entry: ModelEntry, depth: int = 0) -> ModelTreeNode:
             children_entries = [
-                self._models[cid] for cid in entry.children_ids
-                if cid in self._models
+                self._models[cid] for cid in entry.children_ids if cid in self._models
             ]
-            children_nodes = [
-                build_node(child, depth + 1) for child in children_entries
-            ]
+            children_nodes = [build_node(child, depth + 1) for child in children_entries]
             return ModelTreeNode(entry=entry, children=children_nodes, depth=depth)
 
         return [build_node(m) for m in root_models]
@@ -1073,42 +1231,44 @@ class ModelLibrary:
         total_size = sum(m.size_bytes for m in self._models.values())
 
         console.print()
-        console.print(Panel(
-            f"[bold white]Yhteensä {total} mallia[/bold white]  •  [cyan]{format_size(total_size)}[/cyan]\n"
-            f"[dim]Puu näyttää mallien väliset suhteet (parent → child)[/dim]",
-            title="[bold cyan]🌳 MALLIPUU[/bold cyan]",
-            border_style="cyan",
-            padding=(0, 2)
-        ))
+        console.print(
+            Panel(
+                f"[bold white]Yhteensä {total} mallia[/bold white]  •  [cyan]{format_size(total_size)}[/cyan]\n"
+                f"[dim]Puu näyttää mallien väliset suhteet (parent → child)[/dim]",
+                title="[bold cyan]🌳 MALLIPUU[/bold cyan]",
+                border_style="cyan",
+                padding=(0, 2),
+            )
+        )
         console.print()
 
         def get_icon(entry):
             """Get icon based on format and source."""
-            if entry.category == 'ollama':
-                return '🤖'
-            elif entry.category == 'adapter':
-                return '🔧'
-            elif entry.source == 'merged':
-                return '🔀'
-            elif entry.format == 'gguf':
-                if entry.quantization and entry.quantization not in ('F16', 'F32', 'BF16'):
-                    return '⚡'  # Quantized
+            if entry.category == "ollama":
+                return "🤖"
+            elif entry.category == "adapter":
+                return "🔧"
+            elif entry.source == "merged":
+                return "🔀"
+            elif entry.format == "gguf":
+                if entry.quantization and entry.quantization not in ("F16", "F32", "BF16"):
+                    return "⚡"  # Quantized
                 else:
-                    return '📦'  # F16
+                    return "📦"  # F16
             else:
-                return '🏠'  # SafeTensors/base
+                return "🏠"  # SafeTensors/base
 
         def get_color(entry):
             """Get color based on type."""
-            if entry.category == 'ollama':
-                return 'blue'
-            elif entry.format == 'gguf':
-                if entry.quantization and entry.quantization not in ('F16', 'F32', 'BF16'):
-                    return 'cyan'
-                return 'yellow'
-            elif entry.source == 'merged':
-                return 'magenta'
-            return 'green'
+            if entry.category == "ollama":
+                return "blue"
+            elif entry.format == "gguf":
+                if entry.quantization and entry.quantization not in ("F16", "F32", "BF16"):
+                    return "cyan"
+                return "yellow"
+            elif entry.source == "merged":
+                return "magenta"
+            return "green"
 
         def print_node(node, prefix="", is_last=True, is_root=True):
             """Print a single node with proper tree formatting."""
@@ -1133,7 +1293,7 @@ class ModelLibrary:
 
             # Source tag for clarity
             source_tag = ""
-            if entry.source in ('converted', 'quantized', 'merged'):
+            if entry.source in ("converted", "quantized", "merged"):
                 source_tag = f" [dim]({entry.source})[/dim]"
 
             console.print(
@@ -1154,17 +1314,19 @@ class ModelLibrary:
 
         # Legend
         console.print()
-        console.print(Panel(
-            "[green]🏠 SafeTensors[/green]  "
-            "[yellow]📦 GGUF F16[/yellow]  "
-            "[cyan]⚡ Kvantisoidut[/cyan]  "
-            "[magenta]🔀 Merged[/magenta]  "
-            "[blue]🤖 Ollama[/blue]  "
-            "[white]🔧 LoRA[/white]",
-            title="[dim]Selitykset[/dim]",
-            border_style="dim",
-            padding=(0, 1)
-        ))
+        console.print(
+            Panel(
+                "[green]🏠 SafeTensors[/green]  "
+                "[yellow]📦 GGUF F16[/yellow]  "
+                "[cyan]⚡ Kvantisoidut[/cyan]  "
+                "[magenta]🔀 Merged[/magenta]  "
+                "[blue]🤖 Ollama[/blue]  "
+                "[white]🔧 LoRA[/white]",
+                title="[dim]Selitykset[/dim]",
+                border_style="dim",
+                padding=(0, 1),
+            )
+        )
 
     def get_base_models(self) -> List[ModelEntry]:
         """Get all base/foundation models."""
@@ -1196,12 +1358,12 @@ class ModelLibrary:
         paths = get_paths()
 
         orphans = {
-            'safetensors': [],
-            'gguf': [],
-            'lora': [],
-            'merged': [],
-            'abliterated': [],
-            'ollama': []
+            "safetensors": [],
+            "gguf": [],
+            "lora": [],
+            "merged": [],
+            "abliterated": [],
+            "ollama": [],
         }
 
         # Get all registered paths (normalized)
@@ -1214,12 +1376,12 @@ class ModelLibrary:
 
         # Scan directories
         scan_dirs = {
-            'safetensors': paths.safetensors_dir,
-            'gguf': paths.gguf_dir,
-            'lora': paths.loras_dir,
-            'merged': paths.merged_dir,
-            'abliterated': paths.abliterated_dir,
-            'ollama': paths.ollama_dir
+            "safetensors": paths.safetensors_dir,
+            "gguf": paths.gguf_dir,
+            "lora": paths.loras_dir,
+            "merged": paths.merged_dir,
+            "abliterated": paths.abliterated_dir,
+            "ollama": paths.ollama_dir,
         }
 
         for category, scan_dir in scan_dirs.items():
@@ -1233,24 +1395,28 @@ class ModelLibrary:
                     # Check if this path or any parent/child is registered
                     is_registered = False
                     for reg_path in registered_paths:
-                        if (item_path == reg_path or
-                            item_path in reg_path.parents or
-                            reg_path in item_path.parents):
+                        if (
+                            item_path == reg_path
+                            or item_path in reg_path.parents
+                            or reg_path in item_path.parents
+                        ):
                             is_registered = True
                             break
 
                     if not is_registered:
                         # Skip modelfiles in ollama dir - they're managed by OllamaManager
-                        if category == 'ollama' and item.suffix == '.modelfile':
+                        if category == "ollama" and item.suffix == ".modelfile":
                             continue
 
                         size = self._calculate_size(item)
-                        orphans[category].append({
-                            'path': str(item),
-                            'name': item.name,
-                            'size_bytes': size,
-                            'is_directory': item.is_dir()
-                        })
+                        orphans[category].append(
+                            {
+                                "path": str(item),
+                                "name": item.name,
+                                "size_bytes": size,
+                                "is_directory": item.is_dir(),
+                            }
+                        )
                 except Exception:
                     pass
 
@@ -1260,28 +1426,19 @@ class ModelLibrary:
         """Get statistics about orphaned files."""
         orphans = self.find_orphaned_files()
 
-        stats = {
-            'total_count': 0,
-            'total_size_bytes': 0,
-            'by_category': {}
-        }
+        stats = {"total_count": 0, "total_size_bytes": 0, "by_category": {}}
 
         for category, files in orphans.items():
-            cat_size = sum(f['size_bytes'] for f in files)
+            cat_size = sum(f["size_bytes"] for f in files)
             cat_count = len(files)
-            stats['by_category'][category] = {
-                'count': cat_count,
-                'size_bytes': cat_size
-            }
-            stats['total_count'] += cat_count
-            stats['total_size_bytes'] += cat_size
+            stats["by_category"][category] = {"count": cat_count, "size_bytes": cat_size}
+            stats["total_count"] += cat_count
+            stats["total_size_bytes"] += cat_size
 
         return stats
 
     def cleanup_orphans(
-        self,
-        categories: Optional[List[str]] = None,
-        dry_run: bool = True
+        self, categories: Optional[List[str]] = None, dry_run: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Clean up orphaned files.
@@ -1303,7 +1460,7 @@ class ModelLibrary:
             for file_info in files:
                 if not dry_run:
                     try:
-                        path = Path(file_info['path'])
+                        path = Path(file_info["path"])
                         if path.exists():
                             if path.is_file():
                                 path.unlink()
@@ -1329,31 +1486,29 @@ class ModelLibrary:
             Dict with 'broken_parents', 'broken_children', 'orphaned_children' lists
         """
         issues = {
-            'broken_parents': [],      # Children pointing to non-existent parents
-            'broken_children': [],     # Parents listing non-existent children
-            'orphaned_children': [],   # Children whose parent doesn't list them
+            "broken_parents": [],  # Children pointing to non-existent parents
+            "broken_children": [],  # Parents listing non-existent children
+            "orphaned_children": [],  # Children whose parent doesn't list them
         }
 
         for model_id, model in self._models.items():
             # Check parent reference
             if model.parent_id:
                 if model.parent_id not in self._models:
-                    issues['broken_parents'].append(
+                    issues["broken_parents"].append(
                         f"{model.name} -> missing parent {model.parent_id}"
                     )
                 else:
                     parent = self._models[model.parent_id]
                     if model_id not in parent.children_ids:
-                        issues['orphaned_children'].append(
+                        issues["orphaned_children"].append(
                             f"{model.name} has parent {parent.name} but not listed as child"
                         )
 
             # Check children references
             for child_id in model.children_ids:
                 if child_id not in self._models:
-                    issues['broken_children'].append(
-                        f"{model.name} -> missing child {child_id}"
-                    )
+                    issues["broken_children"].append(f"{model.name} -> missing child {child_id}")
 
         return issues
 
@@ -1393,7 +1548,7 @@ class ModelLibrary:
             Dict with 'children', 'ollama_name', 'size_freed', 'warnings'
         """
         if model_id not in self._models:
-            return {'error': 'Model not found'}
+            return {"error": "Model not found"}
 
         model = self._models[model_id]
         children = self.get_children(model_id)
@@ -1413,19 +1568,17 @@ class ModelLibrary:
 
         warnings = []
         if children:
-            ollama_children = [c for c in children if c.category == 'ollama']
+            ollama_children = [c for c in children if c.category == "ollama"]
             if ollama_children:
-                warnings.append(
-                    f"Talla mallilla on {len(ollama_children)} Ollama-lapsimallia"
-                )
+                warnings.append(f"Talla mallilla on {len(ollama_children)} Ollama-lapsimallia")
 
         return {
-            'model': model,
-            'children': children,
-            'all_descendants': cascade_models,
-            'ollama_name': model.ollama_info.get('ollama_name') if model.ollama_info else None,
-            'size_freed': cascade_size,
-            'warnings': warnings
+            "model": model,
+            "children": children,
+            "all_descendants": cascade_models,
+            "ollama_name": model.ollama_info.get("ollama_name") if model.ollama_info else None,
+            "size_freed": cascade_size,
+            "warnings": warnings,
         }
 
     def find_missing_files(self) -> List[ModelEntry]:
@@ -1474,18 +1627,18 @@ class ModelLibrary:
         Returns:
             Dict with 'missing' and 'duplicates' counts
         """
-        results = {'missing': 0, 'duplicates': 0}
+        results = {"missing": 0, "duplicates": 0}
 
         # Remove missing files
         missing = self.find_missing_files()
         for m in missing:
             del self._models[m.id]
-        results['missing'] = len(missing)
+        results["missing"] = len(missing)
 
         # Remove duplicates
-        results['duplicates'] = self.cleanup_duplicates()
+        results["duplicates"] = self.cleanup_duplicates()
 
-        if results['missing'] > 0 or results['duplicates'] > 0:
+        if results["missing"] > 0 or results["duplicates"] > 0:
             self._save_index()
 
         return results
@@ -1496,12 +1649,9 @@ class ModelLibrary:
 
         for model in self._models.values():
             if model.category not in category_stats:
-                category_stats[model.category] = {
-                    'count': 0,
-                    'size_bytes': 0
-                }
-            category_stats[model.category]['count'] += 1
-            category_stats[model.category]['size_bytes'] += model.size_bytes
+                category_stats[model.category] = {"count": 0, "size_bytes": 0}
+            category_stats[model.category]["count"] += 1
+            category_stats[model.category]["size_bytes"] += model.size_bytes
 
         return category_stats
 
@@ -1516,8 +1666,9 @@ class ModelLibrary:
         Returns SafeTensors and merged models (not GGUF).
         """
         return [
-            m for m in self._models.values()
-            if m.format in ('safetensors', 'pytorch') and m.format != 'gguf'
+            m
+            for m in self._models.values()
+            if m.format in ("safetensors", "pytorch") and m.format != "gguf"
         ]
 
     def get_quantizable_models(self) -> List[ModelEntry]:
@@ -1527,8 +1678,9 @@ class ModelLibrary:
         Returns F16/F32 GGUF models (not already heavily quantized).
         """
         return [
-            m for m in self._models.values()
-            if m.format == 'gguf' and m.quantization in (None, 'F16', 'F32', 'BF16')
+            m
+            for m in self._models.values()
+            if m.format == "gguf" and m.quantization in (None, "F16", "F32", "BF16")
         ]
 
     def get_already_quantized_models(self) -> List[ModelEntry]:
@@ -1538,8 +1690,9 @@ class ModelLibrary:
         Returns GGUF models with quantization other than F16/F32.
         """
         return [
-            m for m in self._models.values()
-            if m.format == 'gguf' and m.quantization not in (None, 'F16', 'F32', 'BF16')
+            m
+            for m in self._models.values()
+            if m.format == "gguf" and m.quantization not in (None, "F16", "F32", "BF16")
         ]
 
     def get_models_grouped_by_format(self) -> Dict[str, List[ModelEntry]]:
@@ -1551,33 +1704,33 @@ class ModelLibrary:
                            'merged', 'ollama', 'adapter', 'other'
         """
         groups: Dict[str, List[ModelEntry]] = {
-            'safetensors': [],
-            'gguf_f16': [],
-            'gguf_quantized': [],
-            'merged': [],
-            'ollama': [],
-            'adapter': [],
-            'other': []
+            "safetensors": [],
+            "gguf_f16": [],
+            "gguf_quantized": [],
+            "merged": [],
+            "ollama": [],
+            "adapter": [],
+            "other": [],
         }
 
         for model in self._models.values():
             # Check category first
-            if model.category == 'ollama':
-                groups['ollama'].append(model)
-            elif model.category == 'adapter':
-                groups['adapter'].append(model)
-            elif model.category == 'merged':
-                groups['merged'].append(model)
+            if model.category == "ollama":
+                groups["ollama"].append(model)
+            elif model.category == "adapter":
+                groups["adapter"].append(model)
+            elif model.category == "merged":
+                groups["merged"].append(model)
             # Then check format
-            elif model.format == 'gguf':
-                if model.quantization in (None, 'F16', 'F32', 'BF16'):
-                    groups['gguf_f16'].append(model)
+            elif model.format == "gguf":
+                if model.quantization in (None, "F16", "F32", "BF16"):
+                    groups["gguf_f16"].append(model)
                 else:
-                    groups['gguf_quantized'].append(model)
-            elif model.format in ('safetensors', 'pytorch'):
-                groups['safetensors'].append(model)
+                    groups["gguf_quantized"].append(model)
+            elif model.format in ("safetensors", "pytorch"):
+                groups["safetensors"].append(model)
             else:
-                groups['other'].append(model)
+                groups["other"].append(model)
 
         # Sort each group by name
         for key in groups:
@@ -1587,7 +1740,7 @@ class ModelLibrary:
 
     def get_all_gguf_models(self) -> List[ModelEntry]:
         """Get all GGUF format models (both F16 and quantized)."""
-        return [m for m in self._models.values() if m.format == 'gguf']
+        return [m for m in self._models.values() if m.format == "gguf"]
 
     def refresh(self):
         """Reload the library index from disk."""

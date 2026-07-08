@@ -62,47 +62,39 @@ class SettingsCommands:
                 menu_separator("Konfiguraatio"),
                 questionary.Choice(
                     title=format_menu_item("Show All Paths", "Näytä kaikki polut"),
-                    value="show_paths"
+                    value="show_paths",
                 ),
                 questionary.Choice(
                     title=format_menu_item("HuggingFace Token", "HF-token asetukset"),
-                    value="hf_token"
+                    value="hf_token",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Clear Cache", "Tyhjennä välimuisti"),
-                    value="clear_cache"
+                    value="clear_cache",
                 ),
                 menu_separator("Kirjasto"),
                 questionary.Choice(
                     title=format_menu_item("Library Cleanup", "Siivoa duplikaatit"),
-                    value="library_cleanup"
+                    value="library_cleanup",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Orphan Cleanup", "Orpo-tiedostojen siivous"),
-                    value="orphan_cleanup"
+                    value="orphan_cleanup",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Disk Analysis", "Levytilan analyysi"),
-                    value="disk_analysis"
+                    value="disk_analysis",
                 ),
                 menu_separator("Järjestelmä"),
                 questionary.Choice(
-                    title=format_menu_item("System Info", "Järjestelmätiedot"),
-                    value="sysinfo"
+                    title=format_menu_item("System Info", "Järjestelmätiedot"), value="sysinfo"
                 ),
                 menu_separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
-                "Valitse toiminto:",
-                choices=choices,
-                style=custom_style,
-                qmark="#",
-                pointer=">"
+                "Valitse toiminto:", choices=choices, style=custom_style, qmark="#", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -125,8 +117,9 @@ class SettingsCommands:
     def _show_paths(self):
         """Show all configured paths."""
         paths = get_paths()
-        console.print(Panel(
-            f"""[bold white]AI Toolbox - Portable Paths[/bold white]
+        console.print(
+            Panel(
+                f"""[bold white]AI Toolbox - Portable Paths[/bold white]
 
 [cyan]Root:[/cyan]           {paths.root}
 [cyan]Models:[/cyan]         {paths.models_dir}
@@ -141,9 +134,10 @@ class SettingsCommands:
 
 [dim]Kaikki polut ovat suhteessa AI Toolboxin asennuskansioon.
 Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
-            title="[bold]Path Configuration[/bold]",
-            border_style="cyan"
-        ))
+                title="[bold]Path Configuration[/bold]",
+                border_style="cyan",
+            )
+        )
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _hf_token_settings(self):
@@ -157,7 +151,9 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             has_token = bool(self.downloader and self.downloader.token)
             if has_token:
                 console.print("[green]HF-token on asetettu[/green]")
-                token_preview = self.downloader.token[:8] + "..." if len(self.downloader.token) > 8 else "***"
+                token_preview = (
+                    self.downloader.token[:8] + "..." if len(self.downloader.token) > 8 else "***"
+                )
                 console.print(f"[dim]Token: {token_preview}[/dim]\n")
             else:
                 console.print("[yellow]HF-tokenia ei ole asetettu[/yellow]")
@@ -165,40 +161,38 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
             choices = [
                 questionary.Choice(
-                    title=format_menu_item("Set Token", "Syota ja tallenna token"),
-                    value="set"
+                    title=format_menu_item("Set Token", "Syota ja tallenna token"), value="set"
                 ),
             ]
             if has_token:
-                choices.append(questionary.Choice(
-                    title=format_menu_item("Remove Token", "Poista tallennettu token"),
-                    value="remove"
-                ))
-            choices.extend([
-                questionary.Choice(
-                    title=format_menu_item("Instructions", "Ymparistomuuttuja-ohjeet"),
-                    value="help"
-                ),
-                questionary.Separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
-            ])
+                choices.append(
+                    questionary.Choice(
+                        title=format_menu_item("Remove Token", "Poista tallennettu token"),
+                        value="remove",
+                    )
+                )
+            choices.extend(
+                [
+                    questionary.Choice(
+                        title=format_menu_item("Instructions", "Ymparistomuuttuja-ohjeet"),
+                        value="help",
+                    ),
+                    questionary.Separator(),
+                    questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
+                ]
+            )
 
             choice = questionary.select(
-                "Valitse toiminto:",
-                choices=choices,
-                style=custom_style,
-                qmark="#",
-                pointer=">"
+                "Valitse toiminto:", choices=choices, style=custom_style, qmark="#", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
                 return
 
             elif choice == "set":
-                console.print("[dim]Tokenin saat osoitteesta: https://huggingface.co/settings/tokens[/dim]")
+                console.print(
+                    "[dim]Tokenin saat osoitteesta: https://huggingface.co/settings/tokens[/dim]"
+                )
                 token = questionary.password(
                     "HF-token (hf_...):",
                     style=custom_style,
@@ -210,7 +204,9 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 token = token.strip()
                 if not token.startswith("hf_"):
                     print_warning("Token ei ala 'hf_' - tarkista etta kopioit oikean arvon")
-                    if not questionary.confirm("Tallenna silti?", default=False, style=custom_style).ask():
+                    if not questionary.confirm(
+                        "Tallenna silti?", default=False, style=custom_style
+                    ).ask():
                         continue
 
                 # Persist to config + activate for this session
@@ -222,7 +218,9 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 questionary.press_any_key_to_continue(style=custom_style).ask()
 
             elif choice == "remove":
-                if questionary.confirm("Poista tallennettu token?", default=False, style=custom_style).ask():
+                if questionary.confirm(
+                    "Poista tallennettu token?", default=False, style=custom_style
+                ).ask():
                     update_config(hf_token=None)
                     os.environ.pop("HF_TOKEN", None)
                     if self.downloader:
@@ -235,10 +233,12 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 console.print("[cyan]Windows (PowerShell):[/cyan]")
                 console.print('  $env:HF_TOKEN = "hf_xxxxxxxxxxxx"')
                 console.print("\n[cyan]Windows (CMD):[/cyan]")
-                console.print('  set HF_TOKEN=hf_xxxxxxxxxxxx')
+                console.print("  set HF_TOKEN=hf_xxxxxxxxxxxx")
                 console.print("\n[cyan]Linux/Mac:[/cyan]")
                 console.print('  export HF_TOKEN="hf_xxxxxxxxxxxx"')
-                console.print("\n[dim]Ymparistomuuttuja ohittaa config-tiedostoon tallennetun tokenin.[/dim]")
+                console.print(
+                    "\n[dim]Ymparistomuuttuja ohittaa config-tiedostoon tallennetun tokenin.[/dim]"
+                )
                 questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _clear_cache(self):
@@ -273,11 +273,10 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         console.print(f"[dim]Sijainti: {temp_dir}[/dim]\n")
 
         if questionary.confirm(
-            "Tyhjenna kaikki valimuistitetut tiedot?",
-            default=False,
-            style=custom_style
+            "Tyhjenna kaikki valimuistitetut tiedot?", default=False, style=custom_style
         ).ask():
             import shutil
+
             cleared = 0
             for cache_dir in cache_dirs:
                 if cache_dir.exists():
@@ -329,6 +328,7 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         gpu_info = ""
         try:
             import torch
+
             if torch.cuda.is_available():
                 gpu_name = torch.cuda.get_device_name(0)
                 gpu_mem = torch.cuda.get_device_properties(0).total_memory / (1024**3)
@@ -338,25 +338,27 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         except ImportError:
             gpu_info = "  Saatavilla: ? (torch ei asennettu)"
 
-        console.print(Panel(
-            f"[bold white]Kayttojarjestelma[/bold white]\n"
-            f"  OS: {platform.system()} {platform.release()}\n"
-            f"  Python: {platform.python_version()}\n\n"
-            f"[bold white]CPU[/bold white]\n"
-            f"  Ytimet (looginen): {cpu_count}\n"
-            f"  Ytimet (fyysinen): {cpu_count_physical}\n\n"
-            f"[bold white]RAM[/bold white]\n"
-            f"  Yhteensa: {total_ram_gb:.1f} GB\n"
-            f"  Kaytettavissa: {available_ram_gb:.1f} GB\n"
-            f"  Kaytossa: {used_ram_gb:.1f} GB ({ram_percent:.0f}%)\n\n"
-            f"[bold white]Levy ({paths.root.drive or 'root'})[/bold white]\n"
-            f"  Yhteensa: {disk_total_gb:.1f} GB\n"
-            f"  Vapaana: {disk_free_gb:.1f} GB ({100-disk_percent:.0f}%)\n\n"
-            f"[bold white]GPU[/bold white]\n"
-            f"{gpu_info}",
-            title="[bold]System Information[/bold]",
-            border_style="cyan"
-        ))
+        console.print(
+            Panel(
+                f"[bold white]Kayttojarjestelma[/bold white]\n"
+                f"  OS: {platform.system()} {platform.release()}\n"
+                f"  Python: {platform.python_version()}\n\n"
+                f"[bold white]CPU[/bold white]\n"
+                f"  Ytimet (looginen): {cpu_count}\n"
+                f"  Ytimet (fyysinen): {cpu_count_physical}\n\n"
+                f"[bold white]RAM[/bold white]\n"
+                f"  Yhteensa: {total_ram_gb:.1f} GB\n"
+                f"  Kaytettavissa: {available_ram_gb:.1f} GB\n"
+                f"  Kaytossa: {used_ram_gb:.1f} GB ({ram_percent:.0f}%)\n\n"
+                f"[bold white]Levy ({paths.root.drive or 'root'})[/bold white]\n"
+                f"  Yhteensa: {disk_total_gb:.1f} GB\n"
+                f"  Vapaana: {disk_free_gb:.1f} GB ({100-disk_percent:.0f}%)\n\n"
+                f"[bold white]GPU[/bold white]\n"
+                f"{gpu_info}",
+                title="[bold]System Information[/bold]",
+                border_style="cyan",
+            )
+        )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -382,6 +384,7 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
         # Check for quantize binary
         import sys
+
         if sys.platform == "win32":
             quantize_names = ["llama-quantize.exe", "quantize.exe"]
         else:
@@ -399,7 +402,9 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 status["quantize_binary"] = str(build_path)
                 break
 
-        status["installed"] = status["convert_script"] is not None or status["quantize_binary"] is not None
+        status["installed"] = (
+            status["convert_script"] is not None or status["quantize_binary"] is not None
+        )
 
         return status
 
@@ -436,12 +441,14 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             return
 
         # Show issues
-        console.print(Panel(
-            f"[yellow]Puuttuvat tiedostot:[/yellow]  {len(missing)}\n"
-            f"[yellow]Duplikaatit:[/yellow]          {len(duplicates)}",
-            title="[bold]Löydetyt ongelmat[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[yellow]Puuttuvat tiedostot:[/yellow]  {len(missing)}\n"
+                f"[yellow]Duplikaatit:[/yellow]          {len(duplicates)}",
+                title="[bold]Löydetyt ongelmat[/bold]",
+                border_style="yellow",
+            )
+        )
         console.print()
 
         if missing:
@@ -460,13 +467,11 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
                 console.print(f"  [dim]  ... ja {len(duplicates) - 5} muuta[/dim]")
             console.print()
 
-        if questionary.confirm(
-            "Siivoa ongelmat?",
-            default=True,
-            style=custom_style
-        ).ask():
+        if questionary.confirm("Siivoa ongelmat?", default=True, style=custom_style).ask():
             results = self.library.cleanup_library() or {}
-            print_success(f"Poistettu {results.get('missing', 0)} puuttuvaa ja {results.get('duplicates', 0)} duplikaattia")
+            print_success(
+                f"Poistettu {results.get('missing', 0)} puuttuvaa ja {results.get('duplicates', 0)} duplikaattia"
+            )
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -485,7 +490,7 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         orphan_stats = self.library.get_orphan_stats() or {}
         orphans = self.library.find_orphaned_files() or {}
 
-        if orphan_stats.get('total_count', 0) == 0:
+        if orphan_stats.get("total_count", 0) == 0:
             console.print("[green]Ei orpo-tiedostoja! Kirjasto on siisti.[/green]")
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return
@@ -496,18 +501,18 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         table.add_column("Maara", justify="right")
         table.add_column("Koko", justify="right", style="yellow")
 
-        for category, cat_stats in orphan_stats.get('by_category', {}).items():
-            if cat_stats.get('count', 0) > 0:
+        for category, cat_stats in orphan_stats.get("by_category", {}).items():
+            if cat_stats.get("count", 0) > 0:
                 table.add_row(
                     category.upper(),
-                    str(cat_stats.get('count', 0)),
-                    format_size(cat_stats.get('size_bytes', 0))
+                    str(cat_stats.get("count", 0)),
+                    format_size(cat_stats.get("size_bytes", 0)),
                 )
 
         table.add_row(
             "[bold]YHTEENSA[/bold]",
             f"[bold]{orphan_stats.get('total_count', 0)}[/bold]",
-            f"[bold]{format_size(orphan_stats.get('total_size_bytes', 0))}[/bold]"
+            f"[bold]{format_size(orphan_stats.get('total_size_bytes', 0))}[/bold]",
         )
 
         console.print(table)
@@ -515,18 +520,16 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
         # Show detailed list if requested
         if questionary.confirm(
-            "Nayta yksityiskohtainen lista?",
-            default=True,
-            style=custom_style
+            "Nayta yksityiskohtainen lista?", default=True, style=custom_style
         ).ask():
             for category, files in orphans.items():
                 if files:
                     console.print(f"\n[bold cyan]{category.upper()}:[/bold cyan]")
                     for f in files[:10]:
-                        is_dir = f.get('is_directory', False)
+                        is_dir = f.get("is_directory", False)
                         icon = "[dim]folder[/dim]" if is_dir else "[dim]file[/dim]"
-                        name = f.get('name', 'tuntematon')
-                        size = f.get('size_bytes', 0)
+                        name = f.get("name", "tuntematon")
+                        size = f.get("size_bytes", 0)
                         console.print(f"  {icon}  {name} ({format_size(size)})")
                     if len(files) > 10:
                         console.print(f"  [dim]... ja {len(files) - 10} muuta[/dim]")
@@ -534,11 +537,11 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
         console.print()
 
         # Cleanup options
-        orphan_total_size = orphan_stats.get('total_size_bytes', 0)
+        orphan_total_size = orphan_stats.get("total_size_bytes", 0)
         if questionary.confirm(
             f"Poista kaikki orvot? (vapautuu {format_size(orphan_total_size)})",
             default=False,
-            style=custom_style
+            style=custom_style,
         ).ask():
             deleted = self.library.cleanup_orphans(dry_run=False) or []
             print_success(f"Poistettu {len(deleted)} orpo-tiedostoa")
@@ -561,20 +564,20 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
 
         console.print("[bold]Levytilan jakautuminen kategorioittain:[/bold]\n")
 
-        total = stats.get('total_size_bytes', 0) + orphan_stats.get('total_size_bytes', 0)
+        total = stats.get("total_size_bytes", 0) + orphan_stats.get("total_size_bytes", 0)
         max_bar_width = 35
 
         categories = [
-            ('base', '🏠 Base Models    ', 'green'),
-            ('adapter', '🔧 LoRA Adapters   ', 'blue'),
-            ('merged', '🔀 Merged Models  ', 'yellow'),
-            ('ollama', '🤖 Ollama Models  ', 'cyan'),
+            ("base", "🏠 Base Models    ", "green"),
+            ("adapter", "🔧 LoRA Adapters   ", "blue"),
+            ("merged", "🔀 Merged Models  ", "yellow"),
+            ("ollama", "🤖 Ollama Models  ", "cyan"),
         ]
 
         for cat_key, cat_name, color in categories:
-            cat_stat = category_stats.get(cat_key, {'count': 0, 'size_bytes': 0})
-            size = cat_stat['size_bytes']
-            count = cat_stat['count']
+            cat_stat = category_stats.get(cat_key, {"count": 0, "size_bytes": 0})
+            size = cat_stat["size_bytes"]
+            count = cat_stat["count"]
 
             if total > 0:
                 bar_width = int((size / total) * max_bar_width)
@@ -585,19 +588,23 @@ Voit siirtaa koko kansion (esim. USB-tikulle) ja kaikki toimii.[/dim]""",
             pct = (size / total * 100) if total > 0 else 0
 
             console.print(f"{cat_name}")
-            console.print(f"  [{color}]{bar}[/{color}] {format_size(size):>10} ({count} kpl) {pct:5.1f}%")
+            console.print(
+                f"  [{color}]{bar}[/{color}] {format_size(size):>10} ({count} kpl) {pct:5.1f}%"
+            )
             console.print()
 
         # Orphan space
-        orphan_size = orphan_stats.get('total_size_bytes', 0)
-        orphan_count = orphan_stats.get('total_count', 0)
+        orphan_size = orphan_stats.get("total_size_bytes", 0)
+        orphan_count = orphan_stats.get("total_count", 0)
         if orphan_size > 0:
             bar_width = int((orphan_size / total) * max_bar_width) if total > 0 else 0
             bar = "█" * bar_width + "░" * (max_bar_width - bar_width)
             pct = (orphan_size / total * 100) if total > 0 else 0
 
             console.print("⚠️  Orvot tiedostot")
-            console.print(f"  [red]{bar}[/red] {format_size(orphan_size):>10} ({orphan_count} kpl) {pct:5.1f}%")
+            console.print(
+                f"  [red]{bar}[/red] {format_size(orphan_size):>10} ({orphan_count} kpl) {pct:5.1f}%"
+            )
             console.print()
 
         console.print(f"[bold]Yhteensa: {format_size(total)}[/bold]")

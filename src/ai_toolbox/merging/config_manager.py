@@ -20,6 +20,7 @@ from ..core.paths import get_paths
 @dataclass
 class MergeHistoryEntry:
     """Merge-historian merkinta."""
+
     timestamp: str
     config_name: str
     method: str
@@ -42,6 +43,7 @@ class MergeHistoryEntry:
 @dataclass
 class MergeConfigMetadata:
     """Konfiguraation metadata."""
+
     name: str
     description: str = ""
     created: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -153,9 +155,7 @@ class MergeConfigManager:
 
         return config
 
-    def load_config_with_metadata(
-        self, name: str
-    ) -> tuple[Dict[str, Any], MergeConfigMetadata]:
+    def load_config_with_metadata(self, name: str) -> tuple[Dict[str, Any], MergeConfigMetadata]:
         """
         Lataa konfiguraatio ja metadata.
 
@@ -235,15 +235,17 @@ class MergeConfigManager:
                 models = config.get("models", [])
                 models_count = len(models) if isinstance(models, list) else 0
 
-                configs.append({
-                    "name": yaml_file.stem,
-                    "description": metadata.description,
-                    "method": config.get("merge_method", "unknown"),
-                    "models_count": models_count,
-                    "modified": metadata.modified,
-                    "tags": metadata.tags,
-                    "file_path": str(yaml_file),
-                })
+                configs.append(
+                    {
+                        "name": yaml_file.stem,
+                        "description": metadata.description,
+                        "method": config.get("merge_method", "unknown"),
+                        "models_count": models_count,
+                        "modified": metadata.modified,
+                        "tags": metadata.tags,
+                        "file_path": str(yaml_file),
+                    }
+                )
             except Exception:
                 # Skipataan virheelliset tiedostot
                 continue
@@ -343,12 +345,14 @@ class MergeConfigManager:
                 reasons.append("Vaatii base modelin")
 
             if score > 0:
-                suggestions.append({
-                    "preset_name": preset_name,
-                    "preset": preset,
-                    "score": score,
-                    "reasons": reasons,
-                })
+                suggestions.append(
+                    {
+                        "preset_name": preset_name,
+                        "preset": preset,
+                        "score": score,
+                        "reasons": reasons,
+                    }
+                )
 
         # Jarjesta pisteiden mukaan
         suggestions.sort(key=lambda x: x["score"], reverse=True)
@@ -631,7 +635,9 @@ class MergeConfigManager:
                     elif line.startswith("Tags:"):
                         tags_str = line[5:].strip()
                         metadata.tags = [t.strip() for t in tags_str.split(",") if t.strip()]
-                    elif not any(line.startswith(x) for x in ["Created", "Modified", "Preset", "Tags", ""]):
+                    elif not any(
+                        line.startswith(x) for x in ["Created", "Modified", "Preset", "Tags", ""]
+                    ):
                         # Ensimmainen ei-tyhja kommentti on kuvaus
                         if not metadata.description:
                             metadata.description = line

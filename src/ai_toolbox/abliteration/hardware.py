@@ -7,6 +7,7 @@ Windows ERROR_COMMITMENT_LIMIT (os error 1455) before the model is loaded.
 No Rich/questionary here — the CLI layer owns user interaction. Every probe is
 wrapped so detection NEVER raises; missing data degrades to zero/None.
 """
+
 from __future__ import annotations
 
 import platform
@@ -14,7 +15,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-_GB = 1024 ** 3
+_GB = 1024**3
 
 
 @dataclass
@@ -67,7 +68,7 @@ def detect_hardware() -> HardwareProfile:
 
 @dataclass
 class MemoryEstimate:
-    peak_commit_gb: float           # RAM + pagefile need (the 1455 metric)
+    peak_commit_gb: float  # RAM + pagefile need (the 1455 metric)
     peak_vram_gb: float
     breakdown: Dict[str, float] = field(default_factory=dict)
 
@@ -79,9 +80,9 @@ def estimate_cost(model_info: Dict[str, Any], config: Any) -> MemoryEstimate:
     layers = int(model_info.get("num_layers", 32) or 32)
     batch = int(getattr(config, "batch_size", 8) or 8)
 
-    weights_gb = params_b * 2.0                       # fp16: 2 bytes/param
+    weights_gb = params_b * 2.0  # fp16: 2 bytes/param
     activations_gb = (2 * hidden * layers * batch * 512) / _GB
-    overhead_gb = 2.0                                 # framework + CUDA context
+    overhead_gb = 2.0  # framework + CUDA context
 
     breakdown: Dict[str, float] = {
         "weights_fp16": round(weights_gb, 1),
@@ -94,7 +95,9 @@ def estimate_cost(model_info: Dict[str, Any], config: Any) -> MemoryEstimate:
         breakdown["direction_selection"] = round(weights_gb * 0.10, 2)
 
     base = (
-        weights_gb + activations_gb + overhead_gb
+        weights_gb
+        + activations_gb
+        + overhead_gb
         + breakdown.get("capability_preservation", 0.0)
         + breakdown.get("direction_selection", 0.0)
     )
@@ -164,8 +167,8 @@ def recommend_config(
 
 @dataclass
 class PreflightResult:
-    status: str                                  # "ok" | "warn" | "fail"
-    bottleneck: Optional[str]                    # "ram" | "pagefile" | "vram" | None
+    status: str  # "ok" | "warn" | "fail"
+    bottleneck: Optional[str]  # "ram" | "pagefile" | "vram" | None
     shortfall_gb: float
     safe_profile: Optional[RecommendedSettings]
     recommended_pagefile_gb: Optional[int]
@@ -218,8 +221,7 @@ def check_preflight(
             recommended_pf = recommend_pagefile_gb(estimate)[1]
 
     message = _preflight_message(status, bottleneck, shortfall)
-    return PreflightResult(status, bottleneck, shortfall, safe_profile,
-                           recommended_pf, message)
+    return PreflightResult(status, bottleneck, shortfall, safe_profile, recommended_pf, message)
 
 
 def _preflight_message(status: str, bottleneck: Optional[str], shortfall: float) -> str:
@@ -287,11 +289,15 @@ def apply_pagefile_setting(initial_gb: int, max_gb: int, drive: str = "C:") -> b
     try:
         completed = subprocess.run(
             [
-                "powershell", "-NoProfile", "-Command",
+                "powershell",
+                "-NoProfile",
+                "-Command",
                 "Start-Process powershell -Verb RunAs -Wait "
                 f"-ArgumentList '-NoProfile','-Command',\"{inner}\"",
             ],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         return completed.returncode == 0
     except Exception:

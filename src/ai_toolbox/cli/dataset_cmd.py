@@ -37,16 +37,18 @@ from ..training.dataset import (
 )
 
 # Questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+custom_style = Style(
+    [
+        ("qmark", "fg:#ff9d00 bold"),
+        ("question", "fg:white bold"),
+        ("answer", "fg:#00d7ff bold"),
+        ("pointer", "fg:#ff9d00 bold"),
+        ("highlighted", "fg:#ff9d00 bold"),
+        ("selected", "fg:#00ff00"),
+        ("separator", "fg:#666666"),
+        ("instruction", "fg:#666666"),
+    ]
+)
 
 
 class DatasetCommands:
@@ -74,51 +76,39 @@ class DatasetCommands:
             choices = [
                 questionary.Choice(
                     title="Inspect Dataset       Analysoi datasetin rakenne ja tilastot",
-                    value="inspect"
+                    value="inspect",
                 ),
                 questionary.Choice(
-                    title="Convert Format        Muunna formaatista toiseen",
-                    value="convert"
+                    title="Convert Format        Muunna formaatista toiseen", value="convert"
                 ),
                 questionary.Choice(
-                    title="Split Dataset         Jaa train/test/validation osiin",
-                    value="split"
+                    title="Split Dataset         Jaa train/test/validation osiin", value="split"
                 ),
                 questionary.Choice(
-                    title="Clean Dataset         Siivoa ja normalisoi",
-                    value="clean"
+                    title="Clean Dataset         Siivoa ja normalisoi", value="clean"
                 ),
                 questionary.Choice(
-                    title="Deduplicate           Poista duplikaatit",
-                    value="dedupe"
+                    title="Deduplicate           Poista duplikaatit", value="dedupe"
                 ),
                 questionary.Choice(
-                    title="Filter by Length      Suodata pituuden mukaan",
-                    value="filter"
+                    title="Filter by Length      Suodata pituuden mukaan", value="filter"
                 ),
                 questionary.Choice(
-                    title="Token Counter         Laske tokenimaarat",
-                    value="tokens"
+                    title="Token Counter         Laske tokenimaarat", value="tokens"
                 ),
                 questionary.Choice(
-                    title="Merge Datasets        Yhdista useita datasetteja",
-                    value="merge"
+                    title="Merge Datasets        Yhdista useita datasetteja", value="merge"
                 ),
                 questionary.Separator(),
                 questionary.Choice(
-                    title="Browse Datasets       Selaa ja nayta datasetit",
-                    value="browse"
+                    title="Browse Datasets       Selaa ja nayta datasetit", value="browse"
                 ),
                 questionary.Separator(),
                 questionary.Choice(title="<- Palaa", value="back"),
             ]
 
             choice = questionary.select(
-                "Dataset Prep:",
-                choices=choices,
-                style=custom_style,
-                qmark=">>",
-                pointer=">"
+                "Dataset Prep:", choices=choices, style=custom_style, qmark=">>", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -168,15 +158,14 @@ class DatasetCommands:
         for i, ds in enumerate(datasets, 1):
             size = format_size(ds["size_bytes"])
             dtype = "processed" if ds.get("is_processed") else "original"
-            table.add_row(str(i), ds['name'][:40], ds['format'], size, dtype)
+            table.add_row(str(i), ds["name"][:40], ds["format"], size, dtype)
 
         console.print(table)
         console.print()
 
         # Get selection
         answer = questionary.text(
-            f"Valitse numero [1-{len(datasets)}] (0 = peruuta):",
-            style=MENU_STYLE
+            f"Valitse numero [1-{len(datasets)}] (0 = peruuta):", style=MENU_STYLE
         ).ask()
 
         if answer is None or answer.strip() == "" or answer.strip() == "0":
@@ -246,13 +235,15 @@ class DatasetCommands:
         stats = self.dataset_prep.inspect_dataset(dataset_path)
 
         # Show results
-        console.print(Panel(
-            f"[bold white]Tiedosto:[/bold white] {dataset_path.name}\n"
-            f"[bold white]Formaatti:[/bold white] {stats.format_detected or 'Tuntematon'}\n"
-            f"[bold white]Naytteita:[/bold white] {stats.total_samples:,}",
-            title="[bold]Perustiedot[/bold]",
-            border_style="cyan"
-        ))
+        console.print(
+            Panel(
+                f"[bold white]Tiedosto:[/bold white] {dataset_path.name}\n"
+                f"[bold white]Formaatti:[/bold white] {stats.format_detected or 'Tuntematon'}\n"
+                f"[bold white]Naytteita:[/bold white] {stats.total_samples:,}",
+                title="[bold]Perustiedot[/bold]",
+                border_style="cyan",
+            )
+        )
 
         # Schema
         if stats.schema:
@@ -268,15 +259,17 @@ class DatasetCommands:
             console.print(schema_table)
 
         # Statistics
-        console.print(Panel(
-            f"[white]Merkkeja yhteensa:[/white] {stats.total_characters:,}\n"
-            f"[white]Keskimaarin/nayte:[/white] {stats.avg_chars_per_sample:.0f} merkkia\n"
-            f"[white]Min/Max:[/white] {stats.min_chars} - {stats.max_chars} merkkia\n"
-            f"[white]Tyhjat rivit:[/white] {stats.empty_rows}\n"
-            f"[white]Duplikaatit (arvio):[/white] {stats.duplicate_count}",
-            title="[bold]Tilastot[/bold]",
-            border_style="green"
-        ))
+        console.print(
+            Panel(
+                f"[white]Merkkeja yhteensa:[/white] {stats.total_characters:,}\n"
+                f"[white]Keskimaarin/nayte:[/white] {stats.avg_chars_per_sample:.0f} merkkia\n"
+                f"[white]Min/Max:[/white] {stats.min_chars} - {stats.max_chars} merkkia\n"
+                f"[white]Tyhjat rivit:[/white] {stats.empty_rows}\n"
+                f"[white]Duplikaatit (arvio):[/white] {stats.duplicate_count}",
+                title="[bold]Tilastot[/bold]",
+                border_style="green",
+            )
+        )
 
         # Show examples
         if questionary.confirm("Nayta esimerkkeja?", default=True, style=custom_style).ask():
@@ -330,13 +323,15 @@ class DatasetCommands:
         output_path = self.dataset_prep.output_dir / output_name
 
         # Confirm
-        console.print(Panel(
-            f"[white]Lahde:[/white] {source_path.name}\n"
-            f"[white]Formaatti:[/white] {source_format.value} -> {target}\n"
-            f"[white]Output:[/white] {output_path}",
-            title="[bold]Muunnos[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Lahde:[/white] {source_path.name}\n"
+                f"[white]Formaatti:[/white] {source_format.value} -> {target}\n"
+                f"[white]Output:[/white] {output_path}",
+                title="[bold]Muunnos[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita muunnos?", default=True, style=custom_style).ask():
             return
@@ -418,7 +413,9 @@ class DatasetCommands:
             return
 
         # Shuffle
-        shuffle = questionary.confirm("Sekoita data ennen jakoa?", default=True, style=custom_style).ask()
+        shuffle = questionary.confirm(
+            "Sekoita data ennen jakoa?", default=True, style=custom_style
+        ).ask()
 
         # Output folder
         output_dir = self.dataset_prep.output_dir / source_path.stem
@@ -432,14 +429,16 @@ class DatasetCommands:
         )
 
         # Confirm
-        console.print(Panel(
-            f"[white]Lahde:[/white] {source_path.name}\n"
-            f"[white]Jako:[/white] {train}% train, {test}% test, {val}% val\n"
-            f"[white]Shuffle:[/white] {'Kylla' if shuffle else 'Ei'}\n"
-            f"[white]Output:[/white] {output_dir}/",
-            title="[bold]Split[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Lahde:[/white] {source_path.name}\n"
+                f"[white]Jako:[/white] {train}% train, {test}% test, {val}% val\n"
+                f"[white]Shuffle:[/white] {'Kylla' if shuffle else 'Ei'}\n"
+                f"[white]Output:[/white] {output_dir}/",
+                title="[bold]Split[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita jako?", default=True, style=custom_style).ask():
             return
@@ -480,11 +479,23 @@ class DatasetCommands:
         console.print("\n[cyan]Valitse siivoustoimenpiteet:[/cyan]\n")
 
         operation_choices = [
-            questionary.Choice(title="Poista tyhjat rivit", value=CleaningOperation.REMOVE_EMPTY, checked=True),
-            questionary.Choice(title="Korjaa merkistoongelmat", value=CleaningOperation.FIX_ENCODING, checked=True),
-            questionary.Choice(title="Normalisoi valilyonnit", value=CleaningOperation.NORMALIZE_WHITESPACE, checked=True),
-            questionary.Choice(title="Trimmaa tekstit", value=CleaningOperation.TRIM_TEXT, checked=False),
-            questionary.Choice(title="Poista HTML-tagit", value=CleaningOperation.REMOVE_HTML, checked=False),
+            questionary.Choice(
+                title="Poista tyhjat rivit", value=CleaningOperation.REMOVE_EMPTY, checked=True
+            ),
+            questionary.Choice(
+                title="Korjaa merkistoongelmat", value=CleaningOperation.FIX_ENCODING, checked=True
+            ),
+            questionary.Choice(
+                title="Normalisoi valilyonnit",
+                value=CleaningOperation.NORMALIZE_WHITESPACE,
+                checked=True,
+            ),
+            questionary.Choice(
+                title="Trimmaa tekstit", value=CleaningOperation.TRIM_TEXT, checked=False
+            ),
+            questionary.Choice(
+                title="Poista HTML-tagit", value=CleaningOperation.REMOVE_HTML, checked=False
+            ),
         ]
 
         operations = questionary.checkbox(
@@ -501,13 +512,15 @@ class DatasetCommands:
 
         # Confirm
         op_names = [op.value for op in operations]
-        console.print(Panel(
-            f"[white]Lahde:[/white] {source_path.name}\n"
-            f"[white]Operaatiot:[/white] {', '.join(op_names)}\n"
-            f"[white]Output:[/white] {output_path}",
-            title="[bold]Clean[/bold]",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[white]Lahde:[/white] {source_path.name}\n"
+                f"[white]Operaatiot:[/white] {', '.join(op_names)}\n"
+                f"[white]Output:[/white] {output_path}",
+                title="[bold]Clean[/bold]",
+                border_style="yellow",
+            )
+        )
 
         if not questionary.confirm("Aloita siivous?", default=True, style=custom_style).ask():
             return
@@ -639,10 +652,16 @@ class DatasetCommands:
 
         # Token-based filtering
         if self.dataset_prep._deps["transformers"]:
-            use_tokens = questionary.confirm("Suodata myos tokenimaaran mukaan?", default=False, style=custom_style).ask()
+            use_tokens = questionary.confirm(
+                "Suodata myos tokenimaaran mukaan?", default=False, style=custom_style
+            ).ask()
             if use_tokens:
-                min_tokens_str = questionary.text("Min tokeneita:", default="", style=custom_style).ask()
-                max_tokens_str = questionary.text("Max tokeneita:", default="", style=custom_style).ask()
+                min_tokens_str = questionary.text(
+                    "Min tokeneita:", default="", style=custom_style
+                ).ask()
+                max_tokens_str = questionary.text(
+                    "Max tokeneita:", default="", style=custom_style
+                ).ask()
                 try:
                     config.min_tokens = int(min_tokens_str) if min_tokens_str else None
                 except ValueError:
@@ -737,15 +756,17 @@ class DatasetCommands:
 
         if result["success"]:
             print_success("Laskenta valmis!")
-            console.print(Panel(
-                f"[white]Tokenizer:[/white] {tokenizer_name}\n"
-                f"[white]Naytteita:[/white] {result['samples_counted']:,}\n"
-                f"[white]Tokeneita yhteensa:[/white] {result['total_tokens']:,}\n"
-                f"[white]Keskimaarin/nayte:[/white] {result['avg_tokens_per_sample']:.0f}\n"
-                f"[white]Min/Max:[/white] {result['min_tokens']} - {result['max_tokens']}",
-                title="[bold]Token Statistics[/bold]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    f"[white]Tokenizer:[/white] {tokenizer_name}\n"
+                    f"[white]Naytteita:[/white] {result['samples_counted']:,}\n"
+                    f"[white]Tokeneita yhteensa:[/white] {result['total_tokens']:,}\n"
+                    f"[white]Keskimaarin/nayte:[/white] {result['avg_tokens_per_sample']:.0f}\n"
+                    f"[white]Min/Max:[/white] {result['min_tokens']} - {result['max_tokens']}",
+                    title="[bold]Token Statistics[/bold]",
+                    border_style="green",
+                )
+            )
         else:
             print_error(f"Laskenta epäonnistui: {result.get('error')}")
 
@@ -784,8 +805,12 @@ class DatasetCommands:
             return
 
         # Options
-        dedupe = questionary.confirm("Poista duplikaatit yhdistamisen jalkeen?", default=True, style=custom_style).ask()
-        shuffle = questionary.confirm("Sekoita yhdistetty data?", default=True, style=custom_style).ask()
+        dedupe = questionary.confirm(
+            "Poista duplikaatit yhdistamisen jalkeen?", default=True, style=custom_style
+        ).ask()
+        shuffle = questionary.confirm(
+            "Sekoita yhdistetty data?", default=True, style=custom_style
+        ).ask()
 
         # Output name
         output_name = questionary.text(
@@ -817,8 +842,10 @@ class DatasetCommands:
             print_success("Yhdistaminen valmis!")
             console.print(f"  [dim]Tiedostoja: {result['files_merged']}[/dim]")
             console.print(f"  [dim]Yhteensa: {result['total_samples']:,} naytetta[/dim]")
-            if result['duplicates_removed'] > 0:
-                console.print(f"  [dim]Duplikaatteja poistettu: {result['duplicates_removed']:,}[/dim]")
+            if result["duplicates_removed"] > 0:
+                console.print(
+                    f"  [dim]Duplikaatteja poistettu: {result['duplicates_removed']:,}[/dim]"
+                )
             console.print(f"  [dim]Lopullinen: {result['final_count']:,} naytetta[/dim]")
         else:
             print_error(f"Yhdistaminen epäonnistui: {result.get('error')}")

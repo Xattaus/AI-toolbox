@@ -38,19 +38,22 @@ from ..core.ui import (
 )
 
 # Questionary-tyyli
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-])
+custom_style = Style(
+    [
+        ("qmark", "fg:#ff9d00 bold"),
+        ("question", "fg:white bold"),
+        ("answer", "fg:#00d7ff bold"),
+        ("pointer", "fg:#ff9d00 bold"),
+        ("highlighted", "fg:#ff9d00 bold"),
+        ("selected", "fg:#00ff00"),
+    ]
+)
 
 
 @dataclass
 class ChatMessage:
     """Yksittäinen chat-viesti."""
+
     role: str  # "user", "assistant", "system"
     content: str
 
@@ -58,6 +61,7 @@ class ChatMessage:
 # =============================================================================
 # BACKEND-ABSTRAKTIO
 # =============================================================================
+
 
 class ChatBackend(ABC):
     """Abstrakti pohjaluokka chat-backendeille."""
@@ -83,7 +87,9 @@ class ChatBackend(ABC):
         pass
 
     @abstractmethod
-    def chat(self, messages: List[Dict[str, str]], stream: bool = True) -> Generator[str, None, None]:
+    def chat(
+        self, messages: List[Dict[str, str]], stream: bool = True
+    ) -> Generator[str, None, None]:
         """Lähetä chat-pyyntö ja palauta vastaus generaattorina."""
         pass
 
@@ -96,6 +102,7 @@ class ChatBackend(ABC):
 # =============================================================================
 # LLAMA-CPP-PYTHON BACKEND (Sisäänrakennettu)
 # =============================================================================
+
 
 class LlamaCppBackend(ChatBackend):
     """Sisäänrakennettu backend käyttäen llama-cpp-python -kirjastoa."""
@@ -110,6 +117,7 @@ class LlamaCppBackend(ChatBackend):
         if self._llama_cpp_available is None:
             try:
                 from llama_cpp import Llama
+
                 self._llama_cpp_available = True
             except ImportError:
                 self._llama_cpp_available = False
@@ -161,17 +169,20 @@ class LlamaCppBackend(ChatBackend):
             # Määritä säikeiden määrä
             if n_threads is None:
                 import multiprocessing
+
                 n_threads = max(1, multiprocessing.cpu_count() - 1)
 
-            console.print(Panel(
-                f"[cyan]Ladataan mallia...[/cyan]\n\n"
-                f"[dim]Konteksti: {n_ctx} tokenia\n"
-                f"Säikeet: {n_threads}\n"
-                f"GPU-kerrokset: {n_gpu_layers}[/dim]",
-                title="[bold]Mallin lataus[/bold]",
-                border_style="cyan",
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    f"[cyan]Ladataan mallia...[/cyan]\n\n"
+                    f"[dim]Konteksti: {n_ctx} tokenia\n"
+                    f"Säikeet: {n_threads}\n"
+                    f"GPU-kerrokset: {n_gpu_layers}[/dim]",
+                    title="[bold]Mallin lataus[/bold]",
+                    border_style="cyan",
+                    box=box.ROUNDED,
+                )
+            )
 
             self.llm = Llama(
                 model_path=model_path,
@@ -198,6 +209,7 @@ class LlamaCppBackend(ChatBackend):
             self.model_path = None
             # Yritä vapauttaa muistia
             import gc
+
             gc.collect()
 
     def generate(
@@ -242,7 +254,9 @@ class LlamaCppBackend(ChatBackend):
         except Exception as e:
             return f"Virhe: {e}"
 
-    def chat(self, messages: List[Dict[str, str]], stream: bool = True) -> Generator[str, None, None]:
+    def chat(
+        self, messages: List[Dict[str, str]], stream: bool = True
+    ) -> Generator[str, None, None]:
         """Lähetä chat-pyyntö (streaming, oletus temperature=0.7)."""
         if self.llm is None:
             yield "Virhe: Mallia ei ole ladattu."
@@ -311,6 +325,7 @@ class LlamaCppBackend(ChatBackend):
 # OLLAMA BACKEND
 # =============================================================================
 
+
 class OllamaBackend(ChatBackend):
     """Backend Ollama-palvelulle."""
 
@@ -321,6 +336,7 @@ class OllamaBackend(ChatBackend):
     def is_available(self) -> bool:
         try:
             import requests
+
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             return response.status_code == 200
         except Exception:
@@ -332,6 +348,7 @@ class OllamaBackend(ChatBackend):
     def get_models(self) -> List[Dict[str, Any]]:
         try:
             import requests
+
             response = requests.get(f"{self.base_url}/api/tags", timeout=10)
             if response.status_code == 200:
                 return response.json().get("models", [])
@@ -378,7 +395,7 @@ class OllamaBackend(ChatBackend):
                     "top_p": top_p,
                     "repeat_penalty": repeat_penalty,
                     "num_predict": max_tokens,
-                }
+                },
             }
 
             # Lisää format jos määritelty (esim. "json")
@@ -400,7 +417,9 @@ class OllamaBackend(ChatBackend):
         except Exception as e:
             return f"Virhe: {e}"
 
-    def chat(self, messages: List[Dict[str, str]], stream: bool = True) -> Generator[str, None, None]:
+    def chat(
+        self, messages: List[Dict[str, str]], stream: bool = True
+    ) -> Generator[str, None, None]:
         if not self.model:
             yield "Virhe: Mallia ei ole valittu."
             return
@@ -416,7 +435,7 @@ class OllamaBackend(ChatBackend):
                     "temperature": 0.7,
                     "top_p": 0.9,
                     "repeat_penalty": 1.1,
-                }
+                },
             }
 
             response = requests.post(
@@ -451,6 +470,7 @@ class OllamaBackend(ChatBackend):
 # TYÖKALU-REKISTERI
 # =============================================================================
 
+
 class ToolRegistry:
     """Rekisteri käytettävissä olevista työkaluista."""
 
@@ -476,9 +496,9 @@ class ToolRegistry:
         example_values = {
             "query": '"llama"',
             "format": '"gguf"',
-            "limit": '5',
+            "limit": "5",
             "model_id": '"meta-llama/Llama-2-7b"',
-            "parameters_b": '7',
+            "parameters_b": "7",
         }
 
         lines = []
@@ -486,11 +506,11 @@ class ToolRegistry:
             lines.append(f"**{name}**: {tool['description']}")
 
             # Näytä parametrit selkeästi esimerkkiarvoilla
-            if tool['parameters']:
+            if tool["parameters"]:
                 params_list = []
-                for param_name, param_info in tool['parameters'].items():
+                for param_name, param_info in tool["parameters"].items():
                     example = example_values.get(param_name, '"arvo"')
-                    if param_info.get('required'):
+                    if param_info.get("required"):
                         params_list.append(f'"{param_name}": {example}')
                     else:
                         params_list.append(f'"{param_name}": {example}')
@@ -519,6 +539,7 @@ class ToolRegistry:
 # =============================================================================
 # AI CHAT -PÄÄLUOKKA
 # =============================================================================
+
 
 class AIChat:
     """Interaktiivinen AI-chat Two-Pass arkkitehtuurilla."""
@@ -634,7 +655,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
                 "limit": {
                     "description": "Tulosten enimmäismäärä (oletus 5)",
                     "required": False,
-                }
+                },
             },
             handler=self._tool_search_huggingface,
         )
@@ -701,7 +722,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
                 "output_type": {
                     "description": "Tulosmuoto: f16 (oletus), f32, bf16",
                     "required": False,
-                }
+                },
             },
             handler=self._tool_convert_to_gguf,
         )
@@ -718,7 +739,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
                 "quantization": {
                     "description": "Kvantisointityyppi: q4_k_m (oletus), q8_0, q5_k_m, jne.",
                     "required": False,
-                }
+                },
             },
             handler=self._tool_quantize_model,
         )
@@ -757,7 +778,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             f"Loytyi **{len(models)}** mallia.",
             "",
             "| Malli | Formaatti | Kvantisointi | Koko |",
-            "|-------|-----------|--------------|------|"
+            "|-------|-----------|--------------|------|",
         ]
 
         for m in models[:10]:
@@ -780,11 +801,11 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             return f"Haulla **{query}** ei loytynyt malleja."
 
         lines = [
-            f"## Hakutulokset: \"{query}\"",
+            f'## Hakutulokset: "{query}"',
             f"Loytyi **{len(results)}** mallia.",
             "",
             "| Malli | Formaatti | Koko |",
-            "|-------|-----------|------|"
+            "|-------|-----------|------|",
         ]
 
         for m in results[:10]:
@@ -809,10 +830,10 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             "",
             "### Formaatit",
             "| Formaatti | Maara |",
-            "|-----------|-------|"
+            "|-----------|-------|",
         ]
 
-        for fmt, count in stats.get('format_counts', {}).items():
+        for fmt, count in stats.get("format_counts", {}).items():
             lines.append(f"| {fmt.upper()} | {count} |")
 
         lines.append("")
@@ -820,7 +841,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
         lines.append("| Lahde | Maara |")
         lines.append("|-------|-------|")
 
-        for src, count in stats.get('source_counts', {}).items():
+        for src, count in stats.get("source_counts", {}).items():
             lines.append(f"| {src} | {count} |")
 
         return "\n".join(lines)
@@ -839,11 +860,11 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             return f"Haulla **{query}** ei loytynyt malleja HuggingFacesta."
 
         lines = [
-            f"## HuggingFace-haku: \"{query}\"",
+            f'## HuggingFace-haku: "{query}"',
             f"Loytyi **{len(results)}** mallia.",
             "",
             "| Malli | Tyyppi | Lataukset | Tagit |",
-            "|-------|--------|-----------|-------|"
+            "|-------|--------|-----------|-------|",
         ]
 
         for r in results:
@@ -885,7 +906,11 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             "|--------|------|",
             f"| **Koko** | **{size_str}** |",
             f"| **Tekija** | {details.author} |",
-            f"| **Lataukset** | {details.downloads:,} |" if details.downloads else "| **Lataukset** | 0 |",
+            (
+                f"| **Lataukset** | {details.downloads:,} |"
+                if details.downloads
+                else "| **Lataukset** | 0 |"
+            ),
             f"| **Tykkaykset** | {details.likes} |" if details.likes else "| **Tykkaykset** | 0 |",
             f"| **Tyyppi** | {details.pipeline_tag or '-'} |",
         ]
@@ -895,8 +920,8 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             lines.append(f"| **Tagit** | {tags_str} |")
 
         # Näytä tiedostotyypit
-        safetensors = sum(1 for f in details.files if f['name'].endswith('.safetensors'))
-        gguf = sum(1 for f in details.files if f['name'].endswith('.gguf'))
+        safetensors = sum(1 for f in details.files if f["name"].endswith(".safetensors"))
+        gguf = sum(1 for f in details.files if f["name"].endswith(".gguf"))
         if safetensors or gguf:
             files_info = []
             if safetensors:
@@ -919,7 +944,7 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
             "### Arviot eri kvantisoinneilla",
             "",
             "| Kvantisointi | Mallin koko | + 4K konteksti | + 8K konteksti |",
-            "|--------------|-------------|----------------|----------------|"
+            "|--------------|-------------|----------------|----------------|",
         ]
 
         calculations = [
@@ -942,7 +967,9 @@ Tehtavasi: Muotoile tyokalun data selkeaksi suomenkieliseksi vastaukseksi.
         lines.append("")
         lines.append("### Suositus")
         lines.append(f"- **Q4_K_M** tarjoaa parhaan tasapainon koon ja laadun valilla")
-        lines.append(f"- Tarvitset vahintaan **{(params_b * 1e9 * 4.5 / 8) / (1024**3):.1f} GB** VRAM:ia")
+        lines.append(
+            f"- Tarvitset vahintaan **{(params_b * 1e9 * 4.5 / 8) / (1024**3):.1f} GB** VRAM:ia"
+        )
 
         return "\n".join(lines)
 
@@ -1129,12 +1156,12 @@ GGUF-malli kvantisoitu onnistuneesti!
             f"Loytyi **{len(downloaded)}** mallia.",
             "",
             "| Malli | Koko |",
-            "|-------|------|"
+            "|-------|------|",
         ]
 
         for m in downloaded:
-            size = format_size(m['size'])
-            model_id = m['model_id'][:40] + "..." if len(m['model_id']) > 40 else m['model_id']
+            size = format_size(m["size"])
+            model_id = m["model_id"][:40] + "..." if len(m["model_id"]) > 40 else m["model_id"]
             lines.append(f"| `{model_id}` | {size} |")
 
         lines.append("")
@@ -1157,14 +1184,26 @@ GGUF-malli kvantisoitu onnistuneesti!
             f"Loytyi **{len(gguf_files)}** mallia.",
             "",
             "| Tiedosto | Koko | Kvantisointi |",
-            "|----------|------|--------------|"
+            "|----------|------|--------------|",
         ]
 
         # Tunnista kvantisointi
         def detect_quant(name: str) -> str:
             name_lower = name.lower()
-            quants = ["q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s", "q4_0",
-                      "q3_k_m", "q3_k_s", "q2_k", "f16", "f32"]
+            quants = [
+                "q8_0",
+                "q6_k",
+                "q5_k_m",
+                "q5_k_s",
+                "q4_k_m",
+                "q4_k_s",
+                "q4_0",
+                "q3_k_m",
+                "q3_k_s",
+                "q2_k",
+                "f16",
+                "f32",
+            ]
             for q in quants:
                 if q in name_lower:
                     return q.upper()
@@ -1190,7 +1229,9 @@ GGUF-malli kvantisoitu onnistuneesti!
         # Luo yksinkertainen JSON-lista työkaluista
         tools_list = []
         for name, tool in self.tools.tools.items():
-            params_str = ", ".join(tool["parameters"].keys()) if tool["parameters"] else "ei parametreja"
+            params_str = (
+                ", ".join(tool["parameters"].keys()) if tool["parameters"] else "ei parametreja"
+            )
             tools_list.append(f"- {name}: {tool['description']} ({params_str})")
 
         tools_json = "\n".join(tools_list)
@@ -1225,21 +1266,21 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
         original_text = text
 
         # 1. Poista <think> tagit (DeepSeek R1 tyyli)
-        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
 
         # 2. Poista <reasoning>...</reasoning> tagit
-        text = re.sub(r'<reasoning>.*?</reasoning>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<reasoning>.*?</reasoning>", "", text, flags=re.DOTALL | re.IGNORECASE)
 
         # 3. Poista englanninkieliset ajatusvirrat alusta
         # Nämä ovat tyypillisiä "reasoning" mallien vuotoja
         cot_patterns = [
-            r'^(?:The user wants?|Let me think|I should|I need to|First,? I\'ll|Okay,? so).*?(?=\n\n|\n#|$)',
-            r'^(?:Looking at|Based on|According to the).*?(?=\n\n|\n#|$)',
-            r'^(?:I\'ll|I will|Let\'s|We need to).*?(?=\n\n|\n#|$)',
+            r"^(?:The user wants?|Let me think|I should|I need to|First,? I\'ll|Okay,? so).*?(?=\n\n|\n#|$)",
+            r"^(?:Looking at|Based on|According to the).*?(?=\n\n|\n#|$)",
+            r"^(?:I\'ll|I will|Let\'s|We need to).*?(?=\n\n|\n#|$)",
         ]
 
         for pattern in cot_patterns:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+            text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
 
         # 4. Poista tyhjät rivit alusta ja lopusta
         text = text.strip()
@@ -1264,7 +1305,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
         Returns:
             {"tool": "name", "params": {...}} tai {"tool": null} tai None virhetilanteessa
         """
-        if not self.backend or not hasattr(self.backend, 'generate'):
+        if not self.backend or not hasattr(self.backend, "generate"):
             return None
 
         router_messages = [
@@ -1333,7 +1374,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
         Returns:
             Luova vastaus käyttäjälle
         """
-        if not self.backend or not hasattr(self.backend, 'generate'):
+        if not self.backend or not hasattr(self.backend, "generate"):
             return "Virhe: Backend ei tue generate-metodia."
 
         response_messages = [
@@ -1358,7 +1399,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
     def _parse_tool_call(self, content: str) -> Optional[Dict[str, Any]]:
         """Parsii työkalukutsun vastauksesta."""
         # Etsi ```tool ... ``` -lohko
-        tool_pattern = r'```tool\s*\n?(.*?)\n?```'
+        tool_pattern = r"```tool\s*\n?(.*?)\n?```"
         match = re.search(tool_pattern, content, re.DOTALL)
 
         if match:
@@ -1381,14 +1422,16 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 
     def _print_user_message(self, content: str):
         """Tulosta käyttäjän viesti kauniisti."""
-        console.print(Panel(
-            Text(content, style="white"),
-            title="[bold blue]Sinä[/bold blue]",
-            title_align="left",
-            border_style="blue",
-            padding=(0, 1),
-            box=box.ROUNDED,
-        ))
+        console.print(
+            Panel(
+                Text(content, style="white"),
+                title="[bold blue]Sinä[/bold blue]",
+                title_align="left",
+                border_style="blue",
+                padding=(0, 1),
+                box=box.ROUNDED,
+            )
+        )
 
     def _print_assistant_message(self, content: str, streaming: bool = False):
         """Tulosta assistentin viesti Markdown-muotoiltuna."""
@@ -1398,33 +1441,41 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 
         # Siivoa CoT-vuodot ja poista tool-kutsut näytöstä
         display_content = self._clean_response(content)
-        display_content = re.sub(r'```tool\s*\n?.*?\n?```', '', display_content, flags=re.DOTALL).strip()
+        display_content = re.sub(
+            r"```tool\s*\n?.*?\n?```", "", display_content, flags=re.DOTALL
+        ).strip()
 
         if display_content:
-            console.print(Panel(
-                Markdown(display_content),
-                title="[bold yellow]Tool Master[/bold yellow]",
-                title_align="left",
-                border_style="green",
-                padding=(0, 1),
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    Markdown(display_content),
+                    title="[bold yellow]Tool Master[/bold yellow]",
+                    title_align="left",
+                    border_style="green",
+                    padding=(0, 1),
+                    box=box.ROUNDED,
+                )
+            )
 
     def _print_streaming_response(self, content: str):
         """Tulosta streaming-vastaus kauniisti kun valmis."""
         # Siivoa CoT-vuodot ja poista tool-kutsut
         display_content = self._clean_response(content)
-        display_content = re.sub(r'```tool\s*\n?.*?\n?```', '', display_content, flags=re.DOTALL).strip()
+        display_content = re.sub(
+            r"```tool\s*\n?.*?\n?```", "", display_content, flags=re.DOTALL
+        ).strip()
 
         if display_content:
-            console.print(Panel(
-                Markdown(display_content),
-                title="[bold yellow]Tool Master[/bold yellow]",
-                title_align="left",
-                border_style="green",
-                padding=(0, 1),
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    Markdown(display_content),
+                    title="[bold yellow]Tool Master[/bold yellow]",
+                    title_align="left",
+                    border_style="green",
+                    padding=(0, 1),
+                    box=box.ROUNDED,
+                )
+            )
 
     def chat(self, user_input: str) -> str:
         """
@@ -1462,14 +1513,16 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             tool_params = router_result.get("params", {})
 
             # Näytä tool-kutsu
-            console.print(Panel(
-                f"[cyan]🔧 Työkalu:[/cyan] {tool_name}\n[dim]Parametrit: {json.dumps(tool_params, ensure_ascii=False)}[/dim]",
-                title="[bold yellow]Router päätös[/bold yellow]",
-                title_align="left",
-                border_style="yellow",
-                padding=(0, 1),
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    f"[cyan]🔧 Työkalu:[/cyan] {tool_name}\n[dim]Parametrit: {json.dumps(tool_params, ensure_ascii=False)}[/dim]",
+                    title="[bold yellow]Router päätös[/bold yellow]",
+                    title_align="left",
+                    border_style="yellow",
+                    padding=(0, 1),
+                    box=box.ROUNDED,
+                )
+            )
 
             # Suorita työkalu
             result = self.tools.execute(tool_name, tool_params)
@@ -1480,14 +1533,20 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
                 tool_context = result.get("result", "Työkalu suoritettu.")
 
             # Näytä työkalun tulos
-            console.print(Panel(
-                Markdown(tool_context) if not tool_context.startswith("Virhe") else Text(tool_context, style="red"),
-                title=f"[bold]📊 {tool_name}[/bold]",
-                title_align="left",
-                border_style="cyan",
-                padding=(0, 1),
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    (
+                        Markdown(tool_context)
+                        if not tool_context.startswith("Virhe")
+                        else Text(tool_context, style="red")
+                    ),
+                    title=f"[bold]📊 {tool_name}[/bold]",
+                    title_align="left",
+                    border_style="cyan",
+                    padding=(0, 1),
+                    box=box.ROUNDED,
+                )
+            )
 
         # ========================================
         # PASS 2: RESPONSE (temperature=0.7)
@@ -1521,27 +1580,33 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 
         # Built-in (aina näytetään, mutta kerrotaan jos ei asennettu)
         if llama_backend.is_available():
-            choices.append(questionary.Choice(
-                title="🔷 Built-in (llama.cpp)   Käytä GGUF-mallia suoraan (suositeltu)",
-                value="builtin"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title="🔷 Built-in (llama.cpp)   Käytä GGUF-mallia suoraan (suositeltu)",
+                    value="builtin",
+                )
+            )
         else:
-            choices.append(questionary.Choice(
-                title="⚪ Built-in (llama.cpp)   (ei asennettu - pip install llama-cpp-python)",
-                value="builtin_not_installed"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title="⚪ Built-in (llama.cpp)   (ei asennettu - pip install llama-cpp-python)",
+                    value="builtin_not_installed",
+                )
+            )
 
         # Ollama
         if ollama_backend.is_available():
-            choices.append(questionary.Choice(
-                title="🟢 Ollama                 Käytä Ollama-palvelua",
-                value="ollama"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title="🟢 Ollama                 Käytä Ollama-palvelua", value="ollama"
+                )
+            )
         else:
-            choices.append(questionary.Choice(
-                title="⚪ Ollama                 (ei käynnissä)",
-                value="ollama_not_running"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title="⚪ Ollama                 (ei käynnissä)", value="ollama_not_running"
+                )
+            )
 
         choices.append(questionary.Separator())
         choices.append(questionary.Choice(title="<- Palaa", value="back"))
@@ -1562,7 +1627,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             console.print("\n[cyan]Asenna komennolla:[/cyan]")
             console.print("[dim]  pip install llama-cpp-python[/dim]")
             console.print("\n[dim]GPU-tuki (CUDA):[/dim]")
-            console.print("[dim]  CMAKE_ARGS=\"-DGGML_CUDA=on\" pip install llama-cpp-python[/dim]")
+            console.print('[dim]  CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python[/dim]')
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return False
         elif selected == "ollama":
@@ -1589,47 +1654,70 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 
         if not gguf_files:
             # Ei GGUF-malleja kansiossa
-            console.print(Panel(
-                "[yellow]GGUF-kansiossa ei ole malleja![/yellow]\n\n"
-                f"[dim]Kansio: {gguf_dir}[/dim]\n\n"
-                "Hanki GGUF-malli:\n"
-                "1. [cyan]Model Download[/cyan] - Lataa GGUF-malli HuggingFacesta\n"
-                "2. [cyan]GGUF Converter[/cyan] - Muunna HF-malli GGUF-muotoon\n"
-                "3. [cyan]Quantize Tool[/cyan] - Kvantisoi olemassa oleva GGUF",
-                title="[bold]Ei malleja[/bold]",
-                border_style="yellow",
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    "[yellow]GGUF-kansiossa ei ole malleja![/yellow]\n\n"
+                    f"[dim]Kansio: {gguf_dir}[/dim]\n\n"
+                    "Hanki GGUF-malli:\n"
+                    "1. [cyan]Model Download[/cyan] - Lataa GGUF-malli HuggingFacesta\n"
+                    "2. [cyan]GGUF Converter[/cyan] - Muunna HF-malli GGUF-muotoon\n"
+                    "3. [cyan]Quantize Tool[/cyan] - Kvantisoi olemassa oleva GGUF",
+                    title="[bold]Ei malleja[/bold]",
+                    border_style="yellow",
+                    box=box.ROUNDED,
+                )
+            )
             questionary.press_any_key_to_continue(style=custom_style).ask()
             return False
 
         # Tunnista kvantisointi tiedostonimestä
         def detect_quant(filename: str) -> str:
             name_lower = filename.lower()
-            quants = ["q8_0", "q6_k", "q5_k_m", "q5_k_s", "q4_k_m", "q4_k_s", "q4_0", "q4_1",
-                      "q3_k_l", "q3_k_m", "q3_k_s", "q2_k", "iq4_xs", "iq3_m", "iq3_s", "iq2_xs",
-                      "f16", "f32", "bf16"]
+            quants = [
+                "q8_0",
+                "q6_k",
+                "q5_k_m",
+                "q5_k_s",
+                "q4_k_m",
+                "q4_k_s",
+                "q4_0",
+                "q4_1",
+                "q3_k_l",
+                "q3_k_m",
+                "q3_k_s",
+                "q2_k",
+                "iq4_xs",
+                "iq3_m",
+                "iq3_s",
+                "iq2_xs",
+                "f16",
+                "f32",
+                "bf16",
+            ]
             for q in quants:
                 if q in name_lower or q.replace("_", "-") in name_lower:
                     return q.upper()
             return "F16/F32"
 
         # Näytä mallit valittavaksi
-        console.print(Panel(
-            f"[green]Loytyi {len(gguf_files)} GGUF-mallia[/green]",
-            border_style="green",
-            box=box.ROUNDED,
-        ))
+        console.print(
+            Panel(
+                f"[green]Loytyi {len(gguf_files)} GGUF-mallia[/green]",
+                border_style="green",
+                box=box.ROUNDED,
+            )
+        )
 
         choices = []
         for f in gguf_files:
             size = format_size(f.stat().st_size)
             quant = detect_quant(f.name)
             display_name = f.stem[:35] if len(f.stem) <= 35 else f.stem[:32] + "..."
-            choices.append(questionary.Choice(
-                title=f"🔷 {display_name:<35} [{quant:<8}] {size:>10}",
-                value=str(f)
-            ))
+            choices.append(
+                questionary.Choice(
+                    title=f"🔷 {display_name:<35} [{quant:<8}] {size:>10}", value=str(f)
+                )
+            )
 
         choices.append(questionary.Separator())
         choices.append(questionary.Choice(title="<- Palaa", value=None))
@@ -1648,7 +1736,7 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
         # Lataa malli järkevillä oletusasetuksilla
         return self.backend.load_model(
             selected,
-            n_ctx=4096,      # Hyvä oletus useimmille malleille
+            n_ctx=4096,  # Hyvä oletus useimmille malleille
             n_gpu_layers=0,  # CPU-only oletuksena (turvallinen)
         )
 
@@ -1666,10 +1754,12 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
             name = m.get("name", "tuntematon")
             size = m.get("size", 0)
             size_str = format_size(size) if size else ""
-            choices.append(questionary.Choice(
-                title=f"{name:<30} {size_str:>12}",
-                value=name,
-            ))
+            choices.append(
+                questionary.Choice(
+                    title=f"{name:<30} {size_str:>12}",
+                    value=name,
+                )
+            )
 
         choices.append(questionary.Separator())
         choices.append(questionary.Choice(title="<- Palaa", value=None))
@@ -1723,13 +1813,15 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
 > "Paljonko muistia 13B malli tarvitsee?"
 > "Mika on Q4_K_M kvantisointi?"
 """
-        console.print(Panel(
-            Markdown(help_text),
-            title="[bold yellow]Tool Master - Ohje[/bold yellow]",
-            border_style="yellow",
-            padding=(0, 1),
-            box=box.ROUNDED,
-        ))
+        console.print(
+            Panel(
+                Markdown(help_text),
+                title="[bold yellow]Tool Master - Ohje[/bold yellow]",
+                border_style="yellow",
+                padding=(0, 1),
+                box=box.ROUNDED,
+            )
+        )
 
     def run(self):
         """Käynnistä interaktiivinen chat."""
@@ -1757,19 +1849,21 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
                         qmark="",
                     ).ask()
 
-                    if user_input is None or user_input.lower() in ['lopeta', 'exit', 'quit', 'q']:
+                    if user_input is None or user_input.lower() in ["lopeta", "exit", "quit", "q"]:
                         break
 
-                    if user_input.lower() in ['tyhjennä', 'clear', 'uusi']:
+                    if user_input.lower() in ["tyhjennä", "clear", "uusi"]:
                         self.messages.clear()
-                        console.print(Panel(
-                            "[green]Keskustelu tyhjennetty. Voit aloittaa alusta![/green]",
-                            border_style="green",
-                            box=box.ROUNDED,
-                        ))
+                        console.print(
+                            Panel(
+                                "[green]Keskustelu tyhjennetty. Voit aloittaa alusta![/green]",
+                                border_style="green",
+                                box=box.ROUNDED,
+                            )
+                        )
                         continue
 
-                    if user_input.lower() in ['ohje', 'help', '?']:
+                    if user_input.lower() in ["ohje", "help", "?"]:
                         self._print_help()
                         continue
 
@@ -1789,11 +1883,13 @@ Kayta yllaolevan tagin sisaltoa vastauksessasi. Muotoile tieto selkeasti kayttaj
                 console.print("\n[dim]Vapautetaan malli muistista...[/dim]")
                 self.backend.unload_model()
 
-            console.print(Panel(
-                "[cyan]Kiitos keskustelusta! Nähdään taas.[/cyan]",
-                border_style="cyan",
-                box=box.ROUNDED,
-            ))
+            console.print(
+                Panel(
+                    "[cyan]Kiitos keskustelusta! Nähdään taas.[/cyan]",
+                    border_style="cyan",
+                    box=box.ROUNDED,
+                )
+            )
 
 
 def ai_chat_menu(library=None, downloader=None, converter=None):

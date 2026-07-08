@@ -11,16 +11,17 @@ import questionary
 from questionary import Style
 from ..core.ui import console
 
-
 # Questionary style used throughout the app
-MENU_STYLE = Style([
-    ('qmark', 'fg:orange bold'),
-    ('question', 'bold'),
-    ('answer', 'fg:orange bold'),
-    ('pointer', 'fg:orange bold'),
-    ('highlighted', 'fg:orange bold'),
-    ('selected', 'fg:green'),
-])
+MENU_STYLE = Style(
+    [
+        ("qmark", "fg:orange bold"),
+        ("question", "bold"),
+        ("answer", "fg:orange bold"),
+        ("pointer", "fg:orange bold"),
+        ("highlighted", "fg:orange bold"),
+        ("selected", "fg:green"),
+    ]
+)
 
 
 def create_menu_choices(items: list, back_label: str = "Back") -> list:
@@ -34,6 +35,7 @@ def create_menu_choices(items: list, back_label: str = "Back") -> list:
 def run_menu(title: str, choices: list, style=None) -> str:
     """Run a menu and return the selection."""
     from ..core.ui import print_mini_banner
+
     print_mini_banner(title)
 
     result = questionary.select(
@@ -63,11 +65,7 @@ def prompt_path(message: str, default: str = "") -> str:
 def prompt_select(message: str, choices: list, style=None) -> Any:
     """Prompt for a selection from choices."""
     return questionary.select(
-        message,
-        choices=choices,
-        style=style or MENU_STYLE,
-        qmark=">>",
-        pointer=">"
+        message, choices=choices, style=style or MENU_STYLE, qmark=">>", pointer=">"
     ).ask()
 
 
@@ -80,8 +78,12 @@ def prompt_checkbox(message: str, choices: list, style=None) -> List[Any]:
     ).ask()
 
 
-def prompt_number(message: str, default: str = "", min_value: Optional[float] = None,
-                  max_value: Optional[float] = None) -> Optional[str]:
+def prompt_number(
+    message: str,
+    default: str = "",
+    min_value: Optional[float] = None,
+    max_value: Optional[float] = None,
+) -> Optional[str]:
     """
     Prompt for a numeric input with optional range validation.
 
@@ -94,6 +96,7 @@ def prompt_number(message: str, default: str = "", min_value: Optional[float] = 
     Returns:
         The entered value as string, or None if cancelled
     """
+
     def validate_number(text):
         if not text:
             return True  # Allow empty for default
@@ -108,10 +111,7 @@ def prompt_number(message: str, default: str = "", min_value: Optional[float] = 
             return "Please enter a valid number"
 
     return questionary.text(
-        message,
-        default=default,
-        validate=validate_number,
-        style=MENU_STYLE
+        message, default=default, validate=validate_number, style=MENU_STYLE
     ).ask()
 
 
@@ -121,11 +121,7 @@ def press_any_key(message: str = "Press any key to continue..."):
 
 
 def run_wizard_step(
-    step: int,
-    total: int,
-    title: str,
-    action: Callable,
-    skip_condition: Callable = None
+    step: int, total: int, title: str, action: Callable, skip_condition: Callable = None
 ) -> tuple[bool, Any]:
     """
     Run a single wizard step with step counter display.
@@ -173,6 +169,7 @@ class WizardContext:
 
     def __enter__(self):
         from ..core.ui import print_mini_banner
+
         print_mini_banner(self.title)
         return self
 

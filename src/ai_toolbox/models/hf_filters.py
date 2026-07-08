@@ -72,9 +72,7 @@ TASK_CATEGORIES: Dict[str, Dict[str, str]] = {
 }
 
 # Flat list of all tasks for validation
-ALL_TASKS: List[str] = [
-    task for category in TASK_CATEGORIES.values() for task in category.keys()
-]
+ALL_TASKS: List[str] = [task for category in TASK_CATEGORIES.values() for task in category.keys()]
 
 # =============================================================================
 # LIBRARIES AND FORMATS
@@ -86,7 +84,6 @@ LIBRARIES: Dict[str, str] = {
     "pytorch": "PyTorch",
     "tensorflow": "TensorFlow",
     "jax": "JAX/Flax",
-
     # Model formats
     "gguf": "GGUF (llama.cpp)",
     "safetensors": "SafeTensors",
@@ -94,7 +91,6 @@ LIBRARIES: Dict[str, str] = {
     "openvino": "OpenVINO",
     "coreml": "Core ML (Apple)",
     "tflite": "TensorFlow Lite",
-
     # Specialized libraries
     "diffusers": "Diffusers (kuvagenerointi)",
     "peft": "PEFT/LoRA (adapterit)",
@@ -114,13 +110,11 @@ LIBRARIES: Dict[str, str] = {
     "span-marker": "SpanMarker",
     "sklearn": "Scikit-learn",
     "keras": "Keras",
-
     # Quantization
     "bitsandbytes": "bitsandbytes (8-bit)",
     "gptq": "GPTQ",
     "awq": "AWQ",
     "exl2": "ExLlamaV2",
-
     # LLM inference
     "vllm": "vLLM",
     "text-generation-inference": "TGI (HF)",
@@ -281,7 +275,6 @@ LICENSES: Dict[str, Dict[str, Any]] = {
     "bigscience-openrail-m": {"name": "BigScience OpenRAIL-M", "open": True, "commercial": True},
     "creativeml-openrail-m": {"name": "CreativeML OpenRAIL-M", "open": True, "commercial": True},
     "bigcode-openrail-m": {"name": "BigCode OpenRAIL-M", "open": True, "commercial": True},
-
     # Commercial/Restricted
     "llama2": {"name": "Llama 2 Community", "open": False, "commercial": True, "gated": True},
     "llama3": {"name": "Llama 3 Community", "open": False, "commercial": True, "gated": True},
@@ -292,7 +285,6 @@ LICENSES: Dict[str, Dict[str, Any]] = {
     "deepseek": {"name": "DeepSeek License", "open": False, "commercial": True},
     "qwen": {"name": "Qwen License", "open": False, "commercial": True},
     "mistral": {"name": "Mistral License", "open": False, "commercial": True},
-
     # Other
     "other": {"name": "Other", "open": None, "commercial": None},
     "unknown": {"name": "Unknown", "open": None, "commercial": None},
@@ -303,7 +295,16 @@ LICENSE_CATEGORIES = {
     "permissive": ["mit", "apache-2.0", "bsd-3-clause", "cc0-1.0"],
     "copyleft": ["gpl-3.0", "lgpl-3.0", "cc-by-sa-4.0"],
     "non_commercial": ["cc-by-nc-4.0", "cc-by-nc-sa-4.0"],
-    "model_specific": ["llama2", "llama3", "llama3.1", "llama3.2", "llama3.3", "gemma", "mistral", "qwen"],
+    "model_specific": [
+        "llama2",
+        "llama3",
+        "llama3.1",
+        "llama3.2",
+        "llama3.3",
+        "gemma",
+        "mistral",
+        "qwen",
+    ],
 }
 
 # =============================================================================
@@ -390,9 +391,9 @@ BYTES_PER_PARAM: Dict[str, float] = {
 RECOMMENDED_QUANTIZATIONS: List[str] = [
     "Q4_K_M",  # Best balance of quality and size
     "Q5_K_M",  # Higher quality
-    "Q6_K",    # Near-original quality
+    "Q6_K",  # Near-original quality
     "Q3_K_M",  # Smaller, still usable
-    "Q8_0",    # Highest quantized quality
+    "Q8_0",  # Highest quantized quality
 ]
 
 # VRAM overhead factor (additional memory needed beyond model weights)
@@ -546,10 +547,10 @@ def parse_model_size_from_name(name: str) -> Optional[str]:
 
     # Common patterns
     patterns = [
-        r'(\d+\.?\d*)[Bb](?:illion)?',  # 7B, 7.5B, 7billion
-        r'(\d+)[Mm](?:illion)?',         # 350M, 350million
-        r'-(\d+\.?\d*)[Bb]-',            # -7B-
-        r'_(\d+\.?\d*)[Bb]_',            # _7B_
+        r"(\d+\.?\d*)[Bb](?:illion)?",  # 7B, 7.5B, 7billion
+        r"(\d+)[Mm](?:illion)?",  # 350M, 350million
+        r"-(\d+\.?\d*)[Bb]-",  # -7B-
+        r"_(\d+\.?\d*)[Bb]_",  # _7B_
     ]
 
     name_lower = name.lower()
@@ -559,9 +560,9 @@ def parse_model_size_from_name(name: str) -> Optional[str]:
         if match:
             size = match.group(1)
             # Normalize
-            if 'b' in name_lower[match.start():match.end()].lower():
+            if "b" in name_lower[match.start() : match.end()].lower():
                 return f"{size}B"
-            elif 'm' in name_lower[match.start():match.end()].lower():
+            elif "m" in name_lower[match.start() : match.end()].lower():
                 return f"{size}M"
 
     return None
@@ -576,14 +577,14 @@ def detect_quantization_from_filename(filename: str) -> Optional[str]:
     # Check each known quantization
     for quant in QUANTIZATION_QUALITY.keys():
         # Create pattern that matches the quantization surrounded by non-alphanumeric
-        pattern = rf'[^A-Z0-9]({re.escape(quant)})[^A-Z0-9]'
+        pattern = rf"[^A-Z0-9]({re.escape(quant)})[^A-Z0-9]"
         if re.search(pattern, f"-{filename_upper}-"):
             return quant
 
     # Fallback patterns
     patterns = [
-        (r'[._-]([QFBI][0-9]+(?:_[KXSML]+)?)[._-]', None),
-        (r'[._-](F16|FP16|BF16|F32)[._-]', None),
+        (r"[._-]([QFBI][0-9]+(?:_[KXSML]+)?)[._-]", None),
+        (r"[._-](F16|FP16|BF16|F32)[._-]", None),
     ]
 
     for pattern, default in patterns:

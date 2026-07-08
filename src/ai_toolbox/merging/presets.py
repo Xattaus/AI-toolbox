@@ -13,17 +13,19 @@ from pathlib import Path
 
 class PresetCategory(str, Enum):
     """Preset-kategoriat."""
-    GENERAL = "general"              # Yleiset
-    LANGUAGE = "language"            # Kielimallien yhdistaminen
-    REASONING = "reasoning"          # Reasoning-kyvykkyydet
-    INSTRUCTION = "instruction"      # Instruction-following
-    CREATIVE = "creative"            # Luova kirjoittaminen
-    CODING = "coding"                # Koodin generointi
+
+    GENERAL = "general"  # Yleiset
+    LANGUAGE = "language"  # Kielimallien yhdistaminen
+    REASONING = "reasoning"  # Reasoning-kyvykkyydet
+    INSTRUCTION = "instruction"  # Instruction-following
+    CREATIVE = "creative"  # Luova kirjoittaminen
+    CODING = "coding"  # Koodin generointi
 
 
 @dataclass
 class MergePreset:
     """Merge preset maarittely."""
+
     name: str
     description: str
     category: PresetCategory
@@ -164,11 +166,9 @@ class MergePreset:
 # =============================================================================
 
 PRESETS: Dict[str, MergePreset] = {
-
     # =========================================================================
     # SLERP Presets
     # =========================================================================
-
     "slerp_balanced": MergePreset(
         name="SLERP Balanced",
         description="Tasapainoinen 50/50 SLERP merge kahdelle mallille",
@@ -179,7 +179,6 @@ PRESETS: Dict[str, MergePreset] = {
         min_models=2,
         max_models=2,
     ),
-
     "slerp_light": MergePreset(
         name="SLERP Light Blend",
         description="Kevyt blend: 70% malli 1 / 30% malli 2",
@@ -190,7 +189,6 @@ PRESETS: Dict[str, MergePreset] = {
         min_models=2,
         max_models=2,
     ),
-
     "slerp_heavy": MergePreset(
         name="SLERP Heavy Blend",
         description="Voimakas blend: 30% malli 1 / 70% malli 2",
@@ -201,11 +199,9 @@ PRESETS: Dict[str, MergePreset] = {
         min_models=2,
         max_models=2,
     ),
-
     # =========================================================================
     # DARE-TIES Presets
     # =========================================================================
-
     "dare_ties_balanced": MergePreset(
         name="DARE-TIES Balanced",
         description="Tasapainoinen DARE-TIES 2+ mallille",
@@ -219,7 +215,6 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     "dare_ties_language": MergePreset(
         name="DARE-TIES Language Transfer",
         description="Optimoitu kielten yhdistamiseen (esim. FI + EN)",
@@ -233,7 +228,6 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["poro", "viking", "finllama", "llama", "mistral"],
         requires_base=True,
     ),
-
     "dare_ties_conservative": MergePreset(
         name="DARE-TIES Conservative",
         description="Varovainen merge, sailyttaa enemman alkuperaisia painoja",
@@ -247,7 +241,6 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     "dare_ties_aggressive": MergePreset(
         name="DARE-TIES Aggressive",
         description="Aggressiivinen merge, enemman uusia ominaisuuksia",
@@ -261,11 +254,9 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     # =========================================================================
     # TIES Presets
     # =========================================================================
-
     "ties_standard": MergePreset(
         name="TIES Standard",
         description="Vakio TIES merge 2+ mallille",
@@ -278,11 +269,9 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     # =========================================================================
     # Task Arithmetic Presets
     # =========================================================================
-
     "task_arithmetic_additive": MergePreset(
         name="Task Arithmetic Additive",
         description="Additiivinen task vector merge",
@@ -294,7 +283,6 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["instruct", "chat", "assistant"],
         requires_base=True,
     ),
-
     "task_arithmetic_normalized": MergePreset(
         name="Task Arithmetic Normalized",
         description="Normalisoitu task arithmetic merge",
@@ -306,11 +294,9 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     # =========================================================================
     # LINEAR Presets
     # =========================================================================
-
     "linear_average": MergePreset(
         name="Linear Average",
         description="Yksinkertainen painotettu keskiarvo",
@@ -322,11 +308,9 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=False,
     ),
-
     # =========================================================================
     # DELLA Presets
     # =========================================================================
-
     "della_efficient": MergePreset(
         name="DELLA Efficient",
         description="DELLA - tehokas pruning + merge",
@@ -340,11 +324,9 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["*"],
         requires_base=True,
     ),
-
     # =========================================================================
     # Specialized Presets
     # =========================================================================
-
     "reasoning_boost": MergePreset(
         name="Reasoning Boost",
         description="Optimoitu reasoning-kyvykkyyden lisaamiseen",
@@ -355,7 +337,6 @@ PRESETS: Dict[str, MergePreset] = {
         min_models=2,
         max_models=2,
     ),
-
     "coding_merge": MergePreset(
         name="Coding Specialist",
         description="Koodauskyvykkyyden yhdistaminen",
@@ -369,7 +350,6 @@ PRESETS: Dict[str, MergePreset] = {
         recommended_keywords=["code", "coder", "deepseek", "starcoder", "codellama"],
         requires_base=True,
     ),
-
     "creative_writing": MergePreset(
         name="Creative Writing",
         description="Luovan kirjoittamisen optimointi",
@@ -380,7 +360,6 @@ PRESETS: Dict[str, MergePreset] = {
         min_models=2,
         max_models=2,
     ),
-
     "finnish_llama": MergePreset(
         name="Finnish LLaMA Merge",
         description="Suomenkielisen Llama-mallin luonti",
@@ -491,10 +470,12 @@ def get_preset_choices_for_cli() -> List[Dict[str, Any]]:
     for category in PresetCategory:
         if category in by_category:
             for preset in by_category[category]:
-                choices.append({
-                    "title": f"{preset.name:<25} {preset.description}",
-                    "value": list(PRESETS.keys())[list(PRESETS.values()).index(preset)],
-                    "category": category.value,
-                })
+                choices.append(
+                    {
+                        "title": f"{preset.name:<25} {preset.description}",
+                        "value": list(PRESETS.keys())[list(PRESETS.values()).index(preset)],
+                        "category": category.value,
+                    }
+                )
 
     return choices

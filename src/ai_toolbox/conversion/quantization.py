@@ -52,6 +52,7 @@ class QuantizationType(Enum):
 @dataclass
 class QuantizationInfo:
     """Information about a quantization type."""
+
     type: QuantizationType
     bits_per_weight: float
     description: str
@@ -72,9 +73,7 @@ QUANTIZATION_INFO: Dict[QuantizationType, QuantizationInfo] = {
     QuantizationType.Q8_0: QuantizationInfo(
         QuantizationType.Q8_0, 8.0, "8-bit quantization", "very high"
     ),
-    QuantizationType.Q6_K: QuantizationInfo(
-        QuantizationType.Q6_K, 6.5, "6-bit K-quant", "high"
-    ),
+    QuantizationType.Q6_K: QuantizationInfo(QuantizationType.Q6_K, 6.5, "6-bit K-quant", "high"),
     QuantizationType.Q5_K_M: QuantizationInfo(
         QuantizationType.Q5_K_M, 5.5, "5-bit K-quant medium", "high"
     ),
@@ -163,19 +162,18 @@ def list_quantization_types() -> list:
     """Get list of all available quantization types."""
     result = []
     for quant_type, info in QUANTIZATION_INFO.items():
-        result.append({
-            "type": quant_type.value,
-            "bits_per_weight": info.bits_per_weight,
-            "quality": info.quality,
-            "description": info.description,
-        })
+        result.append(
+            {
+                "type": quant_type.value,
+                "bits_per_weight": info.bits_per_weight,
+                "quality": info.quality,
+                "description": info.description,
+            }
+        )
     return result
 
 
-def recommend_quantization(
-    model_params_billions: float,
-    available_ram_gb: float
-) -> list:
+def recommend_quantization(model_params_billions: float, available_ram_gb: float) -> list:
     """
     Recommend quantization types based on model size and available RAM.
 
@@ -193,14 +191,16 @@ def recommend_quantization(
         required_ram = estimated_size_gb + 2  # Add overhead
 
         if required_ram <= available_ram_gb * 0.8:  # Leave 20% headroom
-            recommendations.append({
-                "type": quant_type.value,
-                "bits_per_weight": info.bits_per_weight,
-                "quality": info.quality,
-                "estimated_size_gb": round(estimated_size_gb, 2),
-                "required_ram_gb": round(required_ram, 2),
-                "fits_in_ram": True,
-            })
+            recommendations.append(
+                {
+                    "type": quant_type.value,
+                    "bits_per_weight": info.bits_per_weight,
+                    "quality": info.quality,
+                    "estimated_size_gb": round(estimated_size_gb, 2),
+                    "required_ram_gb": round(required_ram, 2),
+                    "fits_in_ram": True,
+                }
+            )
 
     # Sort by quality (bits per weight, higher is better)
     recommendations.sort(key=lambda x: x["bits_per_weight"], reverse=True)

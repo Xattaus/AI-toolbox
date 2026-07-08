@@ -21,8 +21,15 @@ def test_root_follows_env(isolated_toolbox_root):
 
 def test_directories_are_created_under_root(isolated_toolbox_root):
     p = get_paths()
-    for d in (p.models_dir, p.gguf_dir, p.safetensors_dir, p.merged_dir,
-              p.abliterated_dir, p.config_dir, p.datasets_dir):
+    for d in (
+        p.models_dir,
+        p.gguf_dir,
+        p.safetensors_dir,
+        p.merged_dir,
+        p.abliterated_dir,
+        p.config_dir,
+        p.datasets_dir,
+    ):
         assert d.exists() and d.is_dir()
         assert Path(isolated_toolbox_root) in d.parents or d == Path(isolated_toolbox_root)
 

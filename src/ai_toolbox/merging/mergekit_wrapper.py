@@ -24,9 +24,9 @@ from ..core.ui import console
 from ..core.paths import get_paths
 
 
-
 class MergekitMethod(str, Enum):
     """Tuetut merge-metodit."""
+
     SLERP = "slerp"
     LINEAR = "linear"
     TIES = "ties"
@@ -58,6 +58,7 @@ TWO_MODEL_METHODS = {
 @dataclass
 class MergekitConfig:
     """Mergekit merge-konfiguraatio."""
+
     method: MergekitMethod
     models: List[Path]
     output_path: Path
@@ -116,8 +117,12 @@ class MergekitConfig:
             # Tokenizer from first model
             config["tokenizer_source"] = "base"
 
-        elif self.method in {MergekitMethod.TIES, MergekitMethod.DARE_TIES,
-                             MergekitMethod.DARE_LINEAR, MergekitMethod.TASK_ARITHMETIC}:
+        elif self.method in {
+            MergekitMethod.TIES,
+            MergekitMethod.DARE_TIES,
+            MergekitMethod.DARE_LINEAR,
+            MergekitMethod.TASK_ARITHMETIC,
+        }:
             # TIES/DARE: base_model + N mallia, weight + density
             if self.base_model:
                 config["base_model"] = str(self.base_model)
@@ -225,6 +230,7 @@ class MergekitWrapper:
 
         try:
             import mergekit
+
             self._mergekit_available = True
             return True, f"mergekit {getattr(mergekit, '__version__', 'installed')}"
         except ImportError:
@@ -318,6 +324,7 @@ class MergekitWrapper:
         vram_gb = 0.0
         try:
             import torch
+
             if torch.cuda.is_available():
                 vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
         except ImportError:
@@ -358,13 +365,15 @@ class MergekitWrapper:
         Returns:
             Dict with model info or empty dict if not found
         """
-        config_file = model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        config_file = (
+            model_path / "config.json" if model_path.is_dir() else model_path.parent / "config.json"
+        )
 
         if not config_file.exists():
             return {"path": str(model_path), "name": model_path.name, "config_found": False}
 
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 config = json.load(f)
 
             # Normalisoi rope_scaling vertailua varten
@@ -377,7 +386,11 @@ class MergekitWrapper:
                 "path": str(model_path),
                 "name": model_path.name,
                 "config_found": True,
-                "architecture": config.get("architectures", ["Unknown"])[0] if config.get("architectures") else "Unknown",
+                "architecture": (
+                    config.get("architectures", ["Unknown"])[0]
+                    if config.get("architectures")
+                    else "Unknown"
+                ),
                 "hidden_size": config.get("hidden_size", 0),
                 "num_layers": config.get("num_hidden_layers", 0),
                 "vocab_size": config.get("vocab_size", 0),
@@ -387,7 +400,12 @@ class MergekitWrapper:
                 "rope_theta": config.get("rope_theta", 0),
             }
         except Exception as e:
-            return {"path": str(model_path), "name": model_path.name, "config_found": False, "error": str(e)}
+            return {
+                "path": str(model_path),
+                "name": model_path.name,
+                "config_found": False,
+                "error": str(e),
+            }
 
     def check_architecture_compatibility(self, model_infos: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -407,14 +425,24 @@ class MergekitWrapper:
         warnings = []
 
         if len(model_infos) < 2:
-            return {"identical": False, "compatible_slerp": False, "compatible_dare": False,
-                    "issues": ["Vahintaan 2 mallia vaaditaan"], "warnings": [], "recommendation": None}
+            return {
+                "identical": False,
+                "compatible_slerp": False,
+                "compatible_dare": False,
+                "issues": ["Vahintaan 2 mallia vaaditaan"],
+                "warnings": [],
+                "recommendation": None,
+            }
 
         # Kerää arvot vertailuun
         hidden_sizes = [m.get("hidden_size") for m in model_infos if m.get("hidden_size")]
         num_layers = [m.get("num_layers") for m in model_infos if m.get("num_layers")]
         vocab_sizes = [m.get("vocab_size") for m in model_infos if m.get("vocab_size")]
-        max_positions = [m.get("max_position_embeddings") for m in model_infos if m.get("max_position_embeddings")]
+        max_positions = [
+            m.get("max_position_embeddings")
+            for m in model_infos
+            if m.get("max_position_embeddings")
+        ]
         rope_types = [m.get("rope_scaling_type") for m in model_infos]
 
         # Kriittiset: hidden_size ja num_layers PITÄÄ olla samat
@@ -437,7 +465,9 @@ class MergekitWrapper:
             warnings.append(f"Eri vocab_size: {vocab_sizes_valid}")
             # Iso ero on ongelma
             if vocab_sizes_valid and max(vocab_sizes_valid) - min(vocab_sizes_valid) > 100:
-                issues.append(f"Suuri vocab_size ero ({max(vocab_sizes_valid) - min(vocab_sizes_valid)}) voi aiheuttaa ongelmia")
+                issues.append(
+                    f"Suuri vocab_size ero ({max(vocab_sizes_valid) - min(vocab_sizes_valid)}) voi aiheuttaa ongelmia"
+                )
                 compatible_dare = False
 
         # max_position_embeddings ja rope_scaling: kriittinen DARE:lle
@@ -451,19 +481,19 @@ class MergekitWrapper:
         if not rope_match:
             rope_desc = []
             for m in model_infos:
-                name = m.get('name') or '?'
-                rope_type = m.get('rope_scaling_type') or 'null'
+                name = m.get("name") or "?"
+                rope_type = m.get("rope_scaling_type") or "null"
                 rope_desc.append(f"{name[:20]}={rope_type}")
             warnings.append(f"Eri rope_scaling: {', '.join(rope_desc)}")
             compatible_dare = False
 
         # Onko täysin identtinen?
         identical = (
-            len(set(hidden_sizes)) <= 1 and
-            len(set(num_layers)) <= 1 and
-            len(set(vocab_sizes)) <= 1 and
-            positions_match and
-            rope_match
+            len(set(hidden_sizes)) <= 1
+            and len(set(num_layers)) <= 1
+            and len(set(vocab_sizes)) <= 1
+            and positions_match
+            and rope_match
         )
 
         # Suositus
@@ -498,52 +528,86 @@ class MergekitWrapper:
         methods = []
 
         # SLERP - toimii jos tensor shape sama
-        methods.append({
-            "method": MergekitMethod.SLERP,
-            "compatible": compat["compatible_slerp"] and len(model_infos) == 2,
-            "reason": "Vaatii 2 mallia, sama hidden_size/layers" if compat["compatible_slerp"] else "Eri tensor shape",
-            "recommended": compat["compatible_slerp"] and not compat["identical"],
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.SLERP,
+                "compatible": compat["compatible_slerp"] and len(model_infos) == 2,
+                "reason": (
+                    "Vaatii 2 mallia, sama hidden_size/layers"
+                    if compat["compatible_slerp"]
+                    else "Eri tensor shape"
+                ),
+                "recommended": compat["compatible_slerp"] and not compat["identical"],
+            }
+        )
 
         # LINEAR - toimii jos tensor shape sama
-        methods.append({
-            "method": MergekitMethod.LINEAR,
-            "compatible": compat["compatible_slerp"],
-            "reason": "Painotettu keskiarvo" if compat["compatible_slerp"] else "Eri tensor shape",
-            "recommended": False,
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.LINEAR,
+                "compatible": compat["compatible_slerp"],
+                "reason": (
+                    "Painotettu keskiarvo" if compat["compatible_slerp"] else "Eri tensor shape"
+                ),
+                "recommended": False,
+            }
+        )
 
         # DARE-TIES - vaatii identtiset arkkitehtuurit
-        methods.append({
-            "method": MergekitMethod.DARE_TIES,
-            "compatible": compat["compatible_dare"],
-            "reason": "Paras laatu identtisille malleille" if compat["compatible_dare"] else "Vaatii identtiset arkkitehtuurit (max_position, rope_scaling)",
-            "recommended": compat["identical"],
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.DARE_TIES,
+                "compatible": compat["compatible_dare"],
+                "reason": (
+                    "Paras laatu identtisille malleille"
+                    if compat["compatible_dare"]
+                    else "Vaatii identtiset arkkitehtuurit (max_position, rope_scaling)"
+                ),
+                "recommended": compat["identical"],
+            }
+        )
 
         # DARE-LINEAR
-        methods.append({
-            "method": MergekitMethod.DARE_LINEAR,
-            "compatible": compat["compatible_dare"],
-            "reason": "Kuten DARE-TIES" if compat["compatible_dare"] else "Vaatii identtiset arkkitehtuurit",
-            "recommended": False,
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.DARE_LINEAR,
+                "compatible": compat["compatible_dare"],
+                "reason": (
+                    "Kuten DARE-TIES"
+                    if compat["compatible_dare"]
+                    else "Vaatii identtiset arkkitehtuurit"
+                ),
+                "recommended": False,
+            }
+        )
 
         # TIES
-        methods.append({
-            "method": MergekitMethod.TIES,
-            "compatible": compat["compatible_dare"],
-            "reason": "Task vector merge" if compat["compatible_dare"] else "Vaatii identtiset arkkitehtuurit",
-            "recommended": False,
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.TIES,
+                "compatible": compat["compatible_dare"],
+                "reason": (
+                    "Task vector merge"
+                    if compat["compatible_dare"]
+                    else "Vaatii identtiset arkkitehtuurit"
+                ),
+                "recommended": False,
+            }
+        )
 
         # TASK_ARITHMETIC
-        methods.append({
-            "method": MergekitMethod.TASK_ARITHMETIC,
-            "compatible": compat["compatible_dare"],
-            "reason": "Additiiviset task vectorit" if compat["compatible_dare"] else "Vaatii identtiset arkkitehtuurit",
-            "recommended": False,
-        })
+        methods.append(
+            {
+                "method": MergekitMethod.TASK_ARITHMETIC,
+                "compatible": compat["compatible_dare"],
+                "reason": (
+                    "Additiiviset task vectorit"
+                    if compat["compatible_dare"]
+                    else "Vaatii identtiset arkkitehtuurit"
+                ),
+                "recommended": False,
+            }
+        )
 
         return methods
 
@@ -612,7 +676,9 @@ class MergekitWrapper:
         # Tarkista onko valittu metodi yhteensopiva
         method_compat = next((m for m in compatible_methods if m["method"] == method), None)
         if method_compat and not method_compat["compatible"]:
-            errors.append(f"{method.value} ei ole yhteensopiva naille malleille: {method_compat['reason']}")
+            errors.append(
+                f"{method.value} ei ole yhteensopiva naille malleille: {method_compat['reason']}"
+            )
 
             # Ehdota vaihtoehtoista metodia
             alternatives = [m for m in compatible_methods if m["compatible"]]
@@ -711,10 +777,7 @@ class MergekitWrapper:
             yaml_content = config.to_yaml()
 
             with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.yaml',
-                delete=False,
-                encoding='utf-8'
+                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
             ) as f:
                 f.write(yaml_content)
                 yaml_path = f.name
@@ -725,7 +788,9 @@ class MergekitWrapper:
 
             # Rakenna mergekit-komento
             cmd = [
-                sys.executable, "-m", "mergekit.scripts.run_yaml",
+                sys.executable,
+                "-m",
+                "mergekit.scripts.run_yaml",
                 yaml_path,
                 str(config.output_path),
             ]
@@ -752,8 +817,8 @@ class MergekitWrapper:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
             )
 
             # Lue output
@@ -765,8 +830,18 @@ class MergekitWrapper:
                         output_lines.append(line)
                         if progress_callback:
                             # Nayta vain merkitykselliset rivit
-                            if any(kw in line.lower() for kw in
-                                   ['loading', 'merging', 'saving', 'writing', 'done', 'error', '%']):
+                            if any(
+                                kw in line.lower()
+                                for kw in [
+                                    "loading",
+                                    "merging",
+                                    "saving",
+                                    "writing",
+                                    "done",
+                                    "error",
+                                    "%",
+                                ]
+                            ):
                                 progress_callback(line[:100])
 
             return_code = process.wait()
@@ -776,7 +851,10 @@ class MergekitWrapper:
 
             if return_code != 0:
                 error_msg = "\n".join(output_lines[-10:]) if output_lines else "Unknown error"
-                return {"success": False, "error": f"Mergekit error (code {return_code}): {error_msg}"}
+                return {
+                    "success": False,
+                    "error": f"Mergekit error (code {return_code}): {error_msg}",
+                }
 
             # Laske output-koko
             output_size = 0
@@ -795,6 +873,7 @@ class MergekitWrapper:
 
         except Exception as e:
             import traceback
+
             return {
                 "success": False,
                 "error": str(e),
@@ -820,7 +899,9 @@ class MergekitWrapper:
             _, vram_options = self.detect_vram()
 
             cmd = [
-                sys.executable, "-m", "mergekit.scripts.run_yaml",
+                sys.executable,
+                "-m",
+                "mergekit.scripts.run_yaml",
                 str(yaml_path),
                 str(output_path),
             ]
@@ -840,8 +921,8 @@ class MergekitWrapper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
             )
 
             if process.stdout:
@@ -854,9 +935,11 @@ class MergekitWrapper:
             if return_code != 0:
                 return {"success": False, "error": f"Mergekit error (code {return_code})"}
 
-            output_size = sum(
-                f.stat().st_size for f in output_path.rglob("*") if f.is_file()
-            ) if output_path.exists() else 0
+            output_size = (
+                sum(f.stat().st_size for f in output_path.rglob("*") if f.is_file())
+                if output_path.exists()
+                else 0
+            )
 
             return {
                 "success": True,
@@ -896,16 +979,15 @@ class MergekitWrapper:
                 else:
                     # Generoi nimi
                     method = config_dict.get("merge_method", "merge")
-                    output_path = self.output_dir / f"{method}_{len(config_dict.get('models', []))}models"
+                    output_path = (
+                        self.output_dir / f"{method}_{len(config_dict.get('models', []))}models"
+                    )
 
             # Luo valiaikainen YAML-tiedosto
             yaml_content = yaml.dump(config_dict, default_flow_style=False, allow_unicode=True)
 
             with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.yaml',
-                delete=False,
-                encoding='utf-8'
+                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
             ) as f:
                 f.write(yaml_content)
                 yaml_path = Path(f.name)

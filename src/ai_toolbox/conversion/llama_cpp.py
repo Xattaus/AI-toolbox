@@ -18,7 +18,6 @@ from ..core.ui import console
 
 from ..core.paths import get_llama_cpp_dir
 
-
 # Pinned llama.cpp release for reproducible builds. Both the source clone and
 # the prebuilt Windows binaries are fetched at this tag. Bump to upgrade.
 LLAMA_CPP_TAG = "b9902"
@@ -87,13 +86,20 @@ class LlamaCppManager:
 
         try:
             result = subprocess.run(
-                ["git", "clone", "--depth", "1", "--branch", LLAMA_CPP_TAG,
-                 "https://github.com/ggerganov/llama.cpp.git",
-                 str(self.llama_cpp_path)],
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "--branch",
+                    LLAMA_CPP_TAG,
+                    "https://github.com/ggerganov/llama.cpp.git",
+                    str(self.llama_cpp_path),
+                ],
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
                 timeout=300,
             )
 
@@ -123,9 +129,7 @@ class LlamaCppManager:
             try:
                 target.relative_to(dest_resolved)
             except ValueError:
-                raise RuntimeError(
-                    f"Unsafe path in archive blocked (Zip Slip): {member}"
-                )
+                raise RuntimeError(f"Unsafe path in archive blocked (Zip Slip): {member}")
         zip_ref.extractall(dest_resolved)
 
     def download_binaries(self, cuda: bool = True) -> bool:
@@ -142,7 +146,9 @@ class LlamaCppManager:
 
         try:
             # Get pinned release info from GitHub API (reproducible builds)
-            api_url = f"https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/{LLAMA_CPP_TAG}"
+            api_url = (
+                f"https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/{LLAMA_CPP_TAG}"
+            )
             req = urllib.request.Request(api_url, headers={"User-Agent": "AI-Toolbox"})
 
             with urllib.request.urlopen(req, timeout=30) as response:
@@ -175,14 +181,20 @@ class LlamaCppManager:
             if not target_asset:
                 for asset in assets:
                     name = asset.get("name", "")
-                    if (name.startswith("llama-b") and "win" in name.lower()
-                            and "x64" in name.lower() and name.endswith(".zip")):
+                    if (
+                        name.startswith("llama-b")
+                        and "win" in name.lower()
+                        and "x64" in name.lower()
+                        and name.endswith(".zip")
+                    ):
                         target_asset = asset
                         break
 
             if not target_asset:
                 console.print("[red]Windows binaries not found in release![/red]")
-                console.print("[yellow]Download manually: https://github.com/ggml-org/llama.cpp/releases[/yellow]")
+                console.print(
+                    "[yellow]Download manually: https://github.com/ggml-org/llama.cpp/releases[/yellow]"
+                )
                 return False
 
             download_url = target_asset.get("browser_download_url")
@@ -198,8 +210,8 @@ class LlamaCppManager:
             # Download with progress
             req = urllib.request.Request(download_url, headers={"User-Agent": "AI-Toolbox"})
             with urllib.request.urlopen(req, timeout=300) as response:
-                with open(zip_path, 'wb') as out_file:
-                    total = int(response.headers.get('Content-Length', 0))
+                with open(zip_path, "wb") as out_file:
+                    total = int(response.headers.get("Content-Length", 0))
                     downloaded = 0
                     block_size = 8192
 
@@ -217,7 +229,7 @@ class LlamaCppManager:
 
             # Extract zip (with Zip Slip protection)
             console.print("[dim]Extracting...[/dim]")
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 self._safe_extractall(zip_ref, self.llama_cpp_path)
 
             # Remove zip file

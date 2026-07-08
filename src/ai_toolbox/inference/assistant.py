@@ -14,21 +14,22 @@ from questionary import Style
 from ..core.ui import console
 from rich.panel import Panel
 
-
 # AI Toolbox root directory
 TOOLBOX_ROOT = Path(__file__).parent.parent.parent.parent
 
 # Custom questionary style
-custom_style = Style([
-    ('qmark', 'fg:#ff9d00 bold'),
-    ('question', 'fg:white bold'),
-    ('answer', 'fg:#00d7ff bold'),
-    ('pointer', 'fg:#ff9d00 bold'),
-    ('highlighted', 'fg:#ff9d00 bold'),
-    ('selected', 'fg:#00ff00'),
-    ('separator', 'fg:#666666'),
-    ('instruction', 'fg:#666666'),
-])
+custom_style = Style(
+    [
+        ("qmark", "fg:#ff9d00 bold"),
+        ("question", "fg:white bold"),
+        ("answer", "fg:#00d7ff bold"),
+        ("pointer", "fg:#ff9d00 bold"),
+        ("highlighted", "fg:#ff9d00 bold"),
+        ("selected", "fg:#00ff00"),
+        ("separator", "fg:#666666"),
+        ("instruction", "fg:#666666"),
+    ]
+)
 
 
 def print_mini_banner(tool_name: str):
@@ -60,11 +61,7 @@ def launch_claude():
     console.print("[dim]Press Ctrl+C to exit Claude and return to AI Toolbox[/dim]\n")
 
     try:
-        subprocess.run(
-            ["claude"],
-            cwd=str(TOOLBOX_ROOT),
-            shell=True
-        )
+        subprocess.run(["claude"], cwd=str(TOOLBOX_ROOT), shell=True)
     except KeyboardInterrupt:
         console.print("\n[yellow]Returned to AI Toolbox[/yellow]")
     except Exception as e:
@@ -101,11 +98,7 @@ Focus on: Clean code, good UX, helpful error messages."""
     console.print("[dim]Claude has context about AI Toolbox project[/dim]\n")
 
     try:
-        subprocess.run(
-            ["claude", "-p", dev_prompt],
-            cwd=str(TOOLBOX_ROOT),
-            shell=True
-        )
+        subprocess.run(["claude", "-p", dev_prompt], cwd=str(TOOLBOX_ROOT), shell=True)
     except KeyboardInterrupt:
         console.print("\n[yellow]Returned to AI Toolbox[/yellow]")
     except Exception as e:
@@ -125,11 +118,7 @@ def launch_claude_with_prompt(prompt: str):
     console.print(f"[dim]{prompt[:60]}{'...' if len(prompt) > 60 else ''}[/dim]\n")
 
     try:
-        subprocess.run(
-            ["claude", "-p", prompt],
-            cwd=str(TOOLBOX_ROOT),
-            shell=True
-        )
+        subprocess.run(["claude", "-p", prompt], cwd=str(TOOLBOX_ROOT), shell=True)
     except KeyboardInterrupt:
         console.print("\n[yellow]Returned to AI Toolbox[/yellow]")
     except Exception as e:
@@ -146,59 +135,55 @@ def quick_prompts_menu():
         {
             "name": "Add new feature",
             "prompt": "Help me add a new feature to AI Toolbox. First, let me describe what I want to build.",
-            "desc": "Start building a new feature"
+            "desc": "Start building a new feature",
         },
         {
             "name": "Fix a bug",
             "prompt": "I found a bug in AI Toolbox. Let me describe the issue and help me fix it.",
-            "desc": "Debug and fix issues"
+            "desc": "Debug and fix issues",
         },
         {
             "name": "Improve UI",
             "prompt": "Help me improve the user interface of AI Toolbox. Review the current UI code and suggest improvements.",
-            "desc": "Enhance user experience"
+            "desc": "Enhance user experience",
         },
         {
             "name": "Add tests",
             "prompt": "Help me write tests for AI Toolbox. Start by examining the current code structure.",
-            "desc": "Write unit tests"
+            "desc": "Write unit tests",
         },
         {
             "name": "Code review",
             "prompt": "Review the AI Toolbox codebase. Look for potential improvements, bugs, and best practices.",
-            "desc": "Review code quality"
+            "desc": "Review code quality",
         },
         {
             "name": "Documentation",
             "prompt": "Help me improve the documentation for AI Toolbox. Review the existing docs and suggest additions.",
-            "desc": "Write documentation"
+            "desc": "Write documentation",
         },
         {
             "name": "GGUF Converter",
             "prompt": "Help me implement the GGUF conversion functionality in AI Toolbox. It should use llama.cpp's convert scripts.",
-            "desc": "Implement conversion"
+            "desc": "Implement conversion",
         },
         {
             "name": "Performance",
             "prompt": "Help me optimize the performance of AI Toolbox. Profile the code and suggest improvements.",
-            "desc": "Optimize speed"
+            "desc": "Optimize speed",
         },
     ]
 
     choices = []
     for p in prompts:
         title = f"{p['name']:<20} {p['desc']}"
-        choices.append(questionary.Choice(title=title, value=p['prompt']))
+        choices.append(questionary.Choice(title=title, value=p["prompt"]))
 
     choices.append(questionary.Separator())
     choices.append(questionary.Choice(title="Back", value="back"))
 
     selected = questionary.select(
-        "Select a development task:",
-        choices=choices,
-        style=custom_style,
-        qmark=">>",
-        pointer=">"
+        "Select a development task:", choices=choices, style=custom_style, qmark=">>", pointer=">"
     ).ask()
 
     if selected and selected != "back":
@@ -208,9 +193,7 @@ def quick_prompts_menu():
 def custom_prompt_menu():
     """Launch Claude with a custom prompt."""
     prompt = questionary.text(
-        "Enter your prompt for Claude:",
-        style=custom_style,
-        multiline=False
+        "Enter your prompt for Claude:", style=custom_style, multiline=False
     ).ask()
 
     if prompt:
@@ -252,12 +235,11 @@ See CLAUDE_MCP_SETUP.md for configuration instructions.
 - Press Ctrl+C to exit
 - Files are saved automatically
 """
-    console.print(Panel(
-        setup_text,
-        title="[bold]Setup Instructions[/bold]",
-        border_style="cyan",
-        padding=(1, 2)
-    ))
+    console.print(
+        Panel(
+            setup_text, title="[bold]Setup Instructions[/bold]", border_style="cyan", padding=(1, 2)
+        )
+    )
 
     questionary.press_any_key_to_continue(style=custom_style).ask()
 
@@ -278,39 +260,27 @@ def ai_assistant_menu():
 
         choices = [
             questionary.Choice(
-                title="Start Claude               Interactive development session",
-                value="start"
+                title="Start Claude               Interactive development session", value="start"
             ),
             questionary.Choice(
-                title="Development Mode          Claude with toolbox context",
-                value="dev"
+                title="Development Mode          Claude with toolbox context", value="dev"
             ),
             questionary.Separator(),
             questionary.Choice(
-                title="Quick Prompts             Pre-defined development tasks",
-                value="prompts"
+                title="Quick Prompts             Pre-defined development tasks", value="prompts"
             ),
             questionary.Choice(
-                title="Custom Prompt             Start with your own prompt",
-                value="custom"
+                title="Custom Prompt             Start with your own prompt", value="custom"
             ),
             questionary.Separator(),
             questionary.Choice(
-                title="Setup Instructions        How to configure Claude CLI",
-                value="setup"
+                title="Setup Instructions        How to configure Claude CLI", value="setup"
             ),
-            questionary.Choice(
-                title="<- Palaa",
-                value="back"
-            ),
+            questionary.Choice(title="<- Palaa", value="back"),
         ]
 
         choice = questionary.select(
-            "AI Assistant:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "AI Assistant:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if choice is None or choice == "back":

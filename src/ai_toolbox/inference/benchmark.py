@@ -24,8 +24,6 @@ from rich import box
 
 from ..core.paths import get_paths
 
-
-
 # =============================================================================
 # DEFAULT BENCHMARK PROMPTS
 # =============================================================================
@@ -45,9 +43,11 @@ DEFAULT_PROMPTS = {
 # DATA CLASSES
 # =============================================================================
 
+
 @dataclass
 class BenchmarkConfig:
     """Benchmark-konfiguraatio."""
+
     prompt: str = ""
     prompt_name: str = "custom"
     max_tokens: int = 128
@@ -62,6 +62,7 @@ class BenchmarkConfig:
 @dataclass
 class BenchmarkResult:
     """Yksittäisen benchmarkin tulos."""
+
     id: str = ""
     model_name: str = ""
     model_path: str = ""
@@ -84,7 +85,7 @@ class BenchmarkResult:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'BenchmarkResult':
+    def from_dict(cls, data: Dict[str, Any]) -> "BenchmarkResult":
         """Luo dict:stä."""
         return cls(**data)
 
@@ -92,6 +93,7 @@ class BenchmarkResult:
 @dataclass
 class ComparisonReport:
     """Mallien vertailuraportti."""
+
     results: List[BenchmarkResult] = field(default_factory=list)
     fastest_model: str = ""
     slowest_model: str = ""
@@ -112,6 +114,7 @@ class ComparisonReport:
 # =============================================================================
 # BENCHMARK RUNNER
 # =============================================================================
+
 
 class BenchmarkRunner:
     """Benchmark-työkalut mallien vertailuun."""
@@ -136,6 +139,7 @@ class BenchmarkRunner:
         if self._llama_available is None:
             try:
                 from llama_cpp import Llama
+
                 self._llama_available = True
             except ImportError:
                 self._llama_available = False
@@ -168,10 +172,13 @@ class BenchmarkRunner:
         # Yritä tunnistaa GPU (CUDA)
         try:
             import torch
+
             if torch.cuda.is_available():
                 info["gpu_available"] = True
                 info["gpu_name"] = torch.cuda.get_device_name(0)
-                info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 1)
+                info["gpu_memory_gb"] = round(
+                    torch.cuda.get_device_properties(0).total_memory / (1024**3), 1
+                )
             else:
                 info["gpu_available"] = False
         except ImportError:
@@ -230,11 +237,27 @@ class BenchmarkRunner:
         name = Path(model_path).name.lower()
 
         quant_types = [
-            "q8_0", "q6_k", "q5_k_m", "q5_k_s", "q5_0", "q5_1",
-            "q4_k_m", "q4_k_s", "q4_0", "q4_1",
-            "q3_k_m", "q3_k_s", "q3_k_l",
-            "q2_k", "iq4_xs", "iq3_m", "iq2_xs", "iq1_s",
-            "f32", "f16", "bf16",
+            "q8_0",
+            "q6_k",
+            "q5_k_m",
+            "q5_k_s",
+            "q5_0",
+            "q5_1",
+            "q4_k_m",
+            "q4_k_s",
+            "q4_0",
+            "q4_1",
+            "q3_k_m",
+            "q3_k_s",
+            "q3_k_l",
+            "q2_k",
+            "iq4_xs",
+            "iq3_m",
+            "iq2_xs",
+            "iq1_s",
+            "f32",
+            "f16",
+            "bf16",
         ]
 
         for qt in quant_types:
@@ -355,7 +378,11 @@ class BenchmarkRunner:
 
         # Laske keskiarvot
         avg_time_ms = sum(run_times) / len(run_times)
-        avg_completion_tokens = sum(completion_tokens_list) / len(completion_tokens_list) if completion_tokens_list else 0
+        avg_completion_tokens = (
+            sum(completion_tokens_list) / len(completion_tokens_list)
+            if completion_tokens_list
+            else 0
+        )
 
         # Tokens/second
         tokens_per_second = 0
@@ -382,14 +409,18 @@ class BenchmarkRunner:
             timestamp=datetime.now().isoformat(),
             prompt_name=config.prompt_name,
             config={
-                "prompt": config.prompt[:100] + "..." if len(config.prompt) > 100 else config.prompt,
+                "prompt": (
+                    config.prompt[:100] + "..." if len(config.prompt) > 100 else config.prompt
+                ),
                 "max_tokens": config.max_tokens,
                 "temperature": config.temperature,
                 "num_runs": config.num_runs,
                 "n_ctx": config.n_ctx,
                 "n_gpu_layers": config.n_gpu_layers,
             },
-            response_preview=last_response[:200] + "..." if len(last_response) > 200 else last_response,
+            response_preview=(
+                last_response[:200] + "..." if len(last_response) > 200 else last_response
+            ),
         )
 
         return result
@@ -548,9 +579,9 @@ class BenchmarkRunner:
         }
 
         # Kirjoita ensin temp-tiedostoon
-        temp_file = self.results_file.with_suffix('.tmp')
+        temp_file = self.results_file.with_suffix(".tmp")
         try:
-            with open(temp_file, 'w', encoding='utf-8') as f:
+            with open(temp_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             # Korvaa alkuperäinen vasta kun kirjoitus onnistui
             temp_file.replace(self.results_file)
@@ -568,7 +599,7 @@ class BenchmarkRunner:
             return []
 
         try:
-            with open(self.results_file, 'r', encoding='utf-8') as f:
+            with open(self.results_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             results = []
@@ -600,29 +631,37 @@ class BenchmarkRunner:
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             fieldnames = [
-                "timestamp", "model_name", "quantization",
-                "tokens_per_second", "total_time_ms", "time_to_first_token_ms",
-                "prompt_tokens", "completion_tokens", "memory_used_mb",
+                "timestamp",
+                "model_name",
+                "quantization",
+                "tokens_per_second",
+                "total_time_ms",
+                "time_to_first_token_ms",
+                "prompt_tokens",
+                "completion_tokens",
+                "memory_used_mb",
                 "prompt_name",
             ]
 
-            with open(output_path, 'w', newline='', encoding='utf-8') as f:
+            with open(output_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
 
                 for r in results:
-                    writer.writerow({
-                        "timestamp": r.timestamp,
-                        "model_name": r.model_name,
-                        "quantization": r.quantization or "",
-                        "tokens_per_second": r.tokens_per_second,
-                        "total_time_ms": r.total_time_ms,
-                        "time_to_first_token_ms": r.time_to_first_token_ms,
-                        "prompt_tokens": r.prompt_tokens,
-                        "completion_tokens": r.completion_tokens,
-                        "memory_used_mb": r.memory_used_mb,
-                        "prompt_name": r.prompt_name,
-                    })
+                    writer.writerow(
+                        {
+                            "timestamp": r.timestamp,
+                            "model_name": r.model_name,
+                            "quantization": r.quantization or "",
+                            "tokens_per_second": r.tokens_per_second,
+                            "total_time_ms": r.total_time_ms,
+                            "time_to_first_token_ms": r.time_to_first_token_ms,
+                            "prompt_tokens": r.prompt_tokens,
+                            "completion_tokens": r.completion_tokens,
+                            "memory_used_mb": r.memory_used_mb,
+                            "prompt_name": r.prompt_name,
+                        }
+                    )
 
             return True
         except Exception:
@@ -642,7 +681,7 @@ class BenchmarkRunner:
                 "results": [r.to_dict() for r in results],
             }
 
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
             return True

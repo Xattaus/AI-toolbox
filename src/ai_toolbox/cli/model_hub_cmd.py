@@ -78,60 +78,50 @@ class ModelHubCommands:
             # Show stats
             stats = self.library.get_stats()
             downloaded = self.downloader.list_downloaded()
-            console.print(f"[dim]Kirjasto: {stats['total_models']} mallia ({stats['total_size_gb']:.1f} GB) | Ladattu: {len(downloaded)}[/dim]\n")
+            console.print(
+                f"[dim]Kirjasto: {stats['total_models']} mallia ({stats['total_size_gb']:.1f} GB) | Ladattu: {len(downloaded)}[/dim]\n"
+            )
 
             choices = [
                 questionary.Choice(
-                    title=format_menu_item("Selaa kirjastoa", "Kaikki mallit"),
-                    value="browse"
+                    title=format_menu_item("Selaa kirjastoa", "Kaikki mallit"), value="browse"
                 ),
                 menu_separator("Lataa"),
                 questionary.Choice(
                     title=format_menu_item("Hae HuggingFacesta", "Etsi ja lataa malleja"),
-                    value="search"
+                    value="search",
                 ),
                 questionary.Choice(
                     title=format_menu_item("Lataa ID:llä", "Suora lataus model ID:llä"),
-                    value="direct"
+                    value="direct",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Suositut mallit", "Eniten ladatut"),
-                    value="popular"
+                    title=format_menu_item("Suositut mallit", "Eniten ladatut"), value="popular"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Lataa LoRA", "LoRA-adapterit"),
-                    value="lora"
+                    title=format_menu_item("Lataa LoRA", "LoRA-adapterit"), value="lora"
                 ),
                 menu_separator("Hallinta"),
                 questionary.Choice(
-                    title=format_menu_item("Lisää malli", "Lisää paikallinen malli"),
-                    value="add"
+                    title=format_menu_item("Lisää malli", "Lisää paikallinen malli"), value="add"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Päivitä kirjasto", "Skannaa uudet mallit"),
-                    value="refresh"
+                    value="refresh",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Skannaa kansio", "Etsi malleja kansiosta"),
-                    value="scan"
+                    title=format_menu_item("Skannaa kansio", "Etsi malleja kansiosta"), value="scan"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Kirjaston terveys", "Tarkista ja siivoa"),
-                    value="health"
+                    value="health",
                 ),
                 menu_separator(),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
-                "Valitse toiminto:",
-                choices=choices,
-                style=custom_style,
-                qmark="#",
-                pointer=">"
+                "Valitse toiminto:", choices=choices, style=custom_style, qmark="#", pointer=">"
             ).ask()
 
             if choice is None or choice == "back":
@@ -163,58 +153,50 @@ class ModelHubCommands:
             print_mini_banner("Library Browser", "Selaa ja hallinnoi malleja")
 
             stats = self.library.get_stats()
-            console.print(f"  [dim]Models:[/dim] [cyan]{stats['total_models']}[/cyan]  |  "
-                         f"[dim]Size:[/dim] [cyan]{stats['total_size_gb']:.1f} GB[/cyan]\n")
+            console.print(
+                f"  [dim]Models:[/dim] [cyan]{stats['total_models']}[/cyan]  |  "
+                f"[dim]Size:[/dim] [cyan]{stats['total_size_gb']:.1f} GB[/cyan]\n"
+            )
 
             choices = [
                 questionary.Separator("--- Browse ---"),
                 questionary.Choice(
                     title=format_menu_item("Categorized View", "Ryhmitelty nakyma (suositeltu)"),
-                    value="categorized"
+                    value="categorized",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("All Models", "Kaikki mallit listana"),
-                    value="all"
+                    title=format_menu_item("All Models", "Kaikki mallit listana"), value="all"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Tree View", "Hierarkkinen puunakyma"),
-                    value="tree"
+                    title=format_menu_item("Tree View", "Hierarkkinen puunakyma"), value="tree"
                 ),
                 questionary.Separator("--- Filter ---"),
                 questionary.Choice(
-                    title=format_menu_item("GGUF Models", "Vain GGUF-mallit"),
-                    value="gguf"
+                    title=format_menu_item("GGUF Models", "Vain GGUF-mallit"), value="gguf"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("SafeTensors", "HuggingFace-mallit"),
-                    value="safetensors"
+                    title=format_menu_item("SafeTensors", "HuggingFace-mallit"), value="safetensors"
                 ),
                 questionary.Choice(
                     title=format_menu_item("LoRA Adapters", "Koulutetut adapterit"),
-                    value="adapters"
+                    value="adapters",
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Merged Models", "Yhdistetyt mallit"),
-                    value="merged"
+                    title=format_menu_item("Merged Models", "Yhdistetyt mallit"), value="merged"
                 ),
                 questionary.Choice(
-                    title=format_menu_item("Ollama Models", "Ollama-mallit"),
-                    value="ollama"
+                    title=format_menu_item("Ollama Models", "Ollama-mallit"), value="ollama"
                 ),
                 questionary.Separator("--- Tools ---"),
                 questionary.Choice(
-                    title=format_menu_item("Search", "Hae kirjastosta"),
-                    value="search"
+                    title=format_menu_item("Search", "Hae kirjastosta"), value="search"
                 ),
                 questionary.Choice(
                     title=format_menu_item("Cleanup", "Siivoa duplikaatit ja puuttuvat"),
-                    value="cleanup"
+                    value="cleanup",
                 ),
                 questionary.Separator("-----------------------------------"),
-                questionary.Choice(
-                    title=format_menu_item("<- Palaa", ""),
-                    value="back"
-                ),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
             ]
 
             choice = questionary.select(
@@ -223,7 +205,7 @@ class ModelHubCommands:
                 style=custom_style,
                 qmark="",
                 pointer=">",
-                instruction="(↑↓ valitse)"
+                instruction="(↑↓ valitse)",
             ).ask()
 
             if choice is None or choice == "back":
@@ -268,13 +250,13 @@ class ModelHubCommands:
 
         # Category config
         category_icons = {
-            'safetensors': ('🏠', 'SafeTensors', 'green'),
-            'gguf_f16': ('📦', 'GGUF F16/F32', 'yellow'),
-            'gguf_quantized': ('⚡', 'GGUF Quantized', 'cyan'),
-            'merged': ('🔀', 'Merged', 'magenta'),
-            'ollama': ('🤖', 'Ollama', 'blue'),
-            'adapter': ('🔧', 'Adapters', 'white'),
-            'other': ('📄', 'Other', 'dim'),
+            "safetensors": ("🏠", "SafeTensors", "green"),
+            "gguf_f16": ("📦", "GGUF F16/F32", "yellow"),
+            "gguf_quantized": ("⚡", "GGUF Quantized", "cyan"),
+            "merged": ("🔀", "Merged", "magenta"),
+            "ollama": ("🤖", "Ollama", "blue"),
+            "adapter": ("🔧", "Adapters", "white"),
+            "other": ("📄", "Other", "dim"),
         }
 
         # Build unified list for selection
@@ -297,15 +279,29 @@ class ModelHubCommands:
         table.add_column("Koko", style="cyan", width=10, justify="right")
 
         # Order categories logically
-        category_order = ['safetensors', 'gguf_f16', 'gguf_quantized', 'merged', 'ollama', 'adapter', 'other']
+        category_order = [
+            "safetensors",
+            "gguf_f16",
+            "gguf_quantized",
+            "merged",
+            "ollama",
+            "adapter",
+            "other",
+        ]
 
         for cat_key in category_order:
             models = grouped.get(cat_key, [])
             if not models:
                 continue
 
-            icon, cat_name, color = category_icons.get(cat_key, ('📄', cat_key, 'dim'))
-            table.add_row("", f"[bold {color}]--- {icon} {cat_name} ({len(models)}) ---[/bold {color}]", "", "", "")
+            icon, cat_name, color = category_icons.get(cat_key, ("📄", cat_key, "dim"))
+            table.add_row(
+                "",
+                f"[bold {color}]--- {icon} {cat_name} ({len(models)}) ---[/bold {color}]",
+                "",
+                "",
+                "",
+            )
 
             for m in models[:8]:  # Max 8 per category
                 size = format_size(m.size_bytes) if m.size_bytes else "-"
@@ -354,48 +350,34 @@ class ModelHubCommands:
             return
 
         choices = [
-            questionary.Choice(
-                title="📂 Avaa kansio          Open folder",
-                value="folder"
-            ),
-            questionary.Choice(
-                title="🏷️  Muokkaa tageja       Edit tags",
-                value="tags"
-            ),
+            questionary.Choice(title="📂 Avaa kansio          Open folder", value="folder"),
+            questionary.Choice(title="🏷️  Muokkaa tageja       Edit tags", value="tags"),
         ]
 
         # Add conversion option for non-GGUF models
-        if model.format != 'gguf':
-            choices.append(questionary.Choice(
-                title="🔄 Muunna GGUF:ksi      Convert to GGUF",
-                value="convert"
-            ))
+        if model.format != "gguf":
+            choices.append(
+                questionary.Choice(title="🔄 Muunna GGUF:ksi      Convert to GGUF", value="convert")
+            )
 
         # Add Ollama option for GGUF models
-        if model.format == 'gguf' and model.category != 'ollama':
-            choices.append(questionary.Choice(
-                title="🤖 Luo Ollama-malli     Create Ollama model",
-                value="ollama"
-            ))
+        if model.format == "gguf" and model.category != "ollama":
+            choices.append(
+                questionary.Choice(
+                    title="🤖 Luo Ollama-malli     Create Ollama model", value="ollama"
+                )
+            )
 
-        choices.extend([
-            questionary.Separator(),
-            questionary.Choice(
-                title="🗑️  Poista              Remove",
-                value="remove"
-            ),
-            questionary.Choice(
-                title="⬅️  Palaa               Back",
-                value="back"
-            ),
-        ])
+        choices.extend(
+            [
+                questionary.Separator(),
+                questionary.Choice(title="🗑️  Poista              Remove", value="remove"),
+                questionary.Choice(title="⬅️  Palaa               Back", value="back"),
+            ]
+        )
 
         action = questionary.select(
-            "Toiminto:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Toiminto:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if action == "folder":
@@ -407,6 +389,7 @@ class ModelHubCommands:
         elif action == "ollama":
             # Navigate to Ollama wizard
             from .ollama_cmd import run_ollama_wizard
+
             run_ollama_wizard()
         elif action == "remove":
             self._remove_model(model)
@@ -546,28 +529,32 @@ class ModelHubCommands:
   Name:     {info.get('ollama_name', 'unknown')}
   Template: {info.get('template', 'none')}"""
 
-        console.print(Panel(
-            panel_content,
-            title="[bold]Mallin tiedot[/bold]",
-            border_style="cyan",
-            padding=(1, 2)
-        ))
+        console.print(
+            Panel(
+                panel_content,
+                title="[bold]Mallin tiedot[/bold]",
+                border_style="cyan",
+                padding=(1, 2),
+            )
+        )
 
         choices = [
-            questionary.Choice(title=format_menu_item("Convert to GGUF", "Muunna GGUF-muotoon"), value="convert"),
+            questionary.Choice(
+                title=format_menu_item("Convert to GGUF", "Muunna GGUF-muotoon"), value="convert"
+            ),
             questionary.Choice(title=format_menu_item("Edit Tags", "Muokkaa tageja"), value="tags"),
-            questionary.Choice(title=format_menu_item("Open Folder", "Avaa kansio"), value="folder"),
-            questionary.Choice(title=format_menu_item("Remove", "Poista kirjastosta"), value="remove"),
+            questionary.Choice(
+                title=format_menu_item("Open Folder", "Avaa kansio"), value="folder"
+            ),
+            questionary.Choice(
+                title=format_menu_item("Remove", "Poista kirjastosta"), value="remove"
+            ),
             questionary.Separator(),
             questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
         ]
 
         action = questionary.select(
-            "Toiminnot:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Toiminnot:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if action == "convert":
@@ -584,7 +571,9 @@ class ModelHubCommands:
         print_mini_banner("Model Tree View")
         self.library.print_tree()
         console.print("[dim]Selitykset:[/dim]")
-        console.print("  [dim]🏠 = Base model  |  🔧 = LoRA adapter  |  🔀 = Merged  |  🤖 = Ollama[/dim]")
+        console.print(
+            "  [dim]🏠 = Base model  |  🔧 = LoRA adapter  |  🔀 = Merged  |  🤖 = Ollama[/dim]"
+        )
         questionary.press_any_key_to_continue(style=custom_style).ask()
 
     def _search_library(self):
@@ -617,30 +606,20 @@ class ModelHubCommands:
         # Search mode selection
         mode_choices = [
             questionary.Choice(
-                title=format_menu_item("Pikahaku", "Tekstihaku suosituimmista"),
-                value="quick"
+                title=format_menu_item("Pikahaku", "Tekstihaku suosituimmista"), value="quick"
             ),
             questionary.Choice(
-                title=format_menu_item("Suodatettu haku", "Kaikki suodattimet"),
-                value="filtered"
+                title=format_menu_item("Suodatettu haku", "Kaikki suodattimet"), value="filtered"
             ),
             questionary.Choice(
-                title=format_menu_item("Suositut kategoriat", "Valmiit hakupohjat"),
-                value="presets"
+                title=format_menu_item("Suositut kategoriat", "Valmiit hakupohjat"), value="presets"
             ),
             questionary.Separator(),
-            questionary.Choice(
-                title=format_menu_item("<- Palaa", ""),
-                value="back"
-            ),
+            questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
         ]
 
         mode = questionary.select(
-            "Hakutapa:",
-            choices=mode_choices,
-            style=custom_style,
-            qmark="#",
-            pointer=">"
+            "Hakutapa:", choices=mode_choices, style=custom_style, qmark="#", pointer=">"
         ).ask()
 
         if mode is None or mode == "back":
@@ -734,9 +713,7 @@ class ModelHubCommands:
         # 4. Application compatibility
         app_choices = [
             questionary.Choice(title="Ei rajoitusta", value=None),
-        ] + [
-            questionary.Choice(title=name, value=app_id) for app_id, name in APP_CHOICES
-        ]
+        ] + [questionary.Choice(title=name, value=app_id) for app_id, name in APP_CHOICES]
 
         app = questionary.select(
             "Yhteensopiva sovellus:",
@@ -768,8 +745,15 @@ class ModelHubCommands:
 
         # 7. License filter
         common_licenses = [
-            "apache-2.0", "mit", "llama3.1", "llama3.2", "llama3.3",
-            "gemma", "cc-by-4.0", "cc-by-nc-4.0", "openrail",
+            "apache-2.0",
+            "mit",
+            "llama3.1",
+            "llama3.2",
+            "llama3.3",
+            "gemma",
+            "cc-by-4.0",
+            "cc-by-nc-4.0",
+            "openrail",
         ]
         license_choices = [
             questionary.Choice(title="Kaikki lisenssit", value=None),
@@ -817,23 +801,20 @@ class ModelHubCommands:
         """Search using predefined presets."""
         preset_choices = []
         for preset_id, preset_data in SEARCH_PRESETS.items():
-            preset_choices.append(questionary.Choice(
-                title=format_menu_item(preset_data["name"], preset_data["description"]),
-                value=preset_id
-            ))
+            preset_choices.append(
+                questionary.Choice(
+                    title=format_menu_item(preset_data["name"], preset_data["description"]),
+                    value=preset_id,
+                )
+            )
 
         preset_choices.append(questionary.Separator())
-        preset_choices.append(questionary.Choice(
-            title=format_menu_item("<- Palaa", ""),
-            value="back"
-        ))
+        preset_choices.append(
+            questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back")
+        )
 
         preset_id = questionary.select(
-            "Valitse kategoria:",
-            choices=preset_choices,
-            style=custom_style,
-            qmark="#",
-            pointer=">"
+            "Valitse kategoria:", choices=preset_choices, style=custom_style, qmark="#", pointer=">"
         ).ask()
 
         if preset_id is None or preset_id == "back":
@@ -862,12 +843,7 @@ class ModelHubCommands:
 
         self._display_search_results(results, total, preset["name"])
 
-    def _display_search_results(
-        self,
-        results: List[SearchResult],
-        total: int,
-        title: str
-    ):
+    def _display_search_results(self, results: List[SearchResult], total: int, title: str):
         """Display search results with rich metadata."""
         while True:
             print_branded_header("Hakutulokset", f"{len(results)}/{total} mallia")
@@ -973,7 +949,9 @@ class ModelHubCommands:
         # Technical info table
         tech_info = []
         if card.parameter_count:
-            tech_info.append(f"[cyan]Parametreja:[/cyan]     {card.model_size or self._format_params(card.parameter_count)}")
+            tech_info.append(
+                f"[cyan]Parametreja:[/cyan]     {card.model_size or self._format_params(card.parameter_count)}"
+            )
         elif card.model_size:
             tech_info.append(f"[cyan]Koko:[/cyan]            {card.model_size}")
 
@@ -1012,7 +990,9 @@ class ModelHubCommands:
         if card.has_safetensors:
             file_info.append("[green]SafeTensors[/green]      saatavilla")
         if card.has_gguf:
-            file_info.append(f"[green]GGUF[/green]             {len(card.gguf_variants)} varianttia")
+            file_info.append(
+                f"[green]GGUF[/green]             {len(card.gguf_variants)} varianttia"
+            )
 
         file_section = "\n".join(file_info)
 
@@ -1050,12 +1030,11 @@ class ModelHubCommands:
                 tags_str += f" (+{len(card.tags) - 8})"
             panel_content += f"\n\n[dim]Tagit: {tags_str}[/dim]"
 
-        console.print(Panel(
-            panel_content,
-            title="[bold]Mallikortti[/bold]",
-            border_style="cyan",
-            padding=(1, 2)
-        ))
+        console.print(
+            Panel(
+                panel_content, title="[bold]Mallikortti[/bold]", border_style="cyan", padding=(1, 2)
+            )
+        )
 
     def _model_card_actions(self, card: ModelCardInfo):
         """Show actions for model card."""
@@ -1063,39 +1042,38 @@ class ModelHubCommands:
 
         # Download options based on available formats
         if card.has_gguf and card.gguf_variants:
-            choices.append(questionary.Choice(
-                title=format_menu_item("Lataa GGUF", f"{len(card.gguf_variants)} varianttia"),
-                value="gguf"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title=format_menu_item("Lataa GGUF", f"{len(card.gguf_variants)} varianttia"),
+                    value="gguf",
+                )
+            )
 
         if card.has_safetensors:
-            choices.append(questionary.Choice(
-                title=format_menu_item("Lataa SafeTensors", "HuggingFace-muoto"),
-                value="safetensors"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title=format_menu_item("Lataa SafeTensors", "HuggingFace-muoto"),
+                    value="safetensors",
+                )
+            )
 
-        choices.extend([
-            questionary.Choice(
-                title=format_menu_item("Lataa kaikki", format_size(card.total_size_bytes)),
-                value="full"
-            ),
-            questionary.Choice(
-                title=format_menu_item("Nayta tiedostot", "Kaikki mallin tiedostot"),
-                value="files"
-            ),
-            questionary.Separator(),
-            questionary.Choice(
-                title=format_menu_item("<- Palaa", ""),
-                value="back"
-            ),
-        ])
+        choices.extend(
+            [
+                questionary.Choice(
+                    title=format_menu_item("Lataa kaikki", format_size(card.total_size_bytes)),
+                    value="full",
+                ),
+                questionary.Choice(
+                    title=format_menu_item("Nayta tiedostot", "Kaikki mallin tiedostot"),
+                    value="files",
+                ),
+                questionary.Separator(),
+                questionary.Choice(title=format_menu_item("<- Palaa", ""), value="back"),
+            ]
+        )
 
         action = questionary.select(
-            "Toiminto:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Toiminto:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if action == "back" or action is None:
@@ -1162,7 +1140,7 @@ class ModelHubCommands:
                 f"{quant} {mark}",
                 format_size(variant["size"]),
                 quality_stars,
-                f"~{vram:.1f} GB" if vram else "-"
+                f"~{vram:.1f} GB" if vram else "-",
             )
 
         console.print(table)
@@ -1192,10 +1170,7 @@ class ModelHubCommands:
         """Download a specific GGUF file."""
         console.print(f"\n[cyan]Ladataan: {filename}[/cyan]\n")
 
-        downloaded_path = self.downloader.download_specific_files(
-            model_id,
-            files=[filename]
-        )
+        downloaded_path = self.downloader.download_specific_files(model_id, files=[filename])
 
         if downloaded_path:
             # Add to library
@@ -1331,15 +1306,17 @@ class ModelHubCommands:
         # Convert legacy ModelSearchResult to new SearchResult format
         converted = []
         for r in results:
-            converted.append(SearchResult(
-                model_id=r.model_id,
-                author=r.author,
-                downloads=r.downloads,
-                likes=r.likes,
-                pipeline_tag=r.pipeline_tag,
-                tags=r.tags,
-                last_modified=r.last_modified,
-            ))
+            converted.append(
+                SearchResult(
+                    model_id=r.model_id,
+                    author=r.author,
+                    downloads=r.downloads,
+                    likes=r.likes,
+                    pipeline_tag=r.pipeline_tag,
+                    tags=r.tags,
+                    last_modified=r.last_modified,
+                )
+            )
 
         self._display_search_results(converted, len(converted), "Hakutulokset")
 
@@ -1374,30 +1351,20 @@ class ModelHubCommands:
 
         choices = [
             questionary.Choice(
-                title=format_menu_item("Enter LoRA ID", "Syota HuggingFace ID"),
-                value="direct"
+                title=format_menu_item("Enter LoRA ID", "Syota HuggingFace ID"), value="direct"
             ),
             questionary.Choice(
-                title=format_menu_item("Search LoRAs", "Hae LoRA-adaptereita"),
-                value="search"
+                title=format_menu_item("Search LoRAs", "Hae LoRA-adaptereita"), value="search"
             ),
             questionary.Choice(
-                title=format_menu_item("View Downloaded", "Nayta ladatut LoRAt"),
-                value="view"
+                title=format_menu_item("View Downloaded", "Nayta ladatut LoRAt"), value="view"
             ),
             questionary.Separator(),
-            questionary.Choice(
-                title="<- Palaa",
-                value="back"
-            ),
+            questionary.Choice(title="<- Palaa", value="back"),
         ]
 
         choice = questionary.select(
-            "Download LoRA:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Download LoRA:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if choice is None or choice == "back":
@@ -1426,11 +1393,7 @@ class ModelHubCommands:
             self.downloader.print_lora_details(details)
             console.print()
 
-            if questionary.confirm(
-                "Lataa tama LoRA?",
-                style=custom_style,
-                default=True
-            ).ask():
+            if questionary.confirm("Lataa tama LoRA?", style=custom_style, default=True).ask():
                 result = self.downloader.download_lora(model_id)
                 if result:
                     print_success(f"LoRA ladattu: {result}")
@@ -1476,7 +1439,9 @@ class ModelHubCommands:
 
         for i, result in enumerate(results, 1):
             downloads = f"{result.downloads:,}" if result.downloads else "0"
-            name = result.model_id[:45] if len(result.model_id) <= 45 else result.model_id[:42] + "..."
+            name = (
+                result.model_id[:45] if len(result.model_id) <= 45 else result.model_id[:42] + "..."
+            )
             table.add_row(str(i), f"🔧 {name}", downloads)
 
         console.print(table)
@@ -1508,11 +1473,7 @@ class ModelHubCommands:
             self.downloader.print_lora_details(details)
             console.print()
 
-            if questionary.confirm(
-                "Lataa tama LoRA?",
-                style=custom_style,
-                default=True
-            ).ask():
+            if questionary.confirm("Lataa tama LoRA?", style=custom_style, default=True).ask():
                 result = self.downloader.download_lora(selected)
                 if result:
                     print_success(f"LoRA ladattu: {result}")
@@ -1549,17 +1510,15 @@ class ModelHubCommands:
         table.add_column("Koko", style="cyan", width=10, justify="right")
 
         for i, lora in enumerate(loras, 1):
-            name = lora['name'][:35] if len(lora['name']) <= 35 else lora['name'][:32] + "..."
-            size = format_size(lora.get('size', 0)) if lora.get('size') else "-"
+            name = lora["name"][:35] if len(lora["name"]) <= 35 else lora["name"][:32] + "..."
+            size = format_size(lora.get("size", 0)) if lora.get("size") else "-"
             table.add_row(str(i), f"🔧 {name}", size)
 
         console.print(table)
         console.print()
 
         if questionary.confirm(
-            "Haluatko poistaa jonkin LoRAn?",
-            style=custom_style,
-            default=False
+            "Haluatko poistaa jonkin LoRAn?", style=custom_style, default=False
         ).ask():
             answer = questionary.text(
                 f"Poistettavan numero [1-{len(loras)}] (0 = peruuta)",
@@ -1570,11 +1529,11 @@ class ModelHubCommands:
                 try:
                     idx = int(answer.strip())
                     if 1 <= idx <= len(loras):
-                        to_delete = loras[idx - 1]['model_id']
+                        to_delete = loras[idx - 1]["model_id"]
                         if questionary.confirm(
                             f"Vahvista poisto: {loras[idx - 1]['name']}?",
                             style=custom_style,
-                            default=False
+                            default=False,
                         ).ask():
                             if self.downloader.delete_lora(to_delete):
                                 print_success("LoRA poistettu")
@@ -1694,17 +1653,13 @@ class ModelHubCommands:
 
             for model in found[:20]:
                 table.add_row(
-                    model['name'][:40],
-                    model['format'].upper(),
-                    format_size(model['size'])
+                    model["name"][:40], model["format"].upper(), format_size(model["size"])
                 )
 
             console.print(table)
 
             if questionary.confirm(
-                "Lisaa kaikki loydetyt mallit kirjastoon?",
-                style=custom_style,
-                default=True
+                "Lisaa kaikki loydetyt mallit kirjastoon?", style=custom_style, default=True
             ).ask():
                 self.library.scan_directory(directory, add_found=True)
                 print_success(f"Lisattiin {len(found)} mallia kirjastoon")
@@ -1722,6 +1677,7 @@ class ModelHubCommands:
 
         if self.converter:
             from .gguf_tools_cmd import GGUFToolsCommands
+
             gguf_cmd = GGUFToolsCommands(self.library, self.converter)
             gguf_cmd._run_conversion(model.path, model.name)
         else:
@@ -1730,13 +1686,15 @@ class ModelHubCommands:
 
     def _edit_model_tags(self, model):
         """Edit model tags."""
-        console.print(f"[cyan]Nykyiset tagit:[/cyan] {', '.join(model.tags) if model.tags else 'Ei'}")
+        console.print(
+            f"[cyan]Nykyiset tagit:[/cyan] {', '.join(model.tags) if model.tags else 'Ei'}"
+        )
         new_tags = questionary.text(
             "Syota tagit (pilkuilla erotettuna):",
             style=custom_style,
         ).ask()
         if new_tags:
-            tags = [t.strip() for t in new_tags.split(',')]
+            tags = [t.strip() for t in new_tags.split(",")]
             self.library.update_model(model.id, tags=tags)
             print_success("Tagit paivitetty")
 
@@ -1749,12 +1707,12 @@ class ModelHubCommands:
         path = Path(model.path)
         folder = path.parent if path.is_file() else path
 
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             os.startfile(str(folder))
-        elif sys.platform == 'darwin':
-            subprocess.run(['open', str(folder)])
+        elif sys.platform == "darwin":
+            subprocess.run(["open", str(folder)])
         else:
-            subprocess.run(['xdg-open', str(folder)])
+            subprocess.run(["xdg-open", str(folder)])
 
         print_success(f"Avattu: {folder}")
 
@@ -1774,7 +1732,9 @@ class ModelHubCommands:
         # Check for children that depend on this model
         children = self.library.get_children(model.id)
         if children:
-            console.print(f"\n[yellow]Varoitus: Talla mallilla on {len(children)} lapsimallia:[/yellow]")
+            console.print(
+                f"\n[yellow]Varoitus: Talla mallilla on {len(children)} lapsimallia:[/yellow]"
+            )
             for child in children:
                 category_icons = {"base": "🏠", "adapter": "🔧", "merged": "🔀", "ollama": "🤖"}
                 icon = category_icons.get(child.category, "📄")
@@ -1783,19 +1743,15 @@ class ModelHubCommands:
             if not questionary.confirm(
                 "Poista silti? Lapsimallit menettavat viittauksen tahan malliin.",
                 style=custom_style,
-                default=False
+                default=False,
             ).ask():
                 return
 
         if questionary.confirm(
-            f"Poista '{model.name}' kirjastosta?",
-            style=custom_style,
-            default=False
+            f"Poista '{model.name}' kirjastosta?", style=custom_style, default=False
         ).ask():
             delete_files = questionary.confirm(
-                "Poista myos tiedostot levylta?",
-                style=custom_style,
-                default=False
+                "Poista myos tiedostot levylta?", style=custom_style, default=False
             ).ask()
 
             success = self.library.remove_model(model.id, delete_files=delete_files)
@@ -1808,7 +1764,7 @@ class ModelHubCommands:
         """Remove Ollama model with full cleanup including ollama rm."""
         from ..integrations.ollama import OllamaManager
 
-        ollama_name = model.ollama_info.get('ollama_name') if model.ollama_info else None
+        ollama_name = model.ollama_info.get("ollama_name") if model.ollama_info else None
         parent = self.library.get_parent(model.id)
 
         console.print(f"\n[bold cyan]Ollama-mallin poisto: {model.name}[/bold cyan]")
@@ -1827,11 +1783,16 @@ class ModelHubCommands:
             console.print(f"  Koko: [cyan]{format_size(parent.size_bytes)}[/cyan]")
 
             # Check if other Ollama models use the same GGUF
-            siblings = [c for c in self.library.get_children(parent.id)
-                        if c.id != model.id and c.category == "ollama"]
+            siblings = [
+                c
+                for c in self.library.get_children(parent.id)
+                if c.id != model.id and c.category == "ollama"
+            ]
 
             if siblings:
-                console.print(f"\n[yellow]Huom: Muut Ollama-mallit kayttavat samaa GGUF:ia:[/yellow]")
+                console.print(
+                    f"\n[yellow]Huom: Muut Ollama-mallit kayttavat samaa GGUF:ia:[/yellow]"
+                )
                 for sib in siblings:
                     console.print(f"  - {sib.name}")
             else:
@@ -1842,25 +1803,22 @@ class ModelHubCommands:
         # Build deletion options
         choices = [
             questionary.Choice(
-                title="Poista vain Ollama-malli (sailyta GGUF)",
-                value="ollama_only"
+                title="Poista vain Ollama-malli (sailyta GGUF)", value="ollama_only"
             ),
         ]
 
         if cascade_option and parent:
-            choices.append(questionary.Choice(
-                title=f"Poista myos lahde-GGUF ({format_size(parent.size_bytes)} vapautuu)",
-                value="cascade"
-            ))
+            choices.append(
+                questionary.Choice(
+                    title=f"Poista myos lahde-GGUF ({format_size(parent.size_bytes)} vapautuu)",
+                    value="cascade",
+                )
+            )
 
         choices.append(questionary.Choice(title="Peruuta", value="cancel"))
 
         action = questionary.select(
-            "Poistotapa:",
-            choices=choices,
-            style=custom_style,
-            qmark=">>",
-            pointer=">"
+            "Poistotapa:", choices=choices, style=custom_style, qmark=">>", pointer=">"
         ).ask()
 
         if action == "cancel" or action is None:
@@ -1902,22 +1860,20 @@ class ModelHubCommands:
         console.print(f"  [dim]Puuttuvat:[/dim]        {len(missing)}")
 
         # Run cleanup
-        if questionary.confirm(
-            "Suorita siivous?",
-            default=True,
-            style=custom_style
-        ).ask():
+        if questionary.confirm("Suorita siivous?", default=True, style=custom_style).ask():
             results = self.library.cleanup_library()
 
             console.print()
-            if results['missing'] > 0 or results['duplicates'] > 0:
-                print_success(f"Siivottu: {results['missing']} puuttuvaa, {results['duplicates']} duplikaattia")
+            if results["missing"] > 0 or results["duplicates"] > 0:
+                print_success(
+                    f"Siivottu: {results['missing']} puuttuvaa, {results['duplicates']} duplikaattia"
+                )
             else:
                 console.print("  [green]✓[/green] Kirjasto on jo puhdas!")
 
             # Show stats after
             stats_after = self.library.get_stats()
-            if stats_before['total_models'] != stats_after['total_models']:
+            if stats_before["total_models"] != stats_after["total_models"]:
                 console.print(f"\n  [dim]Malleja nyt:[/dim] {stats_after['total_models']}")
 
         questionary.press_any_key_to_continue(style=custom_style).ask()
@@ -1935,17 +1891,15 @@ class ModelHubCommands:
 
         if total_issues > 0:
             console.print(f"[yellow]   Loytyi {total_issues} suhdeongelma(a):[/yellow]")
-            if issues['broken_parents']:
+            if issues["broken_parents"]:
                 console.print(f"   - Rikkinaiset vanhemmat: {len(issues['broken_parents'])}")
-            if issues['broken_children']:
+            if issues["broken_children"]:
                 console.print(f"   - Rikkinaiset lapset: {len(issues['broken_children'])}")
-            if issues['orphaned_children']:
+            if issues["orphaned_children"]:
                 console.print(f"   - Orvot lapset: {len(issues['orphaned_children'])}")
 
             if questionary.confirm(
-                "Korjaa ongelmat automaattisesti?",
-                default=True,
-                style=custom_style
+                "Korjaa ongelmat automaattisesti?", default=True, style=custom_style
             ).ask():
                 repairs = self.library.repair_relationships()
                 print_success(f"   Korjattu {repairs} ongelmaa")
@@ -1964,9 +1918,7 @@ class ModelHubCommands:
                 console.print(f"   [dim]... ja {len(missing_files) - 5} muuta[/dim]")
 
             if questionary.confirm(
-                "Poista puuttuvat kirjastosta?",
-                default=True,
-                style=custom_style
+                "Poista puuttuvat kirjastosta?", default=True, style=custom_style
             ).ask():
                 for m in missing_files:
                     self.library.remove_model(m.id, delete_files=False)
@@ -1978,22 +1930,20 @@ class ModelHubCommands:
         console.print("\n[bold]3. Orpo-tiedostot[/bold]")
         orphan_stats = self.library.get_orphan_stats()
 
-        if orphan_stats['total_count'] > 0:
+        if orphan_stats["total_count"] > 0:
             console.print(
                 f"[yellow]   {orphan_stats['total_count']} orpo-tiedostoa "
                 f"({format_size(orphan_stats['total_size_bytes'])})[/yellow]"
             )
 
             # Show by category
-            for cat, stats in orphan_stats['by_category'].items():
-                if stats['count'] > 0:
-                    console.print(f"   - {cat}: {stats['count']} kpl ({format_size(stats['size_bytes'])})")
+            for cat, stats in orphan_stats["by_category"].items():
+                if stats["count"] > 0:
+                    console.print(
+                        f"   - {cat}: {stats['count']} kpl ({format_size(stats['size_bytes'])})"
+                    )
 
-            if questionary.confirm(
-                "Poista orvot?",
-                default=False,
-                style=custom_style
-            ).ask():
+            if questionary.confirm("Poista orvot?", default=False, style=custom_style).ask():
                 deleted = self.library.cleanup_orphans(dry_run=False)
                 print_success(f"   Poistettu {len(deleted)} orpo-tiedostoa")
         else:
@@ -2005,18 +1955,18 @@ class ModelHubCommands:
         stats = self.library.get_stats()
 
         categories_display = [
-            ('base', '🏠 Base', 'green'),
-            ('adapter', '🔧 Adapter', 'blue'),
-            ('merged', '🔀 Merged', 'yellow'),
-            ('ollama', '🤖 Ollama', 'cyan'),
+            ("base", "🏠 Base", "green"),
+            ("adapter", "🔧 Adapter", "blue"),
+            ("merged", "🔀 Merged", "yellow"),
+            ("ollama", "🤖 Ollama", "cyan"),
         ]
 
-        total_size = stats['total_size_bytes']
+        total_size = stats["total_size_bytes"]
 
         for cat_key, cat_name, color in categories_display:
-            cat_stats = category_stats.get(cat_key, {'count': 0, 'size_bytes': 0})
-            size = cat_stats['size_bytes']
-            count = cat_stats['count']
+            cat_stats = category_stats.get(cat_key, {"count": 0, "size_bytes": 0})
+            size = cat_stats["size_bytes"]
+            count = cat_stats["count"]
             pct = (size / total_size * 100) if total_size > 0 else 0
 
             console.print(
@@ -2024,7 +1974,9 @@ class ModelHubCommands:
                 f"{count:3} kpl  {format_size(size):>10}  ({pct:5.1f}%)"
             )
 
-        console.print(f"\n   [bold]Yhteensa: {stats['total_models']} mallia, {format_size(total_size)}[/bold]")
+        console.print(
+            f"\n   [bold]Yhteensa: {stats['total_models']} mallia, {format_size(total_size)}[/bold]"
+        )
 
         console.print()
         questionary.press_any_key_to_continue(style=custom_style).ask()

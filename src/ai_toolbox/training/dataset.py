@@ -24,9 +24,9 @@ from rich import box
 from ..core.paths import get_paths
 
 
-
 class DatasetFormat(Enum):
     """Tuetut dataset-formaatit."""
+
     JSONL = "jsonl"
     JSON_ARRAY = "json_array"
     ALPACA = "alpaca"
@@ -40,6 +40,7 @@ class DatasetFormat(Enum):
 
 class CleaningOperation(Enum):
     """Siivoustoimenpiteet."""
+
     REMOVE_EMPTY = "remove_empty"
     FIX_ENCODING = "fix_encoding"
     NORMALIZE_WHITESPACE = "normalize_whitespace"
@@ -50,6 +51,7 @@ class CleaningOperation(Enum):
 @dataclass
 class DatasetStats:
     """Datasetin tilastot."""
+
     total_samples: int = 0
     total_characters: int = 0
     avg_chars_per_sample: float = 0.0
@@ -67,6 +69,7 @@ class DatasetStats:
 @dataclass
 class SplitConfig:
     """Train/test/validation split konfiguraatio."""
+
     train_ratio: float = 0.8
     test_ratio: float = 0.1
     validation_ratio: float = 0.1
@@ -77,6 +80,7 @@ class SplitConfig:
 @dataclass
 class FilterConfig:
     """Suodatuskonfiguraatio."""
+
     min_chars: Optional[int] = None
     max_chars: Optional[int] = None
     min_tokens: Optional[int] = None
@@ -108,12 +112,14 @@ class DatasetPrep:
 
         try:
             import transformers
+
             deps["transformers"] = True
         except ImportError:
             pass
 
         try:
             import rapidfuzz
+
             deps["rapidfuzz"] = True
         except ImportError:
             pass
@@ -142,17 +148,24 @@ class DatasetPrep:
             if not scan_dir.exists():
                 continue
             for file_path in scan_dir.iterdir():
-                if file_path.is_file() and file_path.suffix.lower() in ['.json', '.jsonl', '.csv', '.txt']:
+                if file_path.is_file() and file_path.suffix.lower() in [
+                    ".json",
+                    ".jsonl",
+                    ".csv",
+                    ".txt",
+                ]:
                     format_type = self.detect_format(file_path)
                     size = file_path.stat().st_size
 
-                    datasets.append({
-                        "path": file_path,
-                        "name": file_path.name,
-                        "format": format_type.value if format_type else "unknown",
-                        "size_bytes": size,
-                        "is_processed": scan_dir == self.output_dir,
-                    })
+                    datasets.append(
+                        {
+                            "path": file_path,
+                            "name": file_path.name,
+                            "format": format_type.value if format_type else "unknown",
+                            "size_bytes": size,
+                            "is_processed": scan_dir == self.output_dir,
+                        }
+                    )
 
         return sorted(datasets, key=lambda x: x["name"])
 
@@ -173,10 +186,10 @@ class DatasetPrep:
 
         if suffix in [".json", ".jsonl"]:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     first_line = f.readline().strip()
 
-                    if first_line.startswith('['):
+                    if first_line.startswith("["):
                         # JSON array - lue koko tiedosto
                         f.seek(0)
                         data = json.loads(f.read())
@@ -207,8 +220,7 @@ class DatasetPrep:
 
     # ==================== INSPECTION ====================
 
-    def inspect_dataset(self, file_path: Path,
-                       sample_size: int = 1000) -> DatasetStats:
+    def inspect_dataset(self, file_path: Path, sample_size: int = 1000) -> DatasetStats:
         """Analysoi dataset ja palauta tilastot."""
         stats = DatasetStats()
 
@@ -238,8 +250,7 @@ class DatasetPrep:
 
             stats.schema = {k: "string" for k in sorted(all_fields)}
             stats.field_fill_rates = {
-                k: round(v / len(data) * 100, 1)
-                for k, v in field_counts.items()
+                k: round(v / len(data) * 100, 1) for k, v in field_counts.items()
             }
 
             # Merkkimäärät
@@ -273,12 +284,12 @@ class DatasetPrep:
 
             # Laske todellinen kokonaismäärä (jos sample)
             if sample_size and file_path.suffix.lower() in [".json", ".jsonl"]:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
-                    if content.startswith('['):
+                    if content.startswith("["):
                         stats.total_samples = len(json.loads(content))
                     else:
-                        stats.total_samples = sum(1 for line in content.split('\n') if line.strip())
+                        stats.total_samples = sum(1 for line in content.split("\n") if line.strip())
 
         except Exception as e:
             console.print(f"[red]Virhe analysoinnissa: {e}[/red]")
@@ -321,12 +332,14 @@ class DatasetPrep:
 
     # ==================== FORMAT CONVERSION ====================
 
-    def convert_format(self,
-                      input_path: Path,
-                      output_path: Path,
-                      target_format: DatasetFormat,
-                      field_mapping: Optional[Dict[str, str]] = None,
-                      progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def convert_format(
+        self,
+        input_path: Path,
+        output_path: Path,
+        target_format: DatasetFormat,
+        field_mapping: Optional[Dict[str, str]] = None,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Muunna dataset toiseen formaattiin."""
         result = {
             "success": False,
@@ -352,7 +365,9 @@ class DatasetPrep:
             converted = []
             for i, item in enumerate(data):
                 try:
-                    converted_item = self._convert_item(item, source_format, target_format, field_mapping)
+                    converted_item = self._convert_item(
+                        item, source_format, target_format, field_mapping
+                    )
                     if converted_item:
                         converted.append(converted_item)
                 except Exception as e:
@@ -372,10 +387,13 @@ class DatasetPrep:
 
         return result
 
-    def _convert_item(self, item: Dict[str, Any],
-                     source_format: DatasetFormat,
-                     target_format: DatasetFormat,
-                     field_mapping: Optional[Dict[str, str]] = None) -> Optional[Dict[str, Any]]:
+    def _convert_item(
+        self,
+        item: Dict[str, Any],
+        source_format: DatasetFormat,
+        target_format: DatasetFormat,
+        field_mapping: Optional[Dict[str, str]] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Muunna yksittäinen item formaatista toiseen."""
 
         # Käytä kenttämäppäystä jos annettu
@@ -475,8 +493,12 @@ class DatasetPrep:
 
         else:
             # Fallback
-            messages.append({"role": "user", "content": item.get("instruction", item.get("text", ""))})
-            messages.append({"role": "assistant", "content": item.get("output", item.get("response", ""))})
+            messages.append(
+                {"role": "user", "content": item.get("instruction", item.get("text", ""))}
+            )
+            messages.append(
+                {"role": "assistant", "content": item.get("output", item.get("response", ""))}
+            )
 
         return {"messages": messages}
 
@@ -501,8 +523,12 @@ class DatasetPrep:
             conversations.append({"from": "gpt", "value": item.get("output", "")})
 
         else:
-            conversations.append({"from": "human", "value": item.get("prompt", item.get("text", ""))})
-            conversations.append({"from": "gpt", "value": item.get("completion", item.get("response", ""))})
+            conversations.append(
+                {"from": "human", "value": item.get("prompt", item.get("text", ""))}
+            )
+            conversations.append(
+                {"from": "gpt", "value": item.get("completion", item.get("response", ""))}
+            )
 
         return {"conversations": conversations}
 
@@ -535,11 +561,13 @@ class DatasetPrep:
 
     # ==================== DATA CLEANING ====================
 
-    def clean_dataset(self,
-                     input_path: Path,
-                     output_path: Path,
-                     operations: List[CleaningOperation],
-                     progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def clean_dataset(
+        self,
+        input_path: Path,
+        output_path: Path,
+        operations: List[CleaningOperation],
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Siivoa dataset valituilla operaatioilla."""
         result = {
             "success": False,
@@ -599,31 +627,34 @@ class DatasetPrep:
 
     def _fix_encoding(self, data: List[Dict]) -> List[Dict]:
         """Korjaa merkistöongelmat."""
+
         def fix_text(text: str) -> str:
             if not isinstance(text, str):
                 return text
             # Korjaa yleisiä ongelmia
-            text = text.replace('\x00', '')  # Null bytes
-            text = text.encode('utf-8', errors='replace').decode('utf-8')
+            text = text.replace("\x00", "")  # Null bytes
+            text = text.encode("utf-8", errors="replace").decode("utf-8")
             return text
 
         return self._apply_to_strings(data, fix_text)
 
     def _normalize_whitespace(self, data: List[Dict]) -> List[Dict]:
         """Normalisoi välilyönnit ja rivinvaihdot."""
+
         def normalize(text: str) -> str:
             if not isinstance(text, str):
                 return text
             # Korvaa monet välilyönnit yhdellä
-            text = re.sub(r'[ \t]+', ' ', text)
+            text = re.sub(r"[ \t]+", " ", text)
             # Korvaa monet rivinvaihdot kahdella
-            text = re.sub(r'\n{3,}', '\n\n', text)
+            text = re.sub(r"\n{3,}", "\n\n", text)
             return text.strip()
 
         return self._apply_to_strings(data, normalize)
 
     def _trim_text(self, data: List[Dict]) -> List[Dict]:
         """Trimmaa tekstit."""
+
         def trim(text: str) -> str:
             if not isinstance(text, str):
                 return text
@@ -633,10 +664,11 @@ class DatasetPrep:
 
     def _remove_html(self, data: List[Dict]) -> List[Dict]:
         """Poista HTML-tagit."""
+
         def remove_html(text: str) -> str:
             if not isinstance(text, str):
                 return text
-            return re.sub(r'<[^>]+>', '', text)
+            return re.sub(r"<[^>]+>", "", text)
 
         return self._apply_to_strings(data, remove_html)
 
@@ -650,8 +682,11 @@ class DatasetPrep:
                     new_item[key] = func(value)
                 elif isinstance(value, list):
                     new_item[key] = [
-                        {k: func(v) if isinstance(v, str) else v for k, v in elem.items()}
-                        if isinstance(elem, dict) else elem
+                        (
+                            {k: func(v) if isinstance(v, str) else v for k, v in elem.items()}
+                            if isinstance(elem, dict)
+                            else elem
+                        )
                         for elem in value
                     ]
                 else:
@@ -661,12 +696,14 @@ class DatasetPrep:
 
     # ==================== DEDUPLICATION ====================
 
-    def deduplicate(self,
-                   input_path: Path,
-                   output_path: Path,
-                   method: str = "exact",
-                   threshold: float = 0.9,
-                   progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def deduplicate(
+        self,
+        input_path: Path,
+        output_path: Path,
+        method: str = "exact",
+        threshold: float = 0.9,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Poista duplikaatit datasetista."""
         result = {
             "success": False,
@@ -723,7 +760,9 @@ class DatasetPrep:
 
         return unique
 
-    def _fuzzy_dedupe(self, data: List[Dict], format_type: DatasetFormat, threshold: float) -> List[Dict]:
+    def _fuzzy_dedupe(
+        self, data: List[Dict], format_type: DatasetFormat, threshold: float
+    ) -> List[Dict]:
         """Sumea duplikaattien poisto."""
         from rapidfuzz import fuzz
 
@@ -748,11 +787,13 @@ class DatasetPrep:
 
     # ==================== SPLITTING ====================
 
-    def split_dataset(self,
-                     input_path: Path,
-                     output_dir: Path,
-                     config: SplitConfig,
-                     progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def split_dataset(
+        self,
+        input_path: Path,
+        output_dir: Path,
+        config: SplitConfig,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Jaa dataset train/test/validation osiin."""
         result = {
             "success": False,
@@ -814,12 +855,14 @@ class DatasetPrep:
 
     # ==================== FILTERING ====================
 
-    def filter_dataset(self,
-                      input_path: Path,
-                      output_path: Path,
-                      config: FilterConfig,
-                      tokenizer_name: Optional[str] = None,
-                      progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def filter_dataset(
+        self,
+        input_path: Path,
+        output_path: Path,
+        config: FilterConfig,
+        tokenizer_name: Optional[str] = None,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Suodata dataset kriteerien mukaan."""
         result = {
             "success": False,
@@ -846,6 +889,7 @@ class DatasetPrep:
                     if progress_callback:
                         progress_callback("Ladataan tokenizer...")
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
             if progress_callback:
@@ -902,12 +946,14 @@ class DatasetPrep:
 
     # ==================== MERGING ====================
 
-    def merge_datasets(self,
-                      input_paths: List[Path],
-                      output_path: Path,
-                      deduplicate_result: bool = True,
-                      shuffle: bool = True,
-                      progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def merge_datasets(
+        self,
+        input_paths: List[Path],
+        output_path: Path,
+        deduplicate_result: bool = True,
+        shuffle: bool = True,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Yhdistä useita datasettejä."""
         result = {
             "success": False,
@@ -967,11 +1013,13 @@ class DatasetPrep:
 
     # ==================== TOKEN COUNTING ====================
 
-    def count_tokens(self,
-                    file_path: Path,
-                    tokenizer_name: str = "gpt2",
-                    sample_size: Optional[int] = None,
-                    progress_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    def count_tokens(
+        self,
+        file_path: Path,
+        tokenizer_name: str = "gpt2",
+        sample_size: Optional[int] = None,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
         """Laske tokenimäärät datasetille."""
         result = {
             "success": False,
@@ -991,6 +1039,7 @@ class DatasetPrep:
                 progress_callback("Ladataan tokenizer...")
 
             from transformers import AutoTokenizer
+
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
             if progress_callback:
@@ -1030,7 +1079,7 @@ class DatasetPrep:
 
         try:
             if suffix == ".csv":
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     for i, row in enumerate(reader):
                         data.append(dict(row))
@@ -1038,7 +1087,7 @@ class DatasetPrep:
                             break
 
             elif suffix == ".txt":
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     for i, line in enumerate(f):
                         if line.strip():
                             data.append({"text": line.strip()})
@@ -1046,56 +1095,63 @@ class DatasetPrep:
                             break
 
             elif suffix in [".json", ".jsonl"]:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
 
-                    if content.startswith('['):
+                    if content.startswith("["):
                         # JSON array
                         all_data = json.loads(content)
                         data = all_data[:limit] if limit else all_data
                     else:
                         # JSONL - käsittele jokainen rivi erikseen virheenkäsittelyllä
                         parse_errors = 0
-                        for i, line in enumerate(content.split('\n')):
+                        for i, line in enumerate(content.split("\n")):
                             if line.strip():
                                 try:
                                     data.append(json.loads(line))
                                 except json.JSONDecodeError as e:
                                     parse_errors += 1
                                     if parse_errors <= 3:
-                                        console.print(f"[yellow]Varoitus: Rivi {i+1} virheellinen JSON: {str(e)[:50]}[/yellow]")
+                                        console.print(
+                                            f"[yellow]Varoitus: Rivi {i+1} virheellinen JSON: {str(e)[:50]}[/yellow]"
+                                        )
                                     elif parse_errors == 4:
-                                        console.print(f"[yellow]... lisää virheitä ohitetaan[/yellow]")
+                                        console.print(
+                                            f"[yellow]... lisää virheitä ohitetaan[/yellow]"
+                                        )
                                     continue
                             if limit and len(data) >= limit:
                                 break
                         if parse_errors > 0:
-                            console.print(f"[yellow]Ohitettiin {parse_errors} virheellistä riviä[/yellow]")
+                            console.print(
+                                f"[yellow]Ohitettiin {parse_errors} virheellistä riviä[/yellow]"
+                            )
 
         except Exception as e:
             console.print(f"[red]Virhe ladattaessa: {e}[/red]")
 
         return data
 
-    def _save_dataset(self, data: List[Dict[str, Any]], output_path: Path,
-                     format_type: DatasetFormat) -> None:
+    def _save_dataset(
+        self, data: List[Dict[str, Any]], output_path: Path, format_type: DatasetFormat
+    ) -> None:
         """Tallenna dataset tiedostoon."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         if format_type == DatasetFormat.CSV:
             if data:
-                with open(output_path, 'w', encoding='utf-8', newline='') as f:
+                with open(output_path, "w", encoding="utf-8", newline="") as f:
                     writer = csv.DictWriter(f, fieldnames=data[0].keys())
                     writer.writeheader()
                     writer.writerows(data)
         elif format_type == DatasetFormat.JSON_ARRAY:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         else:
             # JSONL (default)
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 for item in data:
-                    f.write(json.dumps(item, ensure_ascii=False) + '\n')
+                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
     def _extract_text(self, item: Dict[str, Any], format_type: DatasetFormat) -> str:
         """Pura teksti itemista formaatin mukaan."""

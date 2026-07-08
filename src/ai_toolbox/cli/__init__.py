@@ -55,20 +55,20 @@ from .selection import (
 
 __all__ = [
     # Main application
-    'AIToolbox',
-    'main',
+    "AIToolbox",
+    "main",
     # New unified command classes
-    'ModelHubCommands',
-    'GGUFToolsCommands',
-    'TrainingCenterCommands',
+    "ModelHubCommands",
+    "GGUFToolsCommands",
+    "TrainingCenterCommands",
     # Kept command classes (used internally)
-    'TrainingCommands',
-    'DatasetCommands',
-    'BenchmarkCommands',
-    'MergerCommands',
-    'AbliterationCommands',
-    'SettingsCommands',
-    'run_ollama_wizard',
+    "TrainingCommands",
+    "DatasetCommands",
+    "BenchmarkCommands",
+    "MergerCommands",
+    "AbliterationCommands",
+    "SettingsCommands",
+    "run_ollama_wizard",
     # Style and console
     "MENU_STYLE",
     "console",

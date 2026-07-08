@@ -23,7 +23,7 @@ def test_downloads_appended_after_library_with_download_source():
     downloaded = [{"model_id": "org/RepoB", "path": "/d/b", "size": 2}]
     items = build_conversion_choices(convertible, downloaded)
     assert [i["source"] for i in items] == ["library", "download"]
-    assert items[1]["name"] == "RepoB"          # org/ prefix stripped
+    assert items[1]["name"] == "RepoB"  # org/ prefix stripped
     assert items[1]["path"] == Path("/d/b")
     assert items[1]["size_bytes"] == 2
 
