@@ -89,92 +89,96 @@ class ToolboxPaths:
     @property
     def root(self) -> Path:
         """AI Toolbox root directory."""
-        return self._root
+        root = self._root
+        if root is None:
+            root = self._detect_root()
+            self._root = root
+        return root
 
     @property
     def models_dir(self) -> Path:
         """Main models directory."""
-        return self._root / "models"
+        return self.root / "models"
 
     @property
     def downloads_dir(self) -> Path:
         """Directory for HuggingFace downloads (legacy alias for safetensors_dir)."""
-        return self._root / "models" / "safetensors"
+        return self.root / "models" / "safetensors"
 
     @property
     def safetensors_dir(self) -> Path:
         """Directory for SafeTensors/HuggingFace models."""
-        return self._root / "models" / "safetensors"
+        return self.root / "models" / "safetensors"
 
     @property
     def gguf_dir(self) -> Path:
         """Directory for GGUF models."""
-        return self._root / "models" / "gguf"
+        return self.root / "models" / "gguf"
 
     @property
     def loras_dir(self) -> Path:
         """Directory for LoRA adapters (root)."""
-        return self._root / "models" / "lora"
+        return self.root / "models" / "lora"
 
     @property
     def adapters_dir(self) -> Path:
         """Directory for final trained LoRA adapters."""
-        return self._root / "models" / "lora" / "adapters"
+        return self.root / "models" / "lora" / "adapters"
 
     @property
     def runs_dir(self) -> Path:
         """Directory for LoRA training runs with checkpoints."""
-        return self._root / "models" / "lora" / "runs"
+        return self.root / "models" / "lora" / "runs"
 
     @property
     def merged_dir(self) -> Path:
         """Directory for merged models."""
-        return self._root / "models" / "merged"
+        return self.root / "models" / "merged"
 
     @property
     def abliterated_dir(self) -> Path:
         """Directory for abliterated models (refusal removed)."""
-        return self._root / "models" / "abliterated"
+        return self.root / "models" / "abliterated"
 
     @property
     def ollama_dir(self) -> Path:
         """Directory for Ollama modelfiles."""
-        return self._root / "models" / "ollama"
+        return self.root / "models" / "ollama"
 
     @property
     def library_file(self) -> Path:
         """Path to the library index file."""
-        return self._root / "models" / "library.json"
+        return self.root / "models" / "library.json"
 
     @property
     def llama_cpp_dir(self) -> Path:
         """Directory for llama.cpp installation."""
-        return self._root / "tools" / "llama.cpp"
+        return self.root / "tools" / "llama.cpp"
 
     @property
     def config_dir(self) -> Path:
         """Directory for configuration files."""
-        return self._root / "config"
+        return self.root / "config"
 
     @property
     def datasets_dir(self) -> Path:
         """Directory for datasets."""
-        return self._root / "datasets"
+        return self.root / "datasets"
 
     @property
     def processed_dir(self) -> Path:
         """Directory for processed datasets."""
-        return self._root / "datasets" / "processed"
+        return self.root / "datasets" / "processed"
 
     @property
     def benchmarks_dir(self) -> Path:
         """Directory for benchmark results."""
-        return self._root / "benchmarks"
+        return self.root / "benchmarks"
 
     @property
     def config_file(self) -> Path:
         """Main configuration file."""
-        return self._root / "config" / "settings.json"
+        return self.root / "config" / "settings.json"
 
     def get_model_path(self, model_name: str, model_type: str = "gguf") -> Path:
         """
