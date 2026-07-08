@@ -17,7 +17,7 @@ New modular structure (v2.0):
 Backward compatible imports are provided below.
 """
 
-__version__ = "2.0.0"
+__version__ = "3.0.1"
 __author__ = "AI Toolbox"
 
 # =============================================================================

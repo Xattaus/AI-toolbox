@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-07-08
+
+Post-release hardening from the v3.0.0 audit follow-up.
+
+### Changed
+- Reworded "reproducible builds" to "pinned external model tools" and clarified that only Python dependencies auto-install (`llama-quantize` is built from source on Linux/macOS).
+- Formatted the entire codebase with black; `black --check` is now a CI gate (mypy still informational).
+- Corrected the package `__version__` (was `2.0.0`).
+
+### Added
+- `constraints.txt` pinning the core Python dependencies to the CI-validated versions (`pip install -e . -c constraints.txt`).
+- Wheel (`.whl`) attached as a release asset.
+
+[3.0.1]: https://github.com/Xattaus/AI-toolbox/releases/tag/v3.0.1
+
 ## [3.0.0] - 2026-07-08
 
 First public release.

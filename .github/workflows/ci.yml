@@ -35,11 +35,11 @@ jobs:
       - name: Run tests
         run: pytest
 
-      # Lint and type checks currently have a backlog, so they report without
-      # failing the build. Flip continue-on-error off as the debt is cleared.
+      # Formatting is now a gate (the codebase is black-clean). Type checking
+      # still has a backlog, so mypy reports without failing the build; flip
+      # its continue-on-error off once the debt is cleared.
       - name: Check formatting (black)
         run: black --check src tests
-        continue-on-error: true
 
       - name: Type check (mypy)
         run: mypy src
