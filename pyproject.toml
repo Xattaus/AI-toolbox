@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-toolbox"
-version = "3.0.1"
+version = "3.0.2"
 description = "Local AI Toolkit - Download, convert, train, merge, and chat with local LLM models"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}

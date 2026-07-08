@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.2] - 2026-07-08
+
+Continued post-audit hardening.
+
+### Security
+- The config file (which may hold an HF token) is now restricted on Windows too, via `icacls` — inheritance is dropped and only the current user is granted access. Previously `chmod 0600` only had an effect on POSIX.
+
+### Tests
+- Suite grown to 134. Added smoke tests for the Ollama Modelfile generator and the MCP server tool schemas, plus unit tests for the `hf_filters` helpers and the merge config manager (YAML save/load/list/delete).
+
+[3.0.2]: https://github.com/Xattaus/AI-toolbox/releases/tag/v3.0.2
+
 ## [3.0.1] - 2026-07-08
 
 Post-release hardening from the v3.0.0 audit follow-up.
