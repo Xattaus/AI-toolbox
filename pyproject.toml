@@ -8,7 +8,7 @@ version = "3.0.0"
 description = "Local AI Toolkit - Download, convert, train, merge, and chat with local LLM models"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "AI Toolbox"}
 ]
@@ -37,7 +37,6 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -118,10 +117,10 @@ addopts = "-q"
 
 [tool.black]
 line-length = 100
-target-version = ["py39"]
+target-version = ["py310"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 # Lenient baseline: many runtime deps ship without type stubs. Tighten over time.
 ignore_missing_imports = true
 warn_return_any = false

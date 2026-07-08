@@ -4,7 +4,7 @@
 
 **The local LLM workshop** — download, convert, train, merge, and uncensor local LLMs.
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-ff9d00?style=flat-square&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10%2B-ff9d00?style=flat-square&logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPL--3.0-ff9d00?style=flat-square)
 ![Version](https://img.shields.io/badge/Version-3.0.0-ff9d00?style=flat-square)
 ![Platform](https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-ff9d00?style=flat-square)
@@ -196,7 +196,7 @@ Compare model performance:
 
 ### Requirements
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - 8GB+ RAM (for model operations)
 - NVIDIA GPU recommended (for training/merging)
 - Internet connection (for downloading models)
@@ -366,7 +366,7 @@ AI Toolbox is designed to be portable:
 2. On the target PC, run `setup.bat` or `toolbox.bat`
 3. Dependencies install automatically on first run
 
-**Note:** Target PC must have Python 3.9+ installed
+**Note:** Target PC must have Python 3.10+ installed
 
 ---
 
@@ -374,7 +374,7 @@ AI Toolbox is designed to be portable:
 
 ### "Python not found"
 
-Install Python 3.9+ from https://python.org and ensure "Add to PATH" is checked.
+Install Python 3.10+ from https://python.org and ensure "Add to PATH" is checked.
 
 ### "Model not found"
 

@@ -188,7 +188,7 @@ Vertaile mallien suorituskykyä:
 
 ### Vaatimukset
 
-- Python 3.9 tai uudempi
+- Python 3.10 tai uudempi
 - 8GB+ RAM (mallioperaatioihin)
 - NVIDIA GPU suositeltu (koulutus/merget)
 - Internet-yhteys (mallien lataukseen)
@@ -284,7 +284,7 @@ AI Toolbox on suunniteltu kannettavaksi:
 2. Kohde-PC:llä aja `toolbox.bat`
 3. Riippuvuudet asentuvat automaattisesti
 
-**Vaatimus:** Python 3.9+ asennettuna kohde-PC:llä
+**Vaatimus:** Python 3.10+ asennettuna kohde-PC:llä
 
 ---
 
